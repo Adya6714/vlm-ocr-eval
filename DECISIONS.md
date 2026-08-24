@@ -940,3 +940,30 @@ flattened 83 / inverted 87 lines; interrupt mid-natural then resume
 appended only remaining pages (0 path dupes); full rerun printed
 `already complete — skipping` for all three modes with unchanged counts.
 
+---
+
+### 44. Canonical line-crop height 70 px (5 × PATCH_SIZE)
+
+**Decision:** `export_line_crops()` pads every saved line PNG to
+**70 px** tall (white background, top-aligned ink) before writing to
+`data/cache/line_crops/`. Width stays variable; width padding remains
+in `collate_batch`.
+
+**Alternatives considered:** (a) 64 px from train.py's collate docstring
+("e.g. 64px, per docs/stage2_design_notes.md"); (b) leave natural
+43–44 px and fix collate_batch to tolerate mixed heights; (c) round
+observed max up to 56 (4 × 14).
+
+**Why:** `docs/stage2_design_notes.md` is not in the repo — 64 was an
+example, not a settled spec. Dry-run crops were 43–44 px (222/266 at
+43, 44 at 44), which breaks `collate_batch`'s assumption that
+`height = images[0].height` for the whole batch and makes patch-count
+masks wrong when heights differ. 70 = smallest multiple of
+`PATCH_SIZE=14` above the observed range; it matches existing smoke
+fixtures (`encoder.py` `height=70`, `generate.py` blank tensor,
+`make_fake_probe1_data.py`). `PatchEmbedding` uses
+`Conv2d(..., stride=patch_size)` — partial rows are silently dropped,
+not errored, so fixed height must be enforced at export time.
+
+**Verified:** 2026-08-25. Hindi dry run `--pages-per-mode 3`: all 266
+crops height 70 px (was 43/44 mixed); widths still 90–879.

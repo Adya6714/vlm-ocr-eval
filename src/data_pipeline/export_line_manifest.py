@@ -17,7 +17,42 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from PIL import Image
+
 from renderer.render import RenderedPage
+
+# Smallest multiple of PATCH_SIZE (14) that covers observed Tier A line
+# crops (~43–44 px tall). docs/stage2_design_notes.md is referenced in
+# train.py's collate docstring as "e.g. 64px" but that file is not in
+# the repo and 64 was never settled — 70 is already used in encoder/
+# generate smoke tests (DECISIONS.md #44).
+PATCH_SIZE = 14
+CANONICAL_LINE_HEIGHT = 70  # 5 * PATCH_SIZE
+
+
+def pad_crop_to_canonical_height(
+    crop: Image.Image,
+    height: int = CANONICAL_LINE_HEIGHT,
+    fill: int = 255,
+) -> Image.Image:
+    """
+    Pad a line crop to fixed height with white background.
+
+    Why: collate_batch assumes one height per batch; mixed 43/44 px crops
+    broke padding-mask math. White fill matches train.py / collate_batch
+    (255 -> 1.0 after /255.0). Ink stays top-aligned; pad is below the
+    line, same as trailing width padding in collate_batch.
+    """
+    if crop.mode != "L":
+        crop = crop.convert("L")
+    width, current_height = crop.size
+    if current_height == height:
+        return crop
+    if current_height > height:
+        return crop.crop((0, 0, width, height))
+    padded = Image.new("L", (width, height), color=fill)
+    padded.paste(crop, (0, 0))
+    return padded
 
 
 def export_line_crops(
@@ -45,6 +80,7 @@ def export_line_crops(
         if x1 <= x0 or y1 <= y0:
             continue
         crop = page.image.crop((x0, y0, x1, y1))
+        crop = pad_crop_to_canonical_height(crop)
         img_path = out_dir / f"{stem}_r{lg.reading_order:04d}.png"
         crop.save(img_path)
         rows.append({"image_path": str(img_path), "text": lg.text})
