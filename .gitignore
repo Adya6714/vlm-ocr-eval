@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Editor / OS
+.DS_Store
+*.swp
+*~
+
+# Backups
+*.bak
+
+# Generated / heavy data (rebuild or fetch locally / from Colab)
+data/cache/
+data/raw/
+data/predictions/
+data/predictions_backup/
+
+# Colab export archives (jsonl already lives under data/predictions/ when extracted)
+*.zip
+
+# Checkpoints and probe smoke artifacts
+checkpoints/
+/tmp/
