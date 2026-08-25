@@ -512,6 +512,59 @@
   .status-tag.notrun{color:var(--ochre); border:1px solid var(--ochre);}
   .status-tag.oos{color:var(--ink-soft); border:1px solid var(--hairline-strong);}
   table.data td .status-tag{margin-left:0;}
+
+  /* ---- experiment framing (Part One) ---- */
+  .not-product{
+    font-family:'IBM Plex Mono', monospace; font-size:0.72rem;
+    text-transform:uppercase; letter-spacing:0.1em;
+    color:var(--ink-blue); margin:0 0 14px;
+  }
+  .exp-spine{
+    margin-top:28px; border:1px solid var(--hairline-strong);
+    border-radius:4px; background:var(--paper-raised); padding:22px 24px;
+    font-family:'IBM Plex Mono', monospace; font-size:0.78rem;
+    color:var(--ink-soft); line-height:1.55; overflow-x:auto;
+  }
+  .exp-spine .spine-title{
+    font-size:0.68rem; text-transform:uppercase; letter-spacing:0.1em;
+    color:var(--ink-blue); margin:0 0 12px;
+  }
+  .exp-spine pre{
+    margin:0; white-space:pre; font-family:inherit; font-size:0.76rem;
+    color:var(--ink); line-height:1.45;
+  }
+  .freq-grid{
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px;
+    margin-top:28px;
+  }
+  @media (max-width:760px){ .freq-grid{grid-template-columns:1fr;} }
+  .freq-card{
+    border:1px solid var(--hairline); border-radius:3px;
+    background:var(--paper-raised); padding:14px 16px;
+  }
+  .freq-card h3{
+    font-family:'Fraunces', serif; font-weight:500; font-size:1.02rem;
+    margin:0 0 6px;
+  }
+  .freq-card .freq-why{
+    font-size:0.84rem; color:var(--ink-soft); margin:0 0 12px; line-height:1.45;
+  }
+  .bar-row{
+    display:grid; grid-template-columns:2.2rem 1fr; gap:8px;
+    align-items:center; margin:5px 0; font-family:'IBM Plex Mono', monospace;
+    font-size:0.72rem; color:var(--ink);
+  }
+  .bar-track{height:8px; background:var(--paper); border-radius:2px; overflow:hidden;}
+  .bar-fill{height:100%; background:var(--ink-blue); border-radius:2px;}
+  .bar-fill.dim{background:var(--ochre); opacity:0.85;}
+  .confound-box{
+    margin-top:28px; border-left:3px solid var(--brick);
+    padding:4px 0 4px 18px; max-width:66ch;
+  }
+  .confound-box p{margin:0 0 8px; color:var(--ink-soft); font-size:0.96rem;}
+  .confound-box p:last-child{margin:0;}
+  .confound-box strong{color:var(--ink);}
+
   .reported-banner{
     font-family:'IBM Plex Mono', monospace; font-size:0.7rem;
     text-transform:uppercase; letter-spacing:0.1em; color:var(--ochre);
@@ -527,7 +580,7 @@
 
 <div class="topbar">
   <div class="topbar-inner">
-    <div class="brand">vlm-ocr-eval <span class="dim">/ the idea · what happened</span></div>
+    <div class="brand">vlm-ocr-eval <span class="dim">/ experiment · not a product</span></div>
     <nav class="navlinks">
       <a href="#hero">Idea</a>
       <a href="#method">Method</a>
@@ -556,11 +609,11 @@
     <div class="fig-num paper-num">A</div>
     <div class="fig-body">
       <div class="section-kicker paper-label">Abstract</div>
-      <h2 class="section-title">Diagnosing Indic OCR: exposure, encoding, and confidence</h2>
+      <h2 class="section-title">An experiment on Indic OCR — not an OCR product</h2>
       <div class="abstract-box">
-        <p>Published Indic OCR scores mix two causes — how often a script was seen in training, and how hard it is to read — and they often count valid alternate Unicode spellings as errors. This project builds apparatus to separate those effects.</p>
-        <p><strong>Design:</strong> a Stage&nbsp;0 taxonomy; a HarfBuzz renderer with a glyph-frequency dial; a from-scratch instrument model; probes that ask whether confidence comes from reading or guessing. An API cannot answer Probes&nbsp;2/3/5 — you need a model you own.</p>
-        <p><strong>What actually ran</strong> is below the divider: Stages&nbsp;0–1 measured in-tree; Hindi 2a reported from Colab; Bengali partial; Probe&nbsp;6 / 5b / Stage&nbsp;2b–6 out of scope or not run. See <a href="#status">Status ledger</a>.</p>
+        <p>When an OCR model struggles with an Indic script, is it because the glyph is visually hard — or because it was rarely seen in training? And does the model know when it is wrong? Those are scientific questions; a leaderboard CER cannot answer them.</p>
+        <p><strong>Design:</strong> control glyph exposure (natural / flattened / inverted), train a from-scratch instrument with zero Indic pretraining, then probe accuracy, confidence, and reading-vs-guessing. A closed API contaminates the exposure story and cannot open logits — owning the model is required.</p>
+        <p><strong>What actually ran</strong> is below the divider. See <a href="#status">Status ledger</a>.</p>
       </div>
     </div>
   </div>
@@ -570,8 +623,9 @@
 <header class="hero mode-item walk-only" id="hero" style="--walk-order:1; --paper-order:0">
   <div class="hero-inner">
     <div class="hero-kicker">Part One · The Idea</div>
-    <h1>Does confidence come from <em>reading</em> — or from guessing?</h1>
-    <p class="hero-sub">A CER number cannot tell fluent language-prior guessing from genuine vision. Blank/noise controls, runner-up mass, and per-step confidence require opening the model — an API that returns text alone cannot answer Probes&nbsp;2, 3, or&nbsp;5. This project designs the apparatus to ask those questions on purpose.</p>
+    <p class="not-product">A scientific experiment on OCR models — not “build the best Indic OCR”</p>
+    <h1>Hard to <em>see</em> — or rarely <em>seen</em>?</h1>
+    <p class="hero-sub">When an OCR model struggles with an Indic script, is the glyph genuinely visually difficult, or did the model simply not see it often enough during training? And once it is confident — does it know when it is wrong? Those questions need controlled exposure and a model you own. Training runs below are apparatus for that experiment, not the product goal.</p>
 
     <div class="status-strip">
       <span class="pill done">Done: Stage 0 · Stage 1 · Hindi 2a (9/9 reported)</span>
@@ -580,8 +634,26 @@
       <span class="pill out">Out of scope: Stage 2b / 3 / 5 / 6 full</span>
     </div>
 
+    <div class="exp-spine">
+      <div class="spine-title">The overall experiment</div>
+      <pre>REAL-WORLD QUESTION: why is Indic OCR difficult?
+        │
+   ┌────┴────┐
+   ▼         ▼
+exposure?  visually hard?
+   │         │
+   └────┬────┘
+        ▼
+ CONTROL EXPOSURE  →  TRAIN INSTRUMENT (from scratch)
+        │
+   natural · flattened · inverted   (× 3 seeds = 9 runs)
+        │
+        ▼
+ PROBE: accuracy · confidence · reading vs guessing</pre>
+    </div>
+
     <div class="signature" style="margin-top:48px;">
-      <div class="signature-label">Mechanism — how Probe 3 would be tested (click)</div>
+      <div class="signature-label">Mechanism — how we’d test reading vs guessing (click)</div>
       <div class="glyph-row" id="glyphRow">
         <div class="glyph" data-cond="real" tabindex="0" role="button" aria-label="Real line of text"></div>
         <div class="glyph" data-cond="real" tabindex="0" role="button" aria-label="Real line of text"></div>
@@ -599,7 +671,7 @@
 
     <details class="say-this">
       <summary>SAY THIS</summary>
-      <div class="say-body"><p>“The question is reading vs guessing. An API can't run blank-image controls or hand me runner-up mass — so I designed an instrument I own. The click demo is the mechanism; the ledger below is what actually ran.”</p></div>
+      <div class="say-body"><p>“I’m not shipping an OCR. I’m asking: rare-glyph failure — exposure or geometry? And does confidence mean anything? The click demo is how we’d catch guessing; the ledger below is what actually ran.”</p></div>
     </details>
   </div>
 </header>
@@ -612,27 +684,58 @@
     <div class="fig-body">
       <div class="section-kicker walk-label">The core idea</div>
       <div class="section-kicker paper-label">1. Method</div>
-      <h2 class="section-title">Three pieces of apparatus — no run numbers required</h2>
-      <p class="lede">Each piece exists because a CER table cannot answer one of the questions above.</p>
+      <h2 class="section-title">The confound a CER table cannot untangle</h2>
+      <p class="lede">Train on a natural corpus and क may appear 10,000 times while ज्ञ appears 100. If accuracy is 95% vs 40%, you cannot conclude ज्ञ is visually harder — maybe the model simply got less practice. That confound is the reason this repo exists.</p>
 
-      <div class="kv-grid">
+      <div class="confound-box">
+        <p><strong>So we do not train “Hindi normally.”</strong> We hold data volume comparable and deliberately set glyph-cluster frequencies three ways — then train under each condition (and three seeds, so a +6% swing cannot be dismissed as noise).</p>
+      </div>
+
+      <div class="freq-grid">
+        <div class="freq-card">
+          <h3>Natural</h3>
+          <p class="freq-why">Preserve the normal Zipf-like skew.</p>
+          <div class="bar-row"><span>क</span><div class="bar-track"><div class="bar-fill" style="width:95%"></div></div></div>
+          <div class="bar-row"><span>म</span><div class="bar-track"><div class="bar-fill" style="width:70%"></div></div></div>
+          <div class="bar-row"><span>ज्ञ</span><div class="bar-track"><div class="bar-fill dim" style="width:18%"></div></div></div>
+          <div class="bar-row"><span>क्ष</span><div class="bar-track"><div class="bar-fill dim" style="width:10%"></div></div></div>
+        </div>
+        <div class="freq-card">
+          <h3>Flattened</h3>
+          <p class="freq-why">Make frequencies much more balanced.</p>
+          <div class="bar-row"><span>क</span><div class="bar-track"><div class="bar-fill" style="width:55%"></div></div></div>
+          <div class="bar-row"><span>म</span><div class="bar-track"><div class="bar-fill" style="width:55%"></div></div></div>
+          <div class="bar-row"><span>ज्ञ</span><div class="bar-track"><div class="bar-fill" style="width:55%"></div></div></div>
+          <div class="bar-row"><span>क्ष</span><div class="bar-track"><div class="bar-fill" style="width:55%"></div></div></div>
+        </div>
+        <div class="freq-card">
+          <h3>Inverted</h3>
+          <p class="freq-why">Give rare units more exposure on purpose.</p>
+          <div class="bar-row"><span>क</span><div class="bar-track"><div class="bar-fill dim" style="width:18%"></div></div></div>
+          <div class="bar-row"><span>म</span><div class="bar-track"><div class="bar-fill dim" style="width:30%"></div></div></div>
+          <div class="bar-row"><span>ज्ञ</span><div class="bar-track"><div class="bar-fill" style="width:90%"></div></div></div>
+          <div class="bar-row"><span>क्ष</span><div class="bar-track"><div class="bar-fill" style="width:90%"></div></div></div>
+        </div>
+      </div>
+
+      <div class="kv-grid" style="margin-top:36px;">
         <div class="kv-card">
           <h3>Equivalence tiers</h3>
           <p>When two strings differ, is that a real misread — or the same reading in different bytes? Tier&nbsp;1 encoding and Tier&nbsp;2 phonetic equivalence keep alternate Unicode spellings from counting as OCR failure.</p>
         </div>
         <div class="kv-card">
           <h3>Exposure dial</h3>
-          <p>When a language scores low, is it rarely seen or hard to see? Hold volume fixed and set glyph-cluster frequencies to natural / flattened / inverted — so exposure is a dial, not a corpus accident.</p>
+          <p>The three bars above. Renderer + grapheme-cluster tokenizer so “how often did the model see this visual unit?” is well-defined — BPE would tangle frequency with segmentation.</p>
         </div>
         <div class="kv-card">
           <h3>Confidence as target</h3>
-          <p>When the model is sure, is it reading the image or guessing from language priors? Blank/noise controls and calibration buckets need per-step confidence and runner-up mass — which means owning the model.</p>
+          <p>After training: is high confidence reading or guessing? Blank/noise controls and calibration buckets need per-step confidence and runner-up mass — an API that returns text alone cannot answer.</p>
         </div>
       </div>
 
       <details class="say-this">
         <summary>SAY THIS</summary>
-        <div class="say-body"><p>“Encoding-aware scoring, an exposure dial, an openable model. Everything else in the repo exists to land one of those three.”</p></div>
+        <div class="say-body"><p>“If I only train on natural text, rare-glyph failure is confounded. Natural / flattened / inverted × three seeds is the experiment. The instrument and probes exist so I can ask exposure vs difficulty — and whether confidence means anything.”</p></div>
       </details>
     </div>
   </div>
@@ -646,8 +749,8 @@
     <div class="fig-body">
       <div class="section-kicker walk-label">Architecture</div>
       <div class="section-kicker paper-label">2. Architecture</div>
-      <h2 class="section-title">Two models on purpose — instrument vs demo</h2>
-      <p class="lede">The instrument is trained from scratch with zero Indic pretraining so Probes&nbsp;1–3 and&nbsp;5 have somewhere to land. The demo (LoRA on a pretrained doc-VLM) is a different project shape — designed, not built this phase.</p>
+      <h2 class="section-title">Why we need a model we own</h2>
+      <p class="lede">Fine-tune a pretrained OCR/VLM on our Bengali data and you still don’t know what caused its knowledge — it may already have seen millions of Bengali pages. That contaminates the exposure experiment. The instrument is trained from scratch with <em>zero</em> Indic pretraining so every grapheme’s history is ours. The demo (LoRA on a pretrained doc-VLM) is a different project shape — designed, not built this phase.</p>
 
       <div class="figure">
         <div class="diagram-frame">
@@ -658,7 +761,7 @@
               </marker>
             </defs>
 
-            <text x="20" y="26" class="lane-label">the instrument — built, trained</text>
+            <text x="20" y="26" class="lane-label">the instrument — designed for the experiment</text>
             <rect x="20" y="40" width="440" height="150" rx="4" class="node-box blue"/>
             <text x="40" y="66" class="node-text" font-weight="600">Zero-pretraining ViT + AR decoder</text>
             <text x="40" y="86" class="node-text small">~19.5M params · grapheme-cluster vocab</text>
@@ -697,7 +800,7 @@
 
       <details class="say-this">
         <summary>SAY THIS</summary>
-        <div class="say-body"><p>“Left is the openable instrument. Right is shipping shape later. They stay separate so pretrained exposure never contaminates the dial.”</p></div>
+        <div class="say-body"><p>“If I fine-tune a pretrained reader, I don’t know what it already saw. Left is a blank slate I own — so exposure is causal. Right is shipping shape later; they stay separate on purpose.”</p></div>
       </details>
     </div>
   </div>
@@ -711,8 +814,8 @@
     <div class="fig-body">
       <div class="section-kicker walk-label">Data flow</div>
       <div class="section-kicker paper-label">3. Designed flow</div>
-      <h2 class="section-title">Designed flow — images in, probes out</h2>
-      <p class="lede">Same corpus feeds taxonomy and the renderer. Training is a designed 3×3 (mode × seed). Long jobs resume when Colab dies. This diagram is the wiring, not a completion claim.</p>
+      <h2 class="section-title">Designed flow — control → train → probe</h2>
+      <p class="lede">Known text → renderer (HarfBuzz) → line-crop manifests → instrument training under natural/flattened/inverted × seeds → probes. The manifests are the training instruction lists for the experiment — not a product corpus. This diagram is the wiring, not a completion claim.</p>
 
       <div class="figure">
         <div class="diagram-frame">
@@ -780,7 +883,7 @@
 
       <details class="say-this">
         <summary>SAY THIS</summary>
-        <div class="say-body"><p>“GlotOCR → taxonomy or manifests → train runs → probes. Wiring check with no GPU: <span class="mono">make smoke-test</span>.”</p></div>
+        <div class="say-body"><p>“I render so I know what the image says, export line crops so training is cheap, then run the 9-run grid. Wiring check with no GPU: <span class="mono">make smoke-test</span>.”</p></div>
       </details>
     </div>
   </div>
@@ -793,7 +896,7 @@
     <div class="fig-body">
       <div class="section-kicker">Repository tour</div>
       <h2 class="section-title">Every real module under src/ and scripts/</h2>
-      <p class="lede">One card per file: path, what it does, why it exists — grouped by stage. Status pills cross-reference IMPLEMENTATION.md.</p>
+      <p class="lede">One card per file — path, what it does, why it exists for the experiment. Status pills cross-reference IMPLEMENTATION.md. Training scripts exist to run the exposure grid, not to ship a reader.</p>
       <div class="tour-stage">
         <h3 class="tour-stage-title">Stage 0 — Error taxonomy</h3>
         <div class="tour-grid">
@@ -1096,8 +1199,8 @@
     <div class="fig-body">
       <div class="section-kicker walk-label">Findings (reported)</div>
       <div class="section-kicker paper-label">5. Findings</div>
-      <h2 class="section-title">Probe 3 and Probe 5 — as BOOK.md states them</h2>
-      <p class="lede">Numbers below are copied from BOOK.md Chapter&nbsp;7. They are not re-derived in this checkout.</p>
+      <h2 class="section-title">After training: reading vs guessing, and calibration</h2>
+      <p class="lede">Probes ask what accuracy alone cannot. Numbers below are copied from BOOK.md Chapter&nbsp;7 — not re-derived in this checkout.</p>
 
       <span class="reported-banner">REPORTED — see ledger above</span>
 
@@ -1304,8 +1407,8 @@
       <h2 class="section-title">Suggested path</h2>
       <p class="lede">Part One for the design. Part Two for what ran. Stay on this site in the interview.</p>
       <div class="docs-list">
-        <div class="doc-row primary"><span class="doc-name"><a href="#hero">Idea</a></span><span class="doc-desc">question + mechanism demo</span></div>
-        <div class="doc-row"><span class="doc-name"><a href="#method">Method</a></span><span class="doc-desc">tiers · dial · confidence</span></div>
+        <div class="doc-row primary"><span class="doc-name"><a href="#hero">Idea</a></span><span class="doc-desc">exposure vs difficulty · experiment spine</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="#method">Method</a></span><span class="doc-desc">the confound · natural/flat/inverted</span></div>
         <div class="doc-row"><span class="doc-name"><a href="#architecture">Architecture</a></span><span class="doc-desc">instrument vs demo</span></div>
         <div class="doc-row"><span class="doc-name"><a href="#flow">Flow</a></span><span class="doc-desc">designed pipeline</span></div>
         <div class="doc-row"><span class="doc-name"><a href="#tour">Tour</a></span><span class="doc-desc">every module</span></div>
@@ -1326,7 +1429,7 @@
   <div class="wrap-wide">
     <div>
       <div class="fmark">vlm-ocr-eval</div>
-      <p class="fnote">Part One is the design. Part Two is what ran on a free Colab T4. Unbuilt stages and unreproduced numbers are labeled.</p>
+      <p class="fnote">An experiment on Indic OCR models — not a product. Part One is the design; Part Two is what ran on a free Colab T4.</p>
     </div>
     <div class="mono" style="font-size:0.8rem; color:var(--ink-soft);">GitHub Pages serves repo-root index.html</div>
   </div>
