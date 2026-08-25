@@ -425,6 +425,36 @@
   h1{max-width:22ch;}
   .navlinks{gap:14px; flex-wrap:wrap;}
 
+
+  /* ---- compute ledger (quota-cut runs) ---- */
+  .ledger-intro{color:var(--ink-soft); max-width:66ch; margin:0 0 8px;}
+  .ledger-note{
+    font-family:'IBM Plex Mono', monospace; font-size:0.72rem;
+    text-transform:uppercase; letter-spacing:0.1em; color:#C45C26;
+    margin:0 0 20px;
+  }
+  .ledger-grid{margin-top:8px; display:flex; flex-direction:column; gap:0;}
+  .ledger-row{
+    display:grid; grid-template-columns:1fr 1fr; gap:24px;
+    padding:22px 0; border-top:1px solid var(--hairline);
+  }
+  @media (max-width:760px){ .ledger-row{grid-template-columns:1fr;} }
+  .ledger-row:last-of-type{border-bottom:1px solid var(--hairline);}
+  .ledger-row h3{
+    font-family:'Fraunces', serif; font-weight:500; font-size:1.08rem; margin:0 0 10px;
+  }
+  .ledger-col .col-label{
+    font-family:'IBM Plex Mono', monospace; font-size:0.68rem;
+    text-transform:uppercase; letter-spacing:0.08em; color:#C45C26;
+    margin-bottom:6px;
+  }
+  .ledger-col p{margin:0; font-size:0.92rem; color:var(--ink-soft); line-height:1.5;}
+  .ledger-close{
+    margin-top:22px; max-width:66ch; font-size:0.98rem; color:var(--ink);
+    border-left:3px solid #C45C26; padding:10px 0 10px 16px;
+  }
+  .pill.amber{border-color:#C45C26; color:#C45C26;}
+
   /* paper abstract */
   .abstract-box{
     border-left:3px solid var(--ink-blue); padding:4px 0 4px 20px;
@@ -450,6 +480,7 @@
       <a href="#probes">Probes</a>
       <a href="#findings">Results</a>
       <a href="#future">Not built</a>
+      <a href="#compute">Compute</a>
       <a href="#tour" class="walk-only">Files</a>
       <a href="#map">Map</a>
       <span class="mode-toggle" role="group" aria-label="Reading mode">
@@ -472,14 +503,15 @@
       <div class="abstract-box">
         <p>Published Indic OCR scores mix two causes — how often a script was seen in training, and how hard it is to read — and they often count valid alternate Unicode spellings as errors. This project builds apparatus to separate those effects.</p>
         <p><strong>What exists:</strong> a Stage&nbsp;0 taxonomy over Tesseract/Surya/PaddleOCR; a HarfBuzz renderer that sets glyph-cluster frequencies (natural / flattened / inverted); a ~19.5M from-scratch instrument model; and probes that ask whether the model is reading or guessing.</p>
-        <p><strong>Measured:</strong> ~20.4% of Tesseract non-exact predictions are Tier&nbsp;1 encoding variants; glyph-frequency TV ≤&nbsp;0.08. <strong>Reported (Colab):</strong> one early checkpoint stayed ~0.99 confident on blank images with ~0.10 accuracy in its top confidence bucket. Demo LoRA, Sarvam transfer, and cascade are designed but not built — <a href="#future">Not built</a>.</p>
+        <p><strong>Measured:</strong> ~20.4% of Tesseract non-exact predictions are Tier&nbsp;1 encoding variants; glyph-frequency TV ≤&nbsp;0.08. <strong>Reported (Colab):</strong> one early checkpoint stayed ~0.99 confident on blank images with ~0.10 accuracy in its top confidence bucket. Demo LoRA, Sarvam transfer, and cascade are designed but not built — <a href="#future">Not built</a>
+      <a href="#compute">Compute</a>.</p>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ========== 01 WHAT ========== -->
-<header class="hero mode-item" id="what" style="--walk-order:1; --paper-order:0">
+<header class="hero mode-item walk-only" id="what" style="--walk-order:1; --paper-order:0">
   <div class="hero-inner">
     <div class="hero-kicker">Interview walkthrough · 10–15 minutes</div>
     <h1>What I built, why, and how</h1>
@@ -487,7 +519,8 @@
 
     <div class="status-strip">
       <span class="pill done">Built: taxonomy · renderer · instrument · probes</span>
-      <span class="pill pending">Probe 3/5: reported (early Colab)</span>
+      <span class="pill pending">Probe 1/5 — hindi 9/9 trained; early results reported</span>
+      <span class="pill amber">Bengali — quota-limited, partial</span>
       <span class="pill out">Not built: demo VLM · transfer · cascade</span>
     </div>
 
@@ -506,7 +539,7 @@
       </div>
     </div>
     <details class="say-this">
-      <summary>Say this</summary>
+      <summary>SAY THIS</summary>
       <div class="say-body"><p>I'd open with this screen. “I didn't ship an OCR product — I built a diagnostic stack so I can tell encoding noise from real misreads, control what the model saw, and check whether confidence means anything.”</p></div>
     </details>
   </div>
@@ -552,7 +585,7 @@
       <p class="prose" style="font-size:0.86rem; color:var(--ink-soft);">~40-point spread on their own frontier document model. That is the practical “why bother,” not a stale citation.</p>
 
       <details class="say-this">
-        <summary>Say this</summary>
+        <summary>SAY THIS</summary>
         <div class="say-body"><p>I'd say: the gap is still there on Sarvam Vision. But I don't stop at “Kashmiri is hard” — I ask whether that's exposure or geometry, and whether confidence is honest. That needs apparatus, not another CER table.</p></div>
       </details>
     </div>
@@ -580,7 +613,7 @@
       <p class="story-a">A closed API returns text (sometimes a score). It will not give blank-image controls, full next-token distributions, or per-glyph exposure. So some questions are foreclosed unless you own a model you can open.</p>
 
       <details class="say-this">
-        <summary>Say this</summary>
+        <summary>SAY THIS</summary>
         <div class="say-body"><p>This is the slide I'd slow down on. “CER is not enough. I needed encoding-aware scoring, an exposure dial, and an openable model. Everything in the repo exists to answer one of those three.”</p></div>
       </details>
     </div>
@@ -684,7 +717,7 @@
       </div>
 
       <details class="say-this">
-        <summary>Say this</summary>
+        <summary>SAY THIS</summary>
         <div class="say-body"><p>I'd walk 0 → 1 → 2a with a finger. “Taxonomy so scores mean something. Renderer so exposure is a dial. Instrument so I can open confidence. Probes are the questions.” Left solid, right dashed = not built this phase.</p></div>
       </details>
     </div>
@@ -767,7 +800,7 @@
       </div>
 
       <details class="say-this">
-        <summary>Say this</summary>
+        <summary>SAY THIS</summary>
         <div class="say-body"><p>Left to right: GlotOCR → taxonomy CSV or line manifests → nine train runs → probes. Wiring check with no GPU: <span class="mono">make smoke-test</span> (fake data — no scientific findings).</p></div>
       </details>
     </div>
@@ -775,7 +808,7 @@
 </section>
 
 <!-- ========== PROBES WHY ========== -->
-<section id="probes" class="mode-item" style="--walk-order:6; --paper-order:6">
+<section id="probes" class="mode-item" style="--walk-order:7; --paper-order:6">
   <div class="fig-rail">
     <div class="fig-num walk-num">05</div>
     <div class="fig-num paper-num">4</div>
@@ -847,7 +880,7 @@
       </div>
 
       <details class="say-this">
-        <summary>Say this</summary>
+        <summary>SAY THIS</summary>
         <div class="say-body"><p>This is the part I'd lead with after the architecture. “Probe 3 is the soundbite — confidence barely drops on a blank page. Probe 5 says that same certainty is only right one time in ten. That's why the project exists.”</p></div>
       </details>
     </div>
@@ -855,7 +888,7 @@
 </section>
 
 <!-- ========== RESULTS ========== -->
-<section id="findings" class="mode-item" style="--walk-order:7; --paper-order:7">
+<section id="findings" class="mode-item" style="--walk-order:8; --paper-order:7">
   <div class="fig-rail">
     <div class="fig-num walk-num">06</div>
     <div class="fig-num paper-num">5</div>
@@ -895,7 +928,7 @@
       <p class="prose">Spine: (1)&nbsp;stop calling alternate encodings errors; (2)&nbsp;treat glyph exposure as something you set; (3)&nbsp;treat fluent high-confidence failure as calibration/routing, not only CER.</p>
 
       <details class="say-this">
-        <summary>Say this</summary>
+        <summary>SAY THIS</summary>
         <div class="say-body"><p>I'd say measured vs reported out loud. “20% Tier&nbsp;1 is in-repo. The blank-page confidence is an early Colab signal I'm honest about — and it's exactly the failure mode the probes are for.”</p></div>
       </details>
     </div>
@@ -903,13 +936,13 @@
 </section>
 
 <!-- ========== LIMITS ========== -->
-<section id="limitations" class="mode-item" style="--walk-order:8; --paper-order:8">
+<section id="limitations" class="mode-item" style="--walk-order:11; --paper-order:10">
   <div class="fig-rail">
-    <div class="fig-num walk-num">07</div>
-    <div class="fig-num paper-num">6</div>
+    <div class="fig-num walk-num">09</div>
+    <div class="fig-num paper-num">9</div>
     <div class="fig-body">
       <div class="section-kicker walk-label">Limits</div>
-      <div class="section-kicker paper-label">6. Limitations</div>
+      <div class="section-kicker paper-label">9. Limitations</div>
       <h2 class="section-title">Bound by a free Colab T4</h2>
       <p class="lede">fp16 (no bf16), small instrument, early probe sample sizes. More compute changes how much weight the numbers can carry — not the design.</p>
       <ul class="compute-list">
@@ -923,7 +956,7 @@
 </section>
 
 <!-- ========== NOT BUILT ========== -->
-<section id="future" class="mode-item" style="--walk-order:10; --paper-order:9">
+<section id="future" class="mode-item" style="--walk-order:9; --paper-order:8">
   <div class="fig-rail">
     <div class="fig-num walk-num">08</div>
     <div class="fig-num paper-num">7</div>
@@ -971,19 +1004,88 @@
         </div>
       </div>
       <details class="say-this">
-        <summary>Say this</summary>
+        <summary>SAY THIS</summary>
         <div class="say-body"><p>I'd name what's missing before they ask. “Demo, structure metrics, transfer, cascade — designed, gated on time/T4, not because the instrument failed.”</p></div>
       </details>
     </div>
   </div>
 </section>
 
-<section id="tour" class="mode-item walk-only" style="--walk-order:11; --paper-order:0">
+<section id="compute" class="mode-item" style="--walk-order:10; --paper-order:9">
+  <div class="fig-rail">
+    <div class="fig-num walk-num">08.5</div>
+    <div class="fig-num paper-num">8</div>
+    <div class="fig-body">
+      <div class="section-kicker walk-label">Compute ledger</div>
+      <div class="section-kicker paper-label">8. Compute ledger</div>
+      <h2 class="section-title">Started, then cut off by Colab quota</h2>
+      <p class="ledger-intro">This is not the same as <a href="#future">Not built</a>
+      <a href="#compute">Compute</a>. That section is design scope — things deliberately deferred. This section is runs that were <em>started</em> (or ready to start) and stopped by free-tier GPU limits mid-project.</p>
+      <p class="ledger-note">Quota-cut · not a redesign</p>
+
+      <div class="ledger-grid">
+        <div class="ledger-row">
+          <div class="ledger-col">
+            <h3>Bengali full sweep</h3>
+            <div class="col-label">What ran</div>
+            <p>Training started for the same 9-run structure as Hindi (3 glyph-frequency conditions × 3 seeds). Hit Colab GPU quota mid-sweep across two separate Google accounts before completing.</p>
+          </div>
+          <div class="ledger-col">
+            <div class="col-label" style="margin-top:2.1rem;">What full-scale would show</div>
+            <p>Same 9-run structure as Hindi. One early Hindi signal worth flagging honestly: the inverted/seed2 run showed 0% accuracy across every sampled confidence bucket (0.3–0.9) despite a non-degenerate confidence spread — unlike natural/seed0’s single-bucket overconfidence. If that generalizes, inverted (rare-glyph-heavy) may need more than 5000 steps to learn anything at all — a distinct failure mode from natural’s confident-but-wrong pattern. That is <em>one seed</em>, not a finding — exactly why the 9-run design exists.</p>
+          </div>
+        </div>
+        <div class="ledger-row">
+          <div class="ledger-col">
+            <h3>Probe 6 — synthetic-to-real gap</h3>
+            <div class="col-label">What ran</div>
+            <p>Code built and import-tested; resize-to-70px for Tier C and held-out-page methodology decided. Not yet run for real numbers.</p>
+          </div>
+          <div class="ledger-col">
+            <div class="col-label" style="margin-top:2.1rem;">What full-scale would show</div>
+            <p>Needs held-out pages 100–109 rendered, plus baselines (Tesseract/Surya/PaddleOCR) against the synthetic line-crop layout — a path the baseline script was never tested against. Genuinely unknown until run, not assumed to work.</p>
+          </div>
+        </div>
+        <div class="ledger-row">
+          <div class="ledger-col">
+            <h3>Stage 2b prerequisite — base VRAM</h3>
+            <div class="col-label">What ran</div>
+            <p><span class="mono" style="font-size:0.85rem;">benchmark_base_models.py</span> is written but not executed — the <span class="mono" style="font-size:0.85rem;">--inspect</span> step to enumerate real LoRA <span class="mono" style="font-size:0.85rem;">target_modules</span> never completed.</p>
+          </div>
+          <div class="ledger-col">
+            <div class="col-label" style="margin-top:2.1rem;">What full-scale would show</div>
+            <p>One peak-VRAM number per candidate (SmolDocling-256M vs LightOnOCR-1B) under LoRA — the measurement that picks the demo base before any adapter training.</p>
+          </div>
+        </div>
+        <div class="ledger-row">
+          <div class="ledger-col">
+            <h3>Probe 5b — zero-shot floor</h3>
+            <div class="col-label">What ran</div>
+            <p>Not started.</p>
+          </div>
+          <div class="ledger-col">
+            <div class="col-label" style="margin-top:2.1rem;">What full-scale would show</div>
+            <p>Cheapest remaining result: real Santhali/Kashmiri images already sit under <span class="mono" style="font-size:0.85rem;">data/raw/</span>; inference-only, no training.</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="ledger-close">None of this changes the design — it changes how much weight the numbers above can carry. That distinction is deliberate, not a hedge.</p>
+
+      <details class="say-this">
+        <summary>SAY THIS</summary>
+        <div class="say-body"><p>I'd separate this from “not built.” Quota cut me off mid-Bengali sweep and before Probe 6 / the VRAM benchmark. The inverted/seed2 zero-accuracy blip is one seed — it's why I planned nine runs, not a claim I'm willing to ship alone.</p></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section id="tour" class="mode-item walk-only" style="--walk-order:6; --paper-order:0">
   <div class="fig-rail">
     <div class="fig-num">T</div>
     <div class="fig-body">
-      <div class="section-kicker">File map (if they ask)</div>
-      <h2 class="section-title">Optional deep dive — modules by stage</h2>
+      <div class="section-kicker">Repository tour</div>
+      <h2 class="section-title">Every module, in plain language</h2>
       <p class="lede">Technical appendix for the interview — only open if they point at a path. Prefer the story sections above.</p>
 
       <div class="tour-stage">
@@ -1027,7 +1129,7 @@
           </div>
         </div>
       <details class="say-this">
-        <summary>Say this</summary>
+        <summary>SAY THIS</summary>
         <div class="say-body"><p>I'd open with Stage 0 if they ask what I actually measured before building anything. About one in five of Tesseract's apparent Hindi errors were Tier 1 encoding noise — same word, different bytes — not misreads.</p><p>The hand-review pass is load-bearing: the taxonomy categories come from sitting with real diffs, not from inventing buckets first.</p></div>
       </details>
       </div>
@@ -1060,7 +1162,7 @@
           </div>
         </div>
       <details class="say-this">
-        <summary>Say this</summary>
+        <summary>SAY THIS</summary>
         <div class="say-body"><p>The renderer isn't a data utility — it's the experimental apparatus. Glyph frequency is a dial I set, verified within TV ≤ 0.08 of target, so Probe 1 can make something closer to a causal claim about exposure.</p><p>Layout bank and degradation profile are still partial: extractors exist, but the real-document pools aren't finished, and I say that out loud.</p></div>
       </details>
       </div>
@@ -1105,7 +1207,7 @@
           </div>
         </div>
       <details class="say-this">
-        <summary>Say this</summary>
+        <summary>SAY THIS</summary>
         <div class="say-body"><p>I built a ~19M model from scratch with zero Indic pretraining on purpose. A closed API returns text; it does not return runner-up distributions, per-step confidence, or blank-image behaviour.</p><p>Everything here is queued on smoke or early runs — real Probe 1 still waits on full line-crop manifests.</p></div>
       </details>
       </div>
@@ -1132,7 +1234,7 @@
           </div>
         </div>
       <details class="say-this">
-        <summary>Say this</summary>
+        <summary>SAY THIS</summary>
         <div class="say-body"><p>train.py wants line crops; render.py paints pages. The export scripts are the boring adapter that unblocks training, and they're written to resume when Colab dies mid-batch.</p><p>GlotOCR fetch is how Stage 0 got real ground truth without me hand-transcribing documents.</p></div>
       </details>
       </div>
@@ -1183,7 +1285,7 @@
           </div>
         </div>
       <details class="say-this">
-        <summary>Say this</summary>
+        <summary>SAY THIS</summary>
         <div class="say-body"><p>Probe 3 is the soundbite: confidence barely drops on a blank page. Probe 5 says that same checkpoint's top-confidence bucket is only about 10% accurate.</p><p>I'd stress these are early, single-condition numbers — hindi/natural/seed0, 30 samples — not a final claim.</p></div>
       </details>
       </div>
@@ -1204,7 +1306,7 @@
           </div>
         </div>
       <details class="say-this">
-        <summary>Say this</summary>
+        <summary>SAY THIS</summary>
         <div class="say-body"><p>Once you've got nine condition/seed runs, you need one table, not nine files. Aggregate is that rollup; freshness checking stops me from quoting stale probe JSON against a newer checkpoint.</p></div>
       </details>
       </div>
@@ -1219,7 +1321,7 @@
           </div>
         </div>
       <details class="say-this">
-        <summary>Say this</summary>
+        <summary>SAY THIS</summary>
         <div class="say-body"><p>Stage 2b itself is future work, but I already wrote the T4 memory benchmark so I don't pick SmolDocling vs LightOnOCR by vibes. That's the one prerequisite that exists today.</p></div>
       </details>
       </div>
@@ -1228,7 +1330,7 @@
   </div>
 </section>
 
-<section id="map" class="mode-item" style="--walk-order:12; --paper-order:10">
+<section id="map" class="mode-item" style="--walk-order:12; --paper-order:11">
   <div class="fig-rail">
     <div class="fig-num walk-num">09</div>
     <div class="fig-num paper-num">R</div>
@@ -1244,12 +1346,13 @@
         <div class="doc-row"><span class="doc-name"><a href="#how">How</a></span><span class="doc-desc">Stages 0 → 1 → 2a → probes</span></div>
         <div class="doc-row"><span class="doc-name"><a href="#probes">Probes</a></span><span class="doc-desc">why each exists + blank demo</span></div>
         <div class="doc-row"><span class="doc-name"><a href="#findings">Results</a></span><span class="doc-desc">measured vs reported numbers</span></div>
-        <div class="doc-row"><span class="doc-name"><a href="#future">Not built</a></span><span class="doc-desc">demo · transfer · cascade</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="#future">Not built</a>
+      <a href="#compute">Compute</a></span><span class="doc-desc">demo · transfer · cascade</span></div>
         <div class="doc-row"><span class="doc-name"><a href="#tour">Files</a></span><span class="doc-desc">only if they ask about a path</span></div>
         <div class="doc-row"><span class="doc-name"><a href="https://github.com/Adya6714/vlm-ocr-eval">GitHub</a></span><span class="doc-desc">source code</span></div>
       </div>
       <details class="say-this">
-        <summary>Say this</summary>
+        <summary>SAY THIS</summary>
         <div class="say-body"><p>I'd run What → Why → Question → How → Probes → Results. Files only if they dig into a module. GitHub if they want the code.</p></div>
       </details>
     </div>
