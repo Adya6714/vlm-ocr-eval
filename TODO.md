@@ -1,5 +1,8 @@
 # TODO.md
 
+Stages 2b, 3, 5, and 6 were deliberately not executed in this phase —
+see README.md § Future Work for the reasoning behind each.
+
 Sequenced task list. Work top to bottom within a stage; stages are mostly
 sequential but Stage 0 has zero dependency on anything and should happen
 first regardless. See `IMPLEMENTATION.md` for the full spec behind each

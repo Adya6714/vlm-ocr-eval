@@ -1,5 +1,8 @@
 # IMPLEMENTATION.md
 
+Stages 2b, 3, 5, and 6 were deliberately not executed in this phase —
+see README.md § Future Work for the reasoning behind each.
+
 This is the technical spec for ocr-vlm-eval. Every module below has a goal,
 concrete inputs/outputs, a file location, and acceptance criteria. A coding
 agent should read this file before writing any code, check the status
@@ -267,7 +270,7 @@ real data and is metric-only.
       cluster, extract the full output-token distribution, not just the
       argmax. Build a confusion graph over glyph classes from the
       runner-up mass. Impossible against a closed API — this is the
-      strongest argument for owning the model. `src/probes/probe2_confusion.py`
+      strongest argument for owning the model. `src/probes/probe2_confusion_graph.py`
 - [ ] **Probe 3 — Reading vs. guessing.** Feed blank/noise images.
       Whatever accuracy survives is language-model guessing, not vision.
       Decompose per glyph class; cross-reference against Probe 1's

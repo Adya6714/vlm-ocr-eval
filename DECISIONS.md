@@ -110,6 +110,11 @@ the causal experiment doesn't need more scripts to be well-powered.
 **Credit:** this correction came from a direct question about scope,
 2026-08-24.
 
+**Verified:** 2026-08-25. Numbers re-confirmed directly against Sarvam
+Vision's own launch blog (sarvam.ai/blogs/sarvam-vision, Feb 5 2026);
+Kashmiri 55.93 / Santhali 80.32 exact match; spread holds through
+Sarvam's own newest frontier model.
+
 ---
 
 ### 7. CER/error alignment at grapheme-cluster level, not code-point level
