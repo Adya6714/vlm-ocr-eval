@@ -278,6 +278,30 @@
   .doc-row:last-child{border-bottom:1px solid var(--hairline);}
   .doc-name{font-family:'IBM Plex Mono', monospace; font-size:0.92rem;}
   .doc-desc{color:var(--ink-soft); font-size:0.88rem; text-align:right; flex:1;}
+  .doc-row.primary{border-top:1.5px solid var(--ink-blue);}
+  .doc-row.primary .doc-name a{font-weight:500;}
+
+  /* ---- measured evidence strip (BOOK.md) ---- */
+  .evidence-grid{
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;
+    margin-top:24px;
+  }
+  @media (max-width:760px){ .evidence-grid{grid-template-columns:1fr;} }
+  .evidence-card{
+    border:1px solid var(--hairline); border-radius:3px;
+    background:var(--paper-raised); padding:14px 16px;
+  }
+  .evidence-card .ev-tag{
+    font-family:'IBM Plex Mono', monospace; font-size:0.68rem;
+    text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-blue);
+    margin-bottom:6px;
+  }
+  .evidence-card .ev-tag.reported{color:var(--ochre);}
+  .evidence-card h3{
+    font-family:'Fraunces', serif; font-weight:500; font-size:1.02rem; margin:0 0 8px;
+  }
+  .evidence-card p{margin:0; font-size:0.88rem; color:var(--ink-soft); line-height:1.5;}
+  .evidence-card .ev-num{color:var(--ink); font-family:'IBM Plex Mono', monospace; font-size:0.92rem;}
 
   footer{
     padding:56px 0 70px;
@@ -420,8 +444,8 @@
       <h2 class="section-title">A diagnostic instrument for Indic document OCR</h2>
       <div class="abstract-box">
         <p>This repository asks a narrow question: when a document VLM misreads Devanagari or Bengali, <em>why</em> — and can we tell the difference between a model that cannot see the glyph and a model that is confidently guessing from its language prior?</p>
-        <p>Answering that requires a model you own end to end. So this project builds a small instrument from scratch, with zero Indic pretraining exposure, purely so those diagnostics are possible — then transfers the findings to a production API.</p>
-        <p>Early single-condition probes show confidence barely distinguishing real lines from blank pages (Probe 3) and top-bucket confidence with only ~0.10 accuracy (Probe 5). Stages 2b, 3, 5, and 6 remain deliberately out of scope for this phase.</p>
+        <p>Answering that requires a model you own end to end. So this project builds a small instrument from scratch (~19.5M params, zero Indic pretraining), with a controlled glyph-frequency renderer and a Stage&nbsp;0 equivalence taxonomy — then probes confidence on blank and real images.</p>
+        <p><strong>Measured</strong> in-checkout: ~20.4% of Tesseract non-exact preds are Tier&nbsp;1 encoding noise; glyph-frequency TV ≤&nbsp;0.08. <strong>Reported</strong> (Colab; jsonl not in tree): Probe&nbsp;3 confidence barely drops on blank pages; Probe&nbsp;5 top-bucket accuracy ≈0.10. Stages 2b, 3, 5, 6, and Probe&nbsp;5b remain deliberately out of scope.</p>
       </div>
     </div>
   </div>
@@ -482,11 +506,11 @@
           <h3>Confidence is what's being measured</h3>
           <p>A model that fails loudly is manageable. One that fails fluently on a low-resource script is dangerous. The blank/noise control (above) and the calibration probe exist to catch exactly that — confidence that doesn't track correctness.</p>
         </div>
+      </div>
       <details class="say-this">
         <summary>Say this</summary>
         <div class="say-body"><p>The one-liner: this isn't another CER leaderboard. I separate encoding noise from real misreads, I set glyph exposure as a causal dial, and I treat confidence as the thing worth measuring — because fluent overconfidence on a low-resource script is the failure mode that actually ships.</p></div>
       </details>
-      </div>
     </div>
   </div>
 </section>
@@ -513,7 +537,7 @@
             <text x="20" y="26" class="lane-label">the instrument — built, trained</text>
             <rect x="20" y="40" width="440" height="150" rx="4" class="node-box blue"/>
             <text x="40" y="66" class="node-text" font-weight="600">Zero-pretraining ViT + AR decoder</text>
-            <text x="40" y="86" class="node-text small">~19M params · grapheme-cluster vocab</text>
+            <text x="40" y="86" class="node-text small">~19.5M params · grapheme-cluster vocab</text>
 
             <rect x="40" y="100" width="120" height="40" rx="3" class="node-box"/>
             <text x="100" y="124" class="node-text small" text-anchor="middle">encoder.py</text>
@@ -894,19 +918,37 @@
       <div class="section-kicker walk-label">Findings so far</div>
       <div class="section-kicker paper-label">4. Results</div>
       <h2 class="section-title">Early, single-condition, reported as such</h2>
-      <p class="lede">One checkpoint (hindi / natural / seed 0), 5000 steps, 30-sample probes. Not a final claim — a first real signal, and a coherent one.</p>
+      <p class="lede">BOOK.md distinguishes <em>measured</em> (reproduced in this checkout) from <em>reported</em> (Colab write-up; probe jsonl not checked in). Both kinds appear below — labeled.</p>
+
+      <div class="evidence-grid">
+        <div class="evidence-card">
+          <div class="ev-tag">Measured · Stage 0</div>
+          <h3>Encoding noise is real</h3>
+          <p>Of Tesseract predictions that were not exact match, <span class="ev-num">~20.4%</span> were Tier&nbsp;1 encoding variants (n=180). Surya: <span class="ev-num">~16.9%</span> of non-exact. Large <span class="mono" style="font-size:0.8rem;">UNREVIEWED</span> remains — report is real, not final.</p>
+        </div>
+        <div class="evidence-card">
+          <div class="ev-tag">Measured · Stage 1</div>
+          <h3>Exposure dial hits the gate</h3>
+          <p>Hindi GT slice TV: natural <span class="ev-num">0.000</span>, flattened <span class="ev-num">0.047</span>, inverted <span class="ev-num">0.005</span> (all ≤&nbsp;0.08). Instrument architecture: <span class="ev-num">~19.5M</span> params. Tier&nbsp;A verify mean render <span class="ev-num">~82&nbsp;ms</span>.</p>
+        </div>
+        <div class="evidence-card">
+          <div class="ev-tag reported">Reported · Probes 3 / 5</div>
+          <h3>Confidence not grounded yet</h3>
+          <p>One hindi/natural/seed0 checkpoint, 30 samples. Numbers below are from that Colab run — reproduce via BOOK Appendix&nbsp;E once checkpoints are local.</p>
+        </div>
+      </div>
 
       <div class="finding-callout">
-        <div class="fc-label">Probe 3 — reading vs. guessing</div>
+        <div class="fc-label">Probe 3 — reading vs. guessing (reported)</div>
         <p>Mean confidence: <strong>0.9929</strong> on real line crops, <strong>0.9898</strong> on blank images, <strong>0.9877</strong> on matched noise. The gap is nearly nothing — this checkpoint's confidence barely distinguishes real text from an empty page.</p>
       </div>
 
       <div class="finding-callout">
-        <div class="fc-label">Probe 5 — calibration</div>
+        <div class="fc-label">Probe 5 — calibration (reported)</div>
         <p>Every one of 30 sampled predictions landed in the top confidence bucket (0.90–1.00). Actual accuracy in that bucket: <strong>0.10</strong>. When this checkpoint says it's nearly certain, it's right about one time in ten.</p>
       </div>
 
-      <p class="prose">Read together: at this training scale, the instrument isn't grounding its confidence in the image or in correctness. That's an expected, legible failure mode for a small model at 5000 steps on a thin corpus — not a contradiction of the design, but exactly the kind of thing the probe suite exists to surface before it reaches production.</p>
+      <p class="prose">Read together: at this training scale, the instrument isn't grounding its confidence in the image or in correctness. That's an expected, legible failure mode for a small model at 5000 steps on a thin corpus — not a contradiction of the design, but exactly the kind of thing the probe suite exists to surface before it reaches production. Three independent lines already converge without deferred stages: encoding variants are first-class noise, exposure can be set as a dial, and owning decode-time confidence is what makes blank-control askable.</p>
       <details class="say-this">
         <summary>Say this</summary>
         <div class="say-body"><p>This is the part I'd lead with — the model's confidence barely dropped when I showed it a blank image. That's not a bug, that's the whole reason this project exists: to catch exactly that kind of silent overconfidence before it ships.</p><p>And I'd immediately add the honesty caveat: one checkpoint, thirty samples, early training. The signal is coherent; it is not a final claim.</p></div>
@@ -991,11 +1033,18 @@
             <p>Inference-only, no training needed — the renderer can't produce these scripts (no font support), but real Santhali/Kashmiri images already exist in the corpus and could run this cheaply.</p>
           </div>
         </div>
+        <div class="scope-row">
+          <div class="scope-tag"><span class="stage">RLVR</span>coverage ablation</div>
+          <div class="scope-why">
+            <h4>Reward gaming by saying less</h4>
+            <p>Planned reward: accuracy + TEDS + reading-order correlation − a coverage term. Without coverage, accuracy rises by omitting text. The only planned ablation removes that term and quantifies silence — described in BOOK Ch.&nbsp;6, not built this phase.</p>
+          </div>
+        </div>
+      </div>
       <details class="say-this">
         <summary>Say this</summary>
         <div class="say-body"><p>I'd name what's missing before they ask. Demo model, structure metrics, Sarvam transfer, triage cascade — each is a real design with a reason it didn't ship in this phase, not a vague backlog item.</p></div>
       </details>
-      </div>
     </div>
   </div>
 </section>
@@ -1033,18 +1082,19 @@
       <div class="section-kicker walk-label">Documentation map</div>
       <div class="section-kicker paper-label">References</div>
       <h2 class="section-title">Where the reasoning actually lives</h2>
-      <p class="lede">The repository, not this page, is the primary artifact.</p>
+      <p class="lede">This page is the interview walkthrough. BOOK.md is the rebuild path — concept → code → evidence. Spec and why live next to it.</p>
 
       <div class="docs-list">
-        <div class="doc-row"><span class="doc-name"><a href="../IMPLEMENTATION.md">IMPLEMENTATION.md</a></span><span class="doc-desc">technical spec, stage by stage, status-marked</span></div>
-        <div class="doc-row"><span class="doc-name"><a href="../DECISIONS.md">DECISIONS.md</a></span><span class="doc-desc">45 numbered entries — every non-obvious choice, what else was considered, why</span></div>
-        <div class="doc-row"><span class="doc-name"><a href="../BOOK.md">BOOK.md</a></span><span class="doc-desc">first-principles CV/RL explainer</span></div>
-        <div class="doc-row"><span class="doc-name"><a href="../AGENTS.md">AGENTS.md</a></span><span class="doc-desc">workflow rules for coding agents in this repo</span></div>
-        <div class="doc-row"><span class="doc-name"><a href="../COLAB_RUNS.md">COLAB_RUNS.md</a></span><span class="doc-desc">log of what actually executed, and where</span></div>
+        <div class="doc-row primary"><span class="doc-name"><a href="https://github.com/Adya6714/vlm-ocr-eval/blob/main/BOOK.md">BOOK.md</a></span><span class="doc-desc">teaching narrative — rebuild from first principles (Ch. 0–9 + reproduce commands)</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="https://github.com/Adya6714/vlm-ocr-eval/blob/main/IMPLEMENTATION.md">IMPLEMENTATION.md</a></span><span class="doc-desc">technical spec, stage by stage, status-marked</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="https://github.com/Adya6714/vlm-ocr-eval/blob/main/DECISIONS.md">DECISIONS.md</a></span><span class="doc-desc">45 numbered entries — every non-obvious choice, what else was considered, why</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="https://github.com/Adya6714/vlm-ocr-eval/blob/main/AGENTS.md">AGENTS.md</a></span><span class="doc-desc">workflow rules for coding agents in this repo</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="https://github.com/Adya6714/vlm-ocr-eval/blob/main/COLAB_RUNS.md">COLAB_RUNS.md</a></span><span class="doc-desc">log of what actually executed, and where</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="https://github.com/Adya6714/vlm-ocr-eval">github.com/Adya6714/vlm-ocr-eval</a></span><span class="doc-desc">full source — run <span class="mono" style="font-size:0.8rem;">make smoke-test</span> for the no-GPU architecture proof</span></div>
       </div>
       <details class="say-this">
         <summary>Say this</summary>
-        <div class="say-body"><p>If they want the reasoning, I point at DECISIONS.md — not this page. Forty-five numbered choices with rejected alternatives. IMPLEMENTATION.md is the status truth; the site is just the walkthrough.</p></div>
+        <div class="say-body"><p>If they want the deep path, I send them to BOOK.md — not this page. DECISIONS.md has the rejected alternatives. IMPLEMENTATION.md is the status truth; the site is the walkthrough.</p></div>
       </details>
     </div>
   </div>
