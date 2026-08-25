@@ -24,6 +24,7 @@ data/cache/
 data/raw/
 data/predictions/
 data/predictions_backup/
+data/manifests/*.progress.json
 
 # Colab export archives (jsonl already lives under data/predictions/ when extracted)
 *.zip
