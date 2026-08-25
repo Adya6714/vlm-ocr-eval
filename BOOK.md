@@ -359,159 +359,456 @@ learned to emit a different valid spelling.
 
 ## Chapter 2 — Turning Text Back Into Pixels, On Purpose
 
-### The question that forced this chapter
+Chapter 2 is about building a controlled **text → image** machine so
+that you can deliberately decide what the OCR model gets to see during
+training.
 
-Chapter 0 said the hard scientific question is exposure versus intrinsic
-difficulty. To answer it, “how often did the model see this glyph?”
-cannot be an accident of whatever corpus you downloaded. It has to be a
-**dial you set**, while holding data volume fixed.
+That sentence only makes sense once you start from the research
+question. So that is where we begin.
 
-That is what the Stage 1 renderer is for. It is experimental apparatus,
-not a convenience utility.
+### What are we actually trying to find out?
 
-### Why synthesize pages when real scans exist?
+The project wants to answer:
 
-Real scans are essential for honesty (this project uses them as Tier C
-and for measuring degradation). But real scans will not let you say:
-“show me the same amount of text, in the same layouts, with the rare
-conjuncts promoted and the common ones starved.” For that you need to
-start from text you already know and deliberately paint it into pixels.
+> If an OCR model performs badly on a particular Indic character, is
+> it because that character is inherently difficult to recognize, or
+> simply because the model did not see it often enough during
+> training?
 
-So Stage 1 does three jobs that sound separate but are one system:
+Take two grapheme clusters as a toy example:
 
-1. **Shape Indic text correctly** into glyphs with bounding boxes.
-2. **Place that text into geometries taken from real documents.**
-3. **Resample or synthesize the text** so the histogram of grapheme
-   clusters matches a target mode: natural, flattened, or inverted.
+- `क` appears 10,000 times in training
+- `ज्ञ` appears 100 times
 
-### What “drawing a letter” means for Indic scripts
+Suppose the trained model then gets 95% accuracy on `क` and 60% on
+`ज्ञ`. You **cannot** immediately conclude that `ज्ञ` is visually
+harder. Maybe the model simply needed more exposure.
 
-If you have ever drawn Latin text on a screen, the naïve algorithm is:
-look up a bitmap for `A`, place it, advance the pen, look up `B`. That
-is already a little wrong for Latin (kerning, ligatures), and it is
-hopeless for Devanagari or Bengali.
+So we need an experiment where **we control exposure ourselves**.
 
-An Indic syllable is often several Unicode code points that must be
-*shaped* into one visual glyph. Hand-rolling those rules is a career.
-This project calls **HarfBuzz**, the same shaping engine browsers use,
-through `uharfbuzz` for glyph advances and cluster IDs, and paints with
-Pillow (raqm/HarfBuzz under the hood) so the pixels and the boxes agree.
-The code lives in `src/renderer/render.py`. The acceptance bar is
-simple: a page should render in under a second, with exact per-cluster
-ground truth.
+That is the entire scientific reason Stage 1 exists. The renderer is
+not a pretty picture generator. It is experimental apparatus.
 
-### Layouts from the world, not from imagination
+### The basic experiment: three ways to teach the same model
 
-A page is not only characters. It has columns, margins, headers, tables,
-form fields. Inventing a “two-column template” by hand is easy and
-wrong: systems that look identical on clean synthetic pages fall apart
-on real ones. So `layout_sources.py` pulls geometry from Internet Archive
-scans (via IIIF page images), government PDFs, and Wikipedia Indic
-articles as printable PDFs, and stores them as region boxes under
-`data/cache/layouts/bank.json`.
+Imagine you are teaching a child to recognize letters. You can give
+them data in three different policies.
 
-Born-digital PDFs donate their text and table boxes directly. Camera
-scans get columns inferred from ink projection profiles — an old,
-deterministic trick, used here because Stage 1 must not introduce a
-second neural net whose mistakes would leak into Probe 1.
+**Natural.** Give them data the way language usually arrives: `क`
+appears a lot, `ज्ञ` appears rarely, `म` appears a lot, and so on.
+This is the corpus as it is.
 
-The bank is still incomplete: in this checkout it has 28 templates
-(mostly single-column, a couple of two-column, one marginalia) and does
-not yet hold real `form` or `table-embedded` pages. That gap blocks
-Stage 3’s tau-vs-complexity curve later; it does not block Probe 1’s
-glyph-frequency experiment, which holds layout as fixed as possible.
+**Flattened.** Deliberately balance the training data so that common
+and rare clusters get closer to the same number of examples. The
+child no longer mostly practices the easy, frequent letters.
 
-### Degradation as a measured distribution
+**Inverted.** Deliberately give rare characters *more* exposure and
+common characters *less*. The formerly starved `ज्ञ` becomes common;
+the formerly common `क` becomes scarce.
 
-Real paper is blurry, noisy, crooked, and sometimes translucent enough
-that the reverse side ghosts through. Hardcoding
-`GaussianBlur(radius=1.2)` would make the “degraded” condition a
-fiction. Instead, `degradation_profile.py` measures four apply-
-parameters — blur sigma, noise std, skew degrees, show-through alpha —
-off real scans and stores them as an empirical joint distribution.
-Sampling draws a whole page’s four-tuple so blur and noise stay
-correlated the way they were on paper.
+Then you train the **same model architecture** under all three
+conditions, with total data volume held fixed (or explicitly matched).
+Now you can ask a causal question:
+
+> When I changed only how often each grapheme appeared, how did
+> recognition change?
+
+That is Probe 1’s experiment. Chapter 2 is the machinery that makes
+the three training worlds exist as images, not as wishful thinking
+about text files.
+
+### But the model needs images, not text
+
+This is the key reason the chapter is titled the way it is.
+
+The model we train is an OCR model. It does not receive:
+
+```text
+ज्ञानी
+```
+
+as input. It receives an *image* of that word (or of a whole line /
+page containing it), and has to produce the string `ज्ञानी`.
+
+So if we want to control the training distribution, we need a way to
+take carefully controlled text and turn it into realistic-looking
+document images. That converter is the **renderer**:
+
+```text
+Controlled text
+      ↓
+   Renderer
+      ↓
+ Image of a document
+      ↓
+   OCR model
+      ↓
+ Predicted text
+```
+
+In code, that pipeline is centered on `src/renderer/render.py`, fed by
+`glyph_frequency.py` (the dial), `layout_sources.py` (where text sits
+on the page), and `degradation_profile.py` (how damaged the page looks).
+
+### Why can’t we just use real scanned documents?
+
+Real documents are essential later — as a reality check, and as the
+source of measured blur and noise. But they do not give us enough
+*control* for the causal experiment.
+
+Suppose you download a thousand Hindi documents and count graphemes.
+You might find something like 50,000 occurrences of `क` and 200 of
+`ज्ञ`. You do not get to say: “Actually, give me 10,000 examples of
+`ज्ञ` while keeping everything else roughly the same.”
+
+You could try selecting documents that happen to contain rare
+conjuncts. But then other things change too: sentence content, fonts,
+layouts, topics, image quality, word distributions. You would no
+longer know **what caused** the model’s performance to change.
+
+The renderer lets us create the experiment instead of hoping the web
+already contains it.
+
+### What the renderer actually does
+
+In plain language, the renderer says: give me text, and I will turn it
+into a realistic document image — and I will remember exactly what
+text I placed there.
+
+So from:
+
+```text
+यह एक उदाहरण है।
+```
+
+you get a page image, plus automatic ground truth such as:
+
+```json
+{
+  "image_path": "page_001.png",
+  "text": "यह एक उदाहरण है।"
+}
+```
+
+That pair is what training and evaluation need. Without exact ground
+truth, Probe 1 cannot attribute errors to exposure in the first place.
+
+A verification run of 100 Tier A pages under
+`data/cache/renders/verify_100/` shows mean render time about 82 ms
+(max about 353 ms) — well under the Stage 1 acceptance bar of one
+second per page.
+
+### Why HarfBuzz matters
+
+This part is easy to misunderstand. You cannot simply draw Indic text
+character-by-character the way a naïve Latin blit works.
+
+Take `कि`. The underlying Unicode representation contains multiple
+pieces, but visually they must be positioned together correctly. Even
+more complicated are conjuncts such as `ज्ञ` or `क्ष`. Those are not
+“letter plus letter” in pixels; they are shaped glyphs.
+
+So the renderer needs a **text shaping engine**. That is what
+**HarfBuzz** does:
+
+```text
+Unicode code points
+        ↓
+     HarfBuzz
+        ↓
+correct glyph shapes + positions
+        ↓
+       pixels
+```
+
+This project uses `uharfbuzz` for advances and cluster IDs (so each
+grapheme cluster gets a bounding box) and Pillow with raqm/HarfBuzz
+under the hood for painting, so the pixels and the boxes agree
+(Decision #27). The synthetic image must look like real Indic writing;
+otherwise you are training the OCR model on fake visual patterns and
+Probe 1 measures the wrong thing.
+
+### What “grapheme cluster” means here
+
+Chapter 0 and Chapter 1 already introduced this, but it becomes
+operational in the renderer.
+
+A Unicode *code point* is an individual encoded piece. A *grapheme
+cluster* is closer to “one thing a reader visually perceives as a
+unit” — often a consonant plus vowel signs plus other marks.
+
+The project does not want to say: “Show the model this Unicode code
+point 5,000 times.” It wants to reason: “Show the model this **visual
+grapheme unit** 5,000 times.” That is why
+`src/renderer/glyph_frequency.py` counts and targets frequencies with
+Unicode grapheme segmentation (`regex` `\X`), and only for clusters
+that contain Indic script characters — so the dial cannot waste itself
+promoting a stray `%` or Latin digit (Decision #25).
+
+### Then there is the layout problem
+
+A document is not text floating on a white background. Real documents
+have margins, columns, headers, tables, forms, different text
+positions, different fonts.
+
+If the model only ever trains on:
+
+> white background + one centered sentence
+
+then any finding about “exposure” is entangled with “the model has
+never seen a real page.”
+
+So the project takes **layout geometry from real documents**.
+Conceptually:
+
+```text
+Real document
+      ↓
+extract geometry (columns, headers, margins, …)
+      ↓
+reuse that geometry
+      ↓
+pour our controlled Indic text into those regions
+```
+
+`layout_sources.py` pulls from Internet Archive scans (via IIIF page
+images), government PDFs, and Wikipedia Indic articles as printable
+PDFs, and caches templates in `data/cache/layouts/bank.json`
+(Decision #9). Born-digital PDFs donate their text and table boxes
+directly. Camera scans get columns inferred from ink projection
+profiles — an old, deterministic trick, used here because Stage 1 must
+not introduce a second neural net whose mistakes would leak into Probe
+1 (Decision #21).
+
+**Honest gap:** in this checkout the bank has 28 templates (mostly
+single-column, a couple of two-column, one marginalia). It does not
+yet hold real `form` or `table-embedded` pages. That gap blocks Stage
+3’s reading-order-vs-complexity curve later. It does **not** block
+Probe 1’s glyph-frequency experiment, which wants layout held as fixed
+as possible while only exposure moves.
+
+### Why degradation?
+
+Clean synthetic images are too easy. Real documents have blur, noise,
+skew, show-through, scanning artifacts.
+
+Instead of arbitrarily saying “add Gaussian blur with radius 1.2,” the
+project measures those properties from real scans and stores them as
+an empirical joint distribution (`degradation_profile.py`). Sampling
+draws a whole page’s four-tuple — blur, noise, skew, show-through —
+so the damage stays correlated the way it was on paper (Decision #24).
+
+```text
+Real scanned documents
+        ↓
+measure blur / noise / skew / show-through
+        ↓
+empirical distribution
+        ↓
+sample realistic degradation
+        ↓
+apply to a clean synthetic page
+```
 
 **Measured** on the fitted profile in this checkout (n=22 pages): blur
 median about 1.16, noise median about 1.35, skew 90th percentile about
 5.6°, show-through median about 0.044. The first calibration attempt
 used line-level synthetic images and reported every real book page as
 “perfectly sharp” — a scale mismatch, not a scientific result. The fix
-was to calibrate blur against a full Wikipedia-print page rasterized at
-a matching resolution.
+was to calibrate blur against a full Wikipedia-print page rasterized
+at a matching resolution.
 
-### The dial: natural, flattened, inverted
+### The three tiers are three levels of realism
 
-Probe 1 needs three training conditions with identical data *volume*
-and different exposure distributions:
+The same renderer serves three jobs. Confusing them is how people
+accidentally destroy the experiment.
 
-- **natural** — the corpus as it is.
-- **flattened** — push toward uniform over observed Indic grapheme
-  clusters.
-- **inverted** — rare clusters inherit the mass of common ones (the
-  starvation condition).
+**Tier A — controlled experiment.** Fixed font, fixed (usually zero)
+degradation, and **only** glyph-frequency mode changes. This is the
+important one for Probe 1. If accuracy changes across natural /
+flattened / inverted, you want to be able to say: the main thing I
+changed was exposure.
 
-`glyph_frequency.py` is that dial. Frequency is counted only on
-grapheme clusters that contain Indic script characters, so the dial
-cannot waste itself promoting a stray `%` or Latin digit.
+**Tier B — more realistic.** Now fonts, layouts, and degradation can
+vary by sampling from the measured pools. This asks: does the finding
+survive when images get messier?
 
-The first algorithm — reweighting whole sentences — looked right and
-failed for a deep reason: every real sentence is already a natural mix
-of common and rare glyphs. The set of achievable histograms is the
-convex hull of sentence bags, and that hull does not reach “uniform”
-or “inverted.” On the Hindi GlotOCR slice, a greedy oracle that only
-picked existing sentences could not get below roughly TV 0.29 (flat) /
-0.73 (inverted). So the project switched to **synthesis**: allocate an
-exact integer multiset of glyphs from the target distribution, then
-pack them into sentence-shaped strings with a bigram walker trained on
-the source corpus. Local co-occurrence is preserved as far as the quota
-allows; full linguistic naturalness is not. That naturalness confound
-is why Probe 3 (blank images) exists later — to measure guessing
-separately rather than ignore it.
+**Tier C — real documents.** No synthetic rendering. Use actual scans
+plus existing transcriptions. This is the reality check (Probe 6’s
+world). Cluster boxes are not invented here; the question is text-level
+behavior on real paper.
+
+Conceptually:
+
+```text
+Tier A  →  Does the controlled exposure experiment work?
+Tier B  →  Does it survive realistic variation?
+Tier C  →  Does it hold on real documents?
+```
+
+### The clever part: natural / flattened / inverted
+
+This is the most important mechanism in Chapter 2.
+
+Suppose a natural corpus looks roughly like:
+
+| Grapheme | Natural count (toy) |
+|---|---:|
+| `क` | 10,000 |
+| `म` | 8,000 |
+| `त` | 7,000 |
+| `ज्ञ` | 500 |
+| rare conjunct | 100 |
+
+**Natural** keeps approximately that shape.  
+**Flattened** pushes toward roughly equal mass across the observed
+Indic support.  
+**Inverted** swaps rank: rare things inherit the mass of common ones.
+
+The **total amount of training data stays matched**, but **which
+graphemes receive that exposure changes**. That is what makes it an
+experiment rather than “just train on more data.”
+
+In code, `glyph_frequency.resample_corpus()` implements the dial.
+Stage 1’s acceptance gate is explicit: realized frequencies must match
+the target within total-variation distance **TV ≤ 0.08**
+(`TARGET_TV_TOLERANCE`).
 
 **Measured** on the 60-line Hindi ground-truth slice with seed 0:
 
-| mode | total variation to target | within 0.08 gate? |
-|---|---|---|
+| mode | TV to target | within 0.08? |
+|---|---:|---|
 | natural | 0.000 | yes |
 | flattened | ≈ 0.047 | yes |
 | inverted | ≈ 0.005 | yes |
 
-That is the Stage 1 acceptance gate made concrete.
+### Why couldn’t they just select sentences?
 
-### Three realism tiers on one renderer
+This is one of the subtler points, and it is why the first algorithm
+failed.
 
-The same `render.py` serves three jobs:
+Imagine these sentences:
 
-- **Tier A** — fixed font, zero degradation, only glyph-frequency mode
-  varies. Probe 1’s causal condition.
-- **Tier B** — layout, font, and degradation sampled from the measured
-  pools. Headroom for harder probes.
-- **Tier C** — unmodified real documents with existing transcriptions.
-  Reality check; no synthetic boxes.
+```text
+Sentence A: क क क म
+Sentence B: क म त
+Sentence C: ज्ञ क्ष
+```
 
-A verification run of 100 Tier A pages under
-`data/cache/renders/verify_100/` shows mean render time about 82 ms
-(max about 353 ms) — well under the one-second bar.
+You might think: “I’ll just pick more sentences containing `ज्ञ`.”
+But every sentence contains **multiple** graphemes. Choosing Sentence
+C to increase `ज्ञ` also increases `क्ष`, and potentially many other
+characters. So by only selecting existing sentences, there are hard
+limits to which frequency distributions you can create. The achievable
+histograms live inside the convex hull of sentence bags — and that
+hull does not reach “uniform” or “inverted” on real Indic text.
 
-Finally, training does not consume full pages. The instrument trains on
-**line crops**. `export_line_manifest.py` and
-`export_manifest_scaled.py` turn rendered pages into JSONL rows of
-`{"image_path", "text"}` at a canonical 70-pixel height (five ViT
-patches). Full-scale Hindi and Bengali manifests (100 pages per mode)
-already sit under `data/manifests/`.
+On the Hindi GlotOCR slice, a greedy oracle that only picked existing
+sentences could not get below roughly TV 0.29 (flattened) / 0.73
+(inverted). So the project switched to **synthesis** (Decision #29):
 
-### What this stage taught
+> I know the exact number of each grapheme I want. Now construct text
+> that satisfies that quota.
 
-Owning the renderer is what makes “exposure versus complexity” a
-question you can ask rather than a story you tell after the fact. The
-surprises were mundane and useful: layout classification must ignore
-tiny Wikipedia infobox tables or every article becomes
-`table-embedded`; blur calibration must match pixel scale; the
-frequency dial must ignore Latin punctuation; sentence resampling
-cannot reach the histograms Probe 1 needs. None of those show up cleanly
-in a design doc until the first real page is measured. They are in
-`DECISIONS.md` so the next session does not re-learn them.
+It allocates an exact integer multiset from the target distribution
+(largest-remainder), then packs those glyphs into sentence-shaped
+strings with a bigram walker trained on the source corpus. The result
+is only as language-like as the bigram table allows. That
+“naturalness confound” is why Probe 3 (blank / noise images) exists
+later: to measure how much apparent reading is actually language-model
+guessing (Decision #10).
+
+### What the manifests are — and what they are not
+
+After rendering pages, the project does not train the instrument on
+full pages first. It creates **line crops**.
+
+A page becomes several training rows:
+
+```text
+page.png
+   ↓
+ line 1 image  +  "यह एक उदाहरण है।"
+ line 2 image  +  "भारत में कई भाषाएँ हैं।"
+ ...
+```
+
+written as JSONL:
+
+```json
+{"image_path": ".../line_001.png", "text": "यह एक उदाहरण है।"}
+{"image_path": ".../line_002.png", "text": "भारत में कई भाषाएँ हैं।"}
+```
+
+That is what lives under `data/manifests/`:
+
+```text
+hindi_natural.jsonl / hindi_flattened.jsonl / hindi_inverted.jsonl
+bengali_natural.jsonl / bengali_flattened.jsonl / bengali_inverted.jsonl
+```
+
+Those files are **training instructions**: here is an image of a line;
+here is the correct text. They are produced by
+`export_line_manifest.py` and the batch driver
+`export_manifest_scaled.py` (canonical line height 70 px — five ViT
+patches of 14 px).
+
+This also clarifies a common confusion. Seeing a Colab log like
+`[bengali/inverted] page 100/100` means **Stage 1 data preparation**
+(resample → render → crop → append JSONL). That can finish relatively
+quickly. It is **not** the same as Stage 2 neural training, which loads
+those images thousands of times through an encoder–decoder and updates
+tens of millions of parameters. Manifest generation is the setup for
+the experiment; training is the experiment.
+
+### How Chapter 2 sits in the whole scientific chain
+
+Putting the pieces together:
+
+```text
+           Real documents
+                 │
+                 ▼
+      learn layouts + degradation
+                 │
+                 ▼
+            RENDERER
+                 │
+     ┌───────────┼───────────┐
+     ▼           ▼           ▼
+  Natural    Flattened    Inverted
+     │           │           │
+     └───────────┼───────────┘
+                 ▼
+            line images
+                 │
+                 ▼
+        train from scratch
+                 │
+                 ▼
+           OCR instrument
+                 │
+                 ▼
+              PROBES
+                 │
+                 ▼
+   Was this glyph hard because it is
+   visually hard — or because the model
+   rarely saw it?
+```
+
+If someone asks what Chapter 2 is for, in one sentence:
+
+> We are building the infrastructure that turns controlled Indic text
+> into realistic document images with precisely set grapheme-frequency
+> distributions — so that later, when we train a model from scratch
+> under natural / flattened / inverted conditions, we can ask whether
+> errors come from lack of exposure or from intrinsic visual
+> difficulty.
+
+Without this chapter’s machine, Probe 1 has nowhere to plug in. With
+it, exposure stops being an accident of the web and becomes a dial you
+can turn.
 
 > **What to remember.** If you cannot set exposure on purpose, you
 > cannot claim to have separated “rarely seen” from “hard to see.”
@@ -520,60 +817,410 @@ in a design doc until the first real page is measured. They are in
 
 ## Chapter 3 — Learning to Read From Nothing (the Instrument)
 
-### The question that forced this chapter
+Chapter 2 built the **controlled training data**. Chapter 3 builds the
+**OCR model that will actually learn from it**.
 
-Suppose you fine-tune an existing small document VLM on three different
-glyph-frequency mixtures. Have you manipulated exposure?
+The key idea is:
 
-Usually no. Those models have already seen large volumes of Indic text
-during pretraining. Your fine-tuning mixture is a rounding error against
-that history, and the causal claim collapses on the first serious
-question. Decision #1 is therefore non-negotiable: **build a separate
-instrument model from scratch**, with zero Indic pretraining exposure,
-used for the diagnostic probes. A second, production-shaped model (the
-demo) can come later for architecture proof. They must not be the same
-weights doing double duty.
+> We deliberately start with a model that knows nothing about Indic
+> scripts, so that later we can ask whether its performance depends on
+> how much exposure each grapheme received.
 
-### What the instrument is trying to be
+### Why can’t we just use an existing OCR or VLM?
 
-Not a competitor to Tesseract. Not a product. An instrument is a device
-you can open: you can see every next-token probability, every
-confidence, every behavior on a blank page. Its job is to make Probes
-1–5 possible.
+Suppose you take a pretrained vision–language model and fine-tune it
+on natural Bengali, flattened Bengali, and inverted Bengali. You might
+see: “The inverted model performs better on rare graphemes.”
 
-Concretely it is a small encoder–decoder:
+There is a huge problem. The pretrained model may have **already
+learned Bengali** before your experiment started:
 
-- **Tokenizer** (`tokenizer.py`): vocabulary of grapheme clusters, not
-  BPE. Probe 1 needs exposure measured per visual unit. BPE merges are
-  frequency-driven and would tangle “how often this glyph appeared in
-  the image” with “how the tokenizer happened to segment the string.”
-- **Encoder** (`encoder.py`): a small Vision Transformer — patch size
-  14×14, hidden size 320, six layers — trained from scratch on grayscale
-  line images.
-- **Decoder** (`decoder.py`): five layers, hidden size 384, causal
-  self-attention plus cross-attention to encoder memory, output head
-  tied to the token embedding. Autoregressive generation: given the
-  image and the tokens so far, predict the next cluster.
-- **Training** (`train.py`): line-level teacher forcing, fp16 (Colab T4
-  has no bf16), resumable checkpoints, progress printed often enough
-  that a slow run is distinguishable from a hung one.
-- **Generation** (`generate.py`): greedy decode that returns not only
-  text but per-step confidences and top-k candidates — the tensors the
-  probes need.
+```text
+Pretraining
+   ↓
+Model already knows some Bengali
+   ↓
+Your natural / flat / inverted training
+   ↓
+Observed performance
+```
 
-**Measured** architecture size on a tiny smoke vocabulary: about 7.5M
-encoder parameters and about 19.5M for the full `InstrumentModel`. With
-a real Devanagari vocabulary the total grows toward the design target
-of roughly 30–60M.
+You cannot tell how much of the final behavior came from your
+controlled exposure versus the model’s previous exposure. Your
+fine-tuning mixture is a rounding error against that history, and the
+causal claim collapses on the first serious question.
 
-### Why line crops first
+That is why Decision #1 is non-negotiable: **the instrument starts
+blank.**
 
-A full page at training resolution creates a large patch sequence and
-blows memory. Lines iterate faster and match how many classical OCR
-systems are trained. The renderer already knows line boxes; the export
-scripts turn them into the manifest format `train.py` consumes. That
-interface dependency is intentional: Stage 1 and Stage 2a meet at
-`{"image_path", "text"}` JSONL, not at ad-hoc tensors.
+```text
+Randomly initialized model
+          ↓
+Natural training ──────┐
+Flattened training ────┼──→ Compare
+Inverted training ─────┘
+```
+
+Now exposure is controlled from the beginning. A second,
+production-shaped model (the **demo**, Chapter 4) can come later for
+architecture proof. They must not be the same weights doing double
+duty.
+
+### What exactly is this “instrument”?
+
+Think of it as a **scientific measuring device**, not a production OCR
+system.
+
+You are not trying to build “the world’s best OCR model.” You are
+trying to build “a model simple enough that I can inspect what it
+believes and why.” That is why it is called an instrument.
+
+Later you want to ask:
+
+- What probability did the model give to `ज्ञ`?
+- What were its next-best guesses?
+- How confident was it on a blank image?
+- Does confidence correspond to correctness?
+- Did increasing exposure to `ज्ञ` improve its recognition?
+
+A closed commercial OCR API generally will not let you inspect all of
+that. The instrument’s job is to make Probes 1–5 possible.
+
+### The model has two major parts
+
+The architecture is a small encoder–decoder:
+
+```text
+IMAGE
+  │
+  ▼
+┌──────────────┐
+│   ENCODER    │  vision model
+└──────────────┘
+  │ visual features
+  ▼
+┌──────────────┐
+│   DECODER    │  text model
+└──────────────┘
+  │
+  ▼
+TEXT
+```
+
+Very roughly: the **encoder looks at the image**; the **decoder
+generates the text**. The code lives under
+`src/models/instrument/` — `encoder.py`, `decoder.py`, `tokenizer.py`,
+`train.py`, `generate.py`.
+
+### Encoder: looking at the image
+
+The encoder is a small Vision Transformer (`InstrumentEncoder`).
+
+The image is divided into **14×14 pixel patches**. Each patch becomes
+a vector. The Transformer then lets patches interact with each other —
+so rather than saying “this individual patch is the letter,” the model
+can learn relationships such as “this mark above the base character
+belongs to that character.”
+
+This encoder has:
+
+- 6 Transformer layers
+- hidden dimension 320
+- 14×14 image patches
+- sinusoidal positional information
+- grayscale line images as input
+
+**Measured** encoder size: **7,460,800 parameters**. That number does
+not depend on vocabulary size; it is the vision tower alone.
+
+### Decoder: turning vision into text
+
+The decoder (`InstrumentDecoder`) receives the visual information from
+the encoder and generates the transcription one unit at a time.
+
+Suppose the image says `भारत`. The decoder might generate:
+
+```text
+<BOS>
+  ↓
+भ
+  ↓
+ा
+  ↓
+र
+  ↓
+त
+  ↓
+<EOS>
+```
+
+At every step it asks: given the image and everything I have generated
+so far, what should come next? That is **autoregressive generation**.
+
+In this codebase the decoder has five layers and hidden size 384
+(Decision #36). A linear projection inside `InstrumentModel`
+(`train.py`) bridges the encoder’s 320-d memory to the decoder’s 384-d
+width, so each half stays independently smoke-testable.
+
+**Measured** on a tiny smoke vocabulary (~10 tokens): the full
+`InstrumentModel` is about **19.5M** parameters (19,470,016). With a
+real Devanagari vocabulary the total grows toward the design target of
+roughly 30–60M, because the embedding table and output head scale with
+vocab size.
+
+### What “causal mask” means
+
+The decoder must not cheat.
+
+Suppose the correct sequence is `भ → ा → र → त`. When predicting
+`र`, it may see `भ, ा`, but it must not be allowed to see the future
+token `त`. The causal mask enforces: current prediction may attend to
+**past tokens only**. That makes training resemble actual generation.
+
+### What “cross-attention” means
+
+The decoder needs two kinds of information:
+
+- **What have I already generated?** — handled by **self-attention**
+  (with the causal mask).
+- **What is actually in the image?** — handled by **cross-attention**
+  to the encoder’s visual features.
+
+Conceptually:
+
+```text
+                IMAGE
+                  │
+                  ▼
+             ENCODER
+                  │
+           visual features
+                  │
+                  ▼
+            CROSS-ATTENTION
+                  ▲
+                  │
+        previous generated text
+                  │
+                  ▼
+              DECODER
+                  │
+                  ▼
+             next grapheme
+```
+
+When the decoder decides what comes next, it can look back at the
+image. Without that, it would be a language model guessing from prior
+tokens alone — which is exactly the failure mode Probe 3 is designed
+to catch.
+
+### Why the tokenizer is unusual
+
+This is one of the most important design decisions in the whole
+project (Decision #2).
+
+A normal language model might use **BPE**, which turns text into
+pieces driven partly by text frequency. But the research question is:
+how does *visual* recognition depend on exposure to individual
+grapheme clusters?
+
+If the tokenizer itself merges frequent things differently, you have
+introduced another variable. So the instrument uses:
+
+> one grapheme cluster = one token
+
+That gives Probe 1 a clean relationship:
+
+```text
+exposure  ↔  grapheme  ↔  recognition
+```
+
+instead of:
+
+```text
+exposure  ↔  BPE segmentation  ↔  token frequency  ↔  recognition
+```
+
+The vocabulary is built fresh per training run from that run’s corpus
+(`GraphemeTokenizer` in `tokenizer.py`), with fixed special tokens
+`<PAD>`, `<BOS>`, `<EOS>`, `<RARE>`. Clusters below a frequency floor
+map to `<RARE>` at encode time.
+
+### Why `\X`?
+
+The tokenizer uses the `regex` module’s `\X` pattern — Unicode
+**grapheme cluster** boundaries (Decision #7). That is the same unit
+Chapter 2’s frequency dial controls.
+
+So Chapters 2 and 3 connect on purpose:
+
+```text
+Chapter 2
+"What visual units do we control exposure for?"
+              ↓
+       Grapheme clusters
+              ↓
+Chapter 3
+"What units does the model predict?"
+              ↓
+       Grapheme tokens
+```
+
+If those units disagreed, Probe 1 would be measuring two different
+notions of “how often” at once.
+
+### Why train on lines instead of pages?
+
+The renderer creates full pages, but the instrument trains on **line
+crops** (Decision #37).
+
+Why?
+
+- **Memory.** Full pages mean many more ViT patches → more compute and
+  GPU memory.
+- **Speed.** Line-level training lets you run many more updates.
+- **Simplicity.** The research question here is primarily about
+  **recognition**, not page layout. Layout complexity is a later
+  chapter’s problem.
+
+So the training interface is deliberately clean:
+
+```json
+{"image_path": ".../line_001.png", "text": "यह एक उदाहरण है।"}
+```
+
+That is why the manifests from Chapter 2 matter. Stage 1 and Stage 2a
+meet at JSONL rows, not at ad-hoc tensors. Canonical line height is 70
+pixels — five ViT patches of 14 px.
+
+### What is teacher forcing?
+
+During training, suppose the correct answer is `भारत`. The model
+predicts one token at a time. With **teacher forcing**, when training
+the next prediction we feed it the **correct previous token**, not its
+own potentially wrong previous guess:
+
+```text
+Image + <BOS>           → predict भ
+Image + <BOS> भ         → predict ा
+Image + <BOS> भ ा       → predict र
+...
+```
+
+That makes supervised training much more stable. During actual
+generation (`generate.py`), however, the model must use **its own**
+previous predictions — the distribution shift between those two modes
+is a known property of autoregressive training, not a bug unique to
+this repo.
+
+### Why fp16?
+
+Heavy training is designed for a free Colab **T4**. The project uses
+**FP16** (16-bit floating point) to reduce memory and speed training.
+Turing GPUs like the T4 do not support BF16 the way newer cards do, so
+the training code is built around FP16 and gradient checkpointing —
+not because FP16 is theoretically special, but because that is the
+hardware constraint the whole project accepted.
+
+### Why checkpoints are important
+
+Training can take hours. You do not want five epochs of progress to
+vanish when Colab disconnects.
+
+Instead:
+
+```text
+train → checkpoint → train → checkpoint → …
+Colab dies → restart → load latest checkpoint → continue
+```
+
+Resumable checkpoints are a hard engineering requirement in this repo
+(see `AGENTS.md` and `train.py`), not a nice-to-have. The same rule
+applies to every long batch script: progress per item, resume by
+default.
+
+### What `generate.py` does — and why “open” matters
+
+After training, you give the model an image. It greedily generates
+tokens until `<EOS>` (Decision #38: greedy only, no beam search, no KV
+cache at this scale).
+
+But `generate.py` does not only return `"भारत"`. It also returns:
+
+- per-step **confidence** (max softmax probability at each step)
+- **top-k alternatives** at each step (what the model almost said)
+
+That information is extremely important for the probes:
+
+| Probe | Needs from generation |
+|---|---|
+| Probe 2 (confusion) | top-k alternatives — what it almost predicted |
+| Probe 3 (blank control) | text + confidence on empty / noise images |
+| Probe 5 (calibration) | confidence vs actual correctness |
+
+Imagine the model predicts `ज्ञ` with confidence 0.61, and the
+alternatives are `ग` 0.22, `ज` 0.10, `क्ष` 0.04. Now you can study
+**what the model almost thought**. A closed API that only returns the
+string `ज्ञ` cannot support that experiment.
+
+### Why the model has to be small
+
+A huge pretrained model might be much better at OCR. It would be a
+terrible **scientific instrument** for this particular question,
+because it has too much hidden history.
+
+The project deliberately chooses:
+
+> small + from scratch + inspectable
+
+over:
+
+> large + pretrained + powerful
+
+because the goal is not maximum OCR accuracy. It is trying to isolate
+**causal relationships**.
+
+### How Chapter 3 connects everything so far
+
+```text
+CHAPTER 1
+Define what "correct" means
+        │
+        ▼
+CHAPTER 2
+Create controlled image data
+        │
+        ├── Natural
+        ├── Flattened
+        └── Inverted
+        │
+        ▼
+CHAPTER 3
+Train a blank OCR instrument
+        │
+        ├── Encoder → sees image
+        └── Decoder → generates graphemes
+        │
+        ▼
+Later probe chapters
+        │
+        ├── Does exposure matter?
+        ├── What does it almost predict?
+        ├── Is it actually looking at the image?
+        └── Does confidence mean correctness?
+```
+
+### The most important distinction: instrument vs demo
+
+There are **two different models** in the overall project. Do not mix
+their purposes.
+
+**Instrument** — from scratch, no Indic pretraining, controlled
+experiments, scientific probes. Asks: *why does OCR behave this way?*
+
+**Demo** (Chapter 4) — pretrained VLM, LoRA / fine-tuning,
+production-style system. Asks: *can we adapt a modern model into a
+useful OCR system?*
 
 ### What is and isn’t evidenced in this checkout
 
@@ -582,18 +1229,15 @@ decoder, nine fake Probe 1 training runs, and generation end to end
 with no GPU and no `data/raw` — an architecture proof that produces
 **zero scientific findings by design**, and it currently passes.
 
-Real Hindi training checkpoints and probe result JSONL files are not
-necessarily present in a fresh checkout (they often live on Drive /
-Colab). README and the site report early Probe 3/5 numbers from one
-checkpoint; until those artifacts are re-run here, treat them as
-**reported**, not as something this book independently verified.
+Real Hindi / Bengali training checkpoints and probe result JSONL files
+are not necessarily present in a fresh checkout (they often live on
+Drive / Colab). README and the site report early Probe 3/5 numbers
+from one checkpoint; until those artifacts are re-run here, treat them
+as **reported**, not as something this book independently verified.
 
-### What purpose this serves in everything that follows
-
-Without the instrument, Probe 2 (full output distributions) is
-impossible against a closed API. Probe 3 (blank-image control) and
-Probe 5 (calibration) become anecdotes. The renderer’s dial has nowhere
-to plug in. The instrument is the reason Stages 1 and 0 were worth
+Without the instrument, Probe 2 is impossible against a closed API,
+Probes 3 and 5 become anecdotes, and Chapter 2’s dial has nowhere to
+plug in. The instrument is the reason Stages 0 and 1 were worth
 building carefully: they feed a model you can actually interrogate.
 
 > **What to remember.** The instrument is small and blank on purpose —
@@ -605,39 +1249,260 @@ building carefully: they feed a model you can actually interrogate.
 
 ## Chapter 4 — Teaching an Existing Model a New Trick Cheaply (the Demo)
 
-### Why a second model exists at all
+This chapter is basically saying:
 
-The instrument answers causal questions. A hiring manager or a
-production team will also ask: “Can you build something that looks like
-the systems people actually ship?”
+> We actually have two different goals, so we need two different models.
 
-Those systems are rarely trained from scratch on a free T4. They start
-from a pretrained vision–language backbone and adapt it. The cheap,
-standard way to adapt without rewriting every weight is **LoRA**: freeze
-the base model, train small low-rank adapter matrices that steer its
-behavior. That is the demo’s world.
+Chapter 3 already built one of them — the instrument. Chapter 4 exists
+to explain the **other** goal, and why merging the two goals into one
+set of weights would destroy the science.
 
-The demo is also meant to mirror a production *decomposition*: not one
-monolith, but separate pieces for layout detection and reading order on
-top of the recognition backbone — the shape Sarvam-style digitisation
-pipelines use. That is architecture demonstration, not exposure
-science.
+### The first model = the Instrument
 
-### Why this phase deferred building it
+This is the model from Chapter 3. Its purpose is **research**:
 
-LoRA + supervised fine-tuning + later RLVR + two auxiliary modules is a
-different project shape from “train a blank instrument three ways.” It
-is not gated on the instrument’s findings; it is gated on time and on
-T4 memory headroom. The one prerequisite that exists today is
-`src/models/demo/benchmark_base_models.py`, which is supposed to measure
-peak VRAM for SmolDocling-256M versus LightOnOCR-1B under LoRA before
-anyone picks a base (Decision #3 is still open until that measurement
-lands).
+> If I change how often the model sees certain Indic graphemes, what
+> happens?
 
-So this chapter is not a claim that the demo is finished. It is the
-scientific reason the demo must stay **separate** from the instrument:
-if you use a pretrained backbone for Probe 1, you are no longer
-controlling exposure.
+For that question, we need a model that starts with **zero prior
+knowledge of Indic text**.
+
+Otherwise, suppose we take a pretrained VLM that has already seen
+millions of Hindi / Bengali examples and then train it more heavily on
+rare Hindi characters. If performance improves, we cannot confidently
+say: “It improved because we increased exposure to those characters.”
+The model may already have learned them during pretraining.
+
+So the instrument is deliberately:
+
+```text
+blank → controlled training exposure → measure behavior
+```
+
+### The second model = the Demo
+
+The demo has a completely different purpose.
+
+Instead of asking “what caused the model to learn this?”, we are asking:
+
+> Can we build something resembling a practical / production OCR–VLM
+> system?
+
+A real-world system usually **does not start from random weights**.
+Training a large VLM completely from scratch is enormously expensive.
+Instead the usual path is:
+
+```text
+Pretrained model → add LoRA → fine-tune on our OCR data
+```
+
+That is the demo’s world. Decision #1 records this split explicitly:
+one model for causal probes, one model for architecture demonstration.
+They must not be the same weights doing double duty.
+
+### What is LoRA?
+
+Imagine a pretrained model has a billion parameters. You do not want to
+modify all of them just to teach it your OCR task.
+
+**LoRA** (Low-Rank Adaptation) essentially says: keep the original model
+frozen, and learn a relatively small set of additional parameters that
+steer it toward our task.
+
+```text
+                 PRETRAINED MODEL
+                /               \
+          frozen weights      LoRA adapters
+             ↓                    ↓
+        existing knowledge    OCR-specific adjustment
+                \               /
+                 → OCR output
+```
+
+The important advantage is that **you train far fewer parameters**,
+which makes adaptation much cheaper — cheap enough, in principle, to
+attempt on a free Colab T4 once the base model fits in memory.
+
+That is the standard modern pattern for “teach an existing model a new
+trick without rewriting every weight.” It is also exactly why the demo
+cannot answer Probe 1’s causal question: the frozen weights already
+contain someone else’s exposure history.
+
+### Why can’t the Demo replace the Instrument?
+
+This is the most important distinction in the chapter.
+
+Imagine we train:
+
+```text
+Pretrained VLM
+      ↓
+LoRA
+      ↓
+Hindi training (natural / flat / inverted)
+      ↓
+measure effect of glyph frequency
+```
+
+We might observe: rare-glyph performance improved by 8%. But what
+caused that?
+
+Possibilities include:
+
+- the new exposure you carefully set,
+- knowledge already present in the pretrained model,
+- interactions with its existing language knowledge,
+- its existing visual knowledge,
+- or the LoRA adaptation itself.
+
+We **cannot isolate exposure cleanly**. That is why the two machines
+answer different questions:
+
+**Instrument**
+
+```text
+Random initialization
+        ↓
+Controlled exposure
+        ↓
+Scientific measurement
+```
+
+**Demo**
+
+```text
+Pretrained model
+        ↓
+LoRA adaptation
+        ↓
+Practical OCR system
+```
+
+Instrument = *why does OCR behave this way?*  
+Demo = *can we adapt a modern model into a useful OCR system?*
+
+### What “production-shaped” means here
+
+The demo is not just `image → text`.
+
+The project wants to demonstrate the kind of **decomposition** a real
+document-processing system might use — closer to the shape of
+Sarvam-style digitisation pipelines than to a single monolith:
+
+```text
+                 Document image
+                       │
+                       ▼
+              ┌─────────────────┐
+              │ Layout detection│
+              └────────┬────────┘
+                       │
+             ┌─────────┴─────────┐
+             ▼                   ▼
+          Text block          Table / form
+             │                   │
+             ▼                   ▼
+       Reading order       Structure handling
+             │
+             ▼
+        OCR / VLM
+             │
+             ▼
+       Structured output
+```
+
+So the demo is intended to show that you understand **system
+architecture** — layout, reading order, recognition as separate
+concerns — not merely how to train an OCR model end to end. That is
+architecture demonstration, not exposure science. Chapters 5 and 6
+teach the reading-order and RL ideas that would eventually hang off
+this shape; they are not claimed as finished in this phase.
+
+### Why the Demo is currently deferred
+
+The project has limited compute and time, particularly because heavy
+work is designed around a **T4 / Colab** environment.
+
+The demo involves several additional components:
+
+- choosing a pretrained VLM
+- LoRA fine-tuning
+- supervised training
+- potentially RLVR later (Chapter 6)
+- layout detection
+- reading-order handling
+- structured / table handling
+
+That is a substantially larger engineering project than “train a blank
+instrument three ways.” So the current priority stays:
+
+```text
+Stage 0  → error taxonomy
+Stage 1  → controlled renderer
+Stage 2a → from-scratch instrument
+Probes   → scientific findings
+```
+
+The demo comes separately. It is **not** gated on the instrument’s
+findings; it is gated on time and on T4 memory headroom. This chapter
+is therefore not a claim that the demo is finished. It is the reason
+the demo must stay **separate** from the instrument: if you use a
+pretrained backbone for Probe 1, you are no longer controlling
+exposure.
+
+### What `benchmark_base_models.py` is doing
+
+Before choosing the model for the demo, the repo wants an honest answer
+to:
+
+> Which pretrained model can actually fit our LoRA experiment on the
+> available GPU?
+
+The two candidates named in Decision #3 are:
+
+- **SmolDocling-256M** (`ds4sd/SmolDocling-256M-preview`)
+- **LightOnOCR-1B** (`lightonai/LightOnOCR-1B-1025`)
+
+`src/models/demo/benchmark_base_models.py` is supposed to measure
+things such as **peak VRAM usage under LoRA** (and, in `--inspect`
+mode, the real attention module names you must pass to LoRA — do not
+guess those). So instead of arbitrarily saying “let’s use the 1B
+model,” you first measure:
+
+```text
+Model A → peak VRAM → fits / doesn’t fit
+Model B → peak VRAM → fits / doesn’t fit
+```
+
+Then choose based on actual hardware constraints, including headroom
+for layout and reading-order modules that would also be resident later.
+
+That is what **Decision #3 being open** means: the project has not yet
+made that measurement, and therefore has not honestly committed to a
+base model. Newer successors exist on the model cards
+(granite-docling-258M, LightOnOCR-2-1B); swapping them in is also a
+Decision #3 question, not something this script silently decides.
+
+### The key distinction to remember
+
+If someone asks “why do you have two models?”, a strong answer is:
+
+> Because they serve different scientific and engineering purposes.
+> The instrument is trained from scratch so I can control the model’s
+> prior exposure and study questions like exposure versus intrinsic
+> script complexity. The demo is a separate pretrained VLM adapted with
+> LoRA, because that is closer to how we would actually build a capable
+> production system. Using the pretrained model for the causal
+> experiment would confound the exposure variable with what it already
+> learned during pretraining.
+
+And the one-line version:
+
+> **Instrument = scientific measurement. Demo = practical system
+> demonstration.**
+
+That separation is one of the central design decisions of the entire
+project (Decision #1).
 
 > **What to remember.** Fine-tuning a pretrained model can prove you can
 > ship a shape; it cannot prove what exposure caused, because exposure
@@ -682,17 +1547,106 @@ bound to the correct column header?** The renderer can provide clean
 ground truth for that. It also matches what you would compare against
 Sarvam’s Extract-style structured output later.
 
-### Why this chapter is still mostly a blueprint
+### How this project would actually build it
+
+Two blueprints, one for ordering, one for tables, both scoped to what
+is actually measurable rather than what sounds impressive.
+
+**Reading order: pairwise relation, not a single global decision**
+
+The naive framing — "predict the correct order of N blocks" — is a
+much harder learning problem than it needs to be, because it asks a
+model to reason about a whole page at once. A more tractable framing
+mirrors how Kendall tau itself is computed: for every *pair* of
+blocks, ask one small, local question — **does block A come before
+block B?** — using only their relative position, size, and maybe a
+little of their recognized text as features.
+
+This has a genuinely nice property: the training signal and the
+evaluation metric are now the same shape. Kendall tau counts pairwise
+agreements; the model is trained to predict pairwise agreements. There
+is no mismatch between what the model optimizes and what gets
+reported.
+
+At inference, you have a pile of pairwise "A before B" predictions for
+every pair on the page, and you need one global order out of them.
+Two ways to do that:
+
+- **Count and sort.** For each block, count how many other blocks it
+  was predicted to come before. Sort blocks by that count, descending.
+  Simple, forgiving of a few wrong pairwise calls, and cheap to
+  implement.
+- **Pointer network.** A sequence decoder that, at each step, looks at
+  which blocks remain and "points to" the next one to read — the same
+  mechanism (Vinyals et al., 2015) used elsewhere for problems where
+  the output is a permutation of the input. This guarantees a valid
+  ordering by construction (no ties, no cycles), but it is a harder
+  model to train well on a small blueprint dataset.
+
+Given this project's actual constraint — a free T4 and a still-partial
+layout bank — the pairwise classifier is the more buildable first
+version: fewer parameters, a training signal that matches the metric
+directly, and a graceful failure mode (a few wrong pairwise votes just
+nudge the sort order, they don't break everything). The pointer
+network stays the documented alternative for later, exactly as
+`IMPLEMENTATION.md` already lists both options.
+
+**Table binding: your header-matching idea is table structure
+recognition, formalized**
+
+Restated precisely, the idea is: find the header row, then for every
+data row, walk across it pairing each cell with the header above it,
+and assemble a record — `{"name": "Priya", "age": "27", "city":
+"Mumbai"}`. That is exactly right, and it is a real, named task in the
+literature: **table structure recognition**, specifically the
+cell-to-header binding step of it. Four concrete stages:
+
+1. **Header detection.** Which row is the header? Often just the first
+   row, but real tables use bold text or shading instead — a small
+   classifier over visual features (position, boldness) generalizes
+   better than "always row 0."
+2. **Column alignment.** For each cell below the header, which header
+   does it belong under? On a clean, unrotated grid this is pure
+   geometry — compare the cell's horizontal span against each header
+   cell's span, take the best overlap. Real scanned tables skew and
+   merge cells, which is exactly why this step needs to be *learned*
+   rather than assumed once real data enters the picture, not just
+   solved on the renderer's clean synthetic grid.
+3. **Row grouping.** Cluster cells by vertical position into rows,
+   same geometry-first logic, same caveat about skew.
+4. **Assembly.** Walk each row in column order, pair every cell with
+   its bound header, emit the record — this is the step that produces
+   exactly the JSON-shaped output you described.
+
+This four-step breakdown is *also* precisely what `table_binding.py`'s
+metric (Decision #12) checks: not "did you reconstruct a paragraph,"
+but "after steps 2 and 3, is each cell still correctly bound to its
+column header?" Your intuition and the project's existing scoped-down
+metric are the same idea, described two different ways — the metric
+is just the part of your pipeline that's cheap to verify without also
+having to solve full prose generation.
+
+**Why this stays a blueprint, not a built module, in this phase**
+
+Steps 2 and 3 need real, structurally hard tables — merged cells,
+skew, multi-row headers — and the layout bank (Chapter 2) does not
+yet hold those. Building the geometry-only version against clean
+synthetic tables would look deceptively easy and tell you nothing
+about the case that actually matters. The honest order to build this
+in, when there's time: finish the layout bank's table-embedded
+category first, then the geometry baseline, then the learned version
+only where geometry demonstrably fails.
 
 The metrics files (`reading_order_metric.py`, `table_binding.py`) are
-not built yet. More importantly, the layout bank still lacks the hard
-categories those curves need. You can teach the concept now; you cannot
-honestly report the curve until Stage 1’s bank covers real forms and
-table pages.
+likewise not built yet. You can teach the concept now; you cannot
+honestly report the complexity curve until Stage 1's bank covers real
+forms and table pages.
 
-> **What to remember.** Getting the characters right is not the same as
-> getting the document right — and measuring order requires a
-> permutation metric, not a yes/no.
+> **What to remember.** Reading order and table binding are the same
+> kind of problem underneath — turning "a pile of correctly recognized
+> text" into "the structure a reader actually needed" — and both are
+> solvable as small, local, pairwise decisions rather than one big
+> global guess.
 
 ---
 
