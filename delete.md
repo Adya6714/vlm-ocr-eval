@@ -1,9 +1,9 @@
 ⏳ Probe 5b — still not written, still optional, still lowest priority
 ✅ README.md — done, committed
 🔄 Website — base version built and shared; Cursor is now extending it (Repository Tour, Paper-mode toggle, Talking Points) per the prompt just given — waiting on Cursor's report back
-✅ IMPLEMENTATION.md cleanup — Probe 2 filename fixed, done
-⏳ BOOK.md — still untouched, still pending, still lowest priority
-🔄 TODO.md — got the deferred-stages note, but hasn't been updated to reflect the make smoke-test bug fixes (commit 645ae11 happened after the TODO.md edit) — small follow-up still open
+✅ IMPLEMENTATION.md cleanup — Probe 2 filename fixed; smoke-test / Probe 1 makefile blockers cleared (645ae11 reflected)
+✅ BOOK.md — teaching rebuild book written (Ch. 0–9 + App. A–F); keep current as Colab numbers land
+✅ TODO.md — deferred-stages note + smoke-test / BOOK / Sarvam #6 verify / manifest / probe-code status synced (post-645ae11 follow-up done)
 ✅ DECISIONS.md — done, both additions landed: #45 (Probe 6 resize decision) and the #6 verification append (Sarvam numbers confirmed current)
 
 New, not on the original list:

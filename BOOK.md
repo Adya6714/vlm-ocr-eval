@@ -311,7 +311,7 @@ src/models/instrument/
 
 Real Hindi training + Probe 3/5 numbers are **reported** in README/site (e.g. Probe 3 confidences 0.9929 / 0.9898 / 0.9877) but **checkpoint and `data/probe_results/*.jsonl` are not in this checkout** — treat as unreproduced until Appendix E commands are run against a local/Colab checkpoint root.
 
-`make smoke-test` is the no-GPU architecture proof on fake data (#40) — produces **zero scientific findings by design**.
+`make smoke-test` is the no-GPU architecture proof on fake data (#40) — produces **zero scientific findings by design**. **Measured:** after the 645ae11 makefile/fake-manifest fix, `make smoke-test` completes clean (tier self-tests → instrument smokes → 9 Probe 1 fake runs → `generate.py`).
 
 > **What to remember.** The instrument is deliberately small and blank so logits and confidence are observables; it is not meant to beat Tesseract.
 
@@ -532,6 +532,8 @@ Implied fixes the project is aimed at (even before transfer): train/eval with gr
 | Renderer modules + tiers A/B/C | Built (layout/degradation PARTIAL sources) |
 | `export_line_manifest.py` / `export_manifest_scaled.py` | Built; full manifests present |
 | Instrument tokenizer/encoder/decoder/train/generate | Built (architecture verified; real ckpts not in tree) |
+| `make smoke-test` / fake Probe 1 manifests | Built — **verified passing** (645ae11) |
+| Line manifests (`data/manifests/`) | Built — Hindi + Bengali, 100 pages/mode |
 | `src/probes/probe{1,2,3,5,6}*`, `probe_utils`, aggregate | Built |
 | `probe5b_zeroshot_floor.py` | **Not built** |
 | Demo LoRA stack | **Not built** (benchmark stub only) |
@@ -684,6 +686,8 @@ Reported README numbers (0.9929 / 0.9898 / 0.9877) should match these jsonl aggr
 
 ```bash
 make smoke-test
+# Expect: tier self-tests OK, 9 Probe 1 fake runs skip-or-finish,
+# generate.py shape checks OK, "SMOKE TEST COMPLETE"
 ```
 
 ---

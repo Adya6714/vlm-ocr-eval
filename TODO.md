@@ -60,18 +60,16 @@ project — protect time for those first if something has to give.
 ## Stage 2 — The two models (days 9–16)
 
 - [x] Instrument code: tokenizer, encoder, decoder, training loop,
-  resumable checkpointing, `generate.py` — smoke-only (`make
-  stage2-instrument-smoke` / `make smoke-test`)
+  resumable checkpointing, `generate.py` — architecture smoke via
+  `make smoke-test` (verified passing after 645ae11)
 - [ ] Instrument: train once on Devanagari at natural frequency, confirm
-  it converges at all before anything else
-- **Blocked:** `train.py` wants line-crop manifests `{"image_path","text"}`.
-  Tier A/B `PageGT` now includes `lines[]` with page-space boxes
-  (DECISIONS.md #41). Adapter exists: `export_line_manifest.py` +
-  batch driver `export_manifest_scaled.py` (DECISIONS.md #43; hindi
-  smoke 3 pages/mode verified). Full-scale Hindi/Bengali export
-  (`--pages-per-mode 100`) still pending before real instrument train.
-  Stage 3 (demo metrics) is separately blocked on the Stage 1
-  layout-bank gaps (form / table-embedded / india.gov).
+  it converges at all before anything else (Colab; status TBD)
+- [x] Line-crop manifests for Probe 1 / `train.py`: adapter
+  `export_line_manifest.py` + `export_manifest_scaled.py`
+  (DECISIONS.md #41 / #43 / #44). Full-scale Hindi + Bengali
+  `--pages-per-mode 100` lands under `data/manifests/`.
+- Stage 3 (demo metrics) remains blocked on Stage 1 layout-bank gaps
+  (form / table-embedded / india.gov).
 - [ ] Demo: benchmark SmolDocling-256M vs LightOnOCR-1B for T4 memory
   fit, decide, log in DECISIONS.md
 - [ ] Demo: LoRA config, SFT run on Tier A/B renderer output
@@ -84,10 +82,10 @@ project — protect time for those first if something has to give.
 - [ ] Table header-cell binding accuracy metric
 - [ ] Run both on the demo model's output
 
-**Blocked on:** Stage 1's real layout bank (`layout_sources.py` still
-PARTIAL: no `bank.json` at last audit; missing `form` / `table-embedded`;
-india.gov fetch fails). Tau-vs-complexity needs those buckets populated
-from real layouts, not invented templates.
+**Blocked on:** Stage 1's real layout bank (`bank.json` exists but is
+PARTIAL: missing `form` / `table-embedded`; india.gov fetch flaky).
+Tau-vs-complexity needs those buckets populated from real layouts,
+not invented templates.
 
 ## Stage 4 — SFT then RLVR (days 22–25)
 
@@ -100,33 +98,30 @@ from real layouts, not invented templates.
 ## Stage 5 — The probe suite (days 26–33)
 
 - [x] Probe 1 orchestrator (`src/probes/probe1_exposure.py`) — 9-run
-  loop + skip-if-complete; fake-data only
+  loop + skip-if-complete; fake-data path via `make probe1-smoke`
+- [x] Fake Probe 1 data + makefile wiring — repaired (645ae11);
+  `make smoke-test` passes end to end (no GPU, no `data/raw`)
 - [ ] Probe 1: 9 training runs on **real** renderer manifests (3
   conditions × 3 seeds), then glyph-level fixed-effects fit
-- **Blocked:** real Probe 1 waits on the Stage 1 line-crop adapter
-  above. `make probe1-smoke` currently looks for `probe1_exposure.py`
-  under `src/models/instrument/` (file is in `src/probes/`).
-- **Blocked:** `scripts/make_fake_probe1_data.py` is encoding-corrupted
-  (mangled `FAKE_TEXTS` / missing `build_fake_manifest` header) — smoke
-  path will not run until that script is repaired.
-- [ ] Probe 2: confusion graph from output distributions
-- [ ] Probe 3: blank/noise-image control, per glyph class
+  — Colab; last known mid-inverted seed0; probing (`probe_all.sh`)
+  not yet confirmed
+- [x] Probe 2 code (`probe2_confusion_graph.py`) — built; needs real ckpts
+- [x] Probe 3 code (`probe3_blank_control.py`) — built; needs real ckpts
 - [ ] Probe 4: re-run Stage 0's equivalence tables against instrument
-  output
-- [ ] Probe 5: calibration curve, cross-referenced against Probe 1's
-  exposure levels — this is the centerpiece, budget real time for it
+  output (Stage 0 scorers already cover the method)
+- [x] Probe 5 code (`probe5_calibration.py`) + aggregator — built;
+  aggregated calibration table still blocked on Colab probe runs
 - [ ] Probe 5b: render Santhali + Kashmiri, zero-shot inference,
-  calibration check at true zero exposure
-- [ ] Probe 6: Tier C real documents + handwriting anecdote (15-20
-  lines, 2-3 writers) vs Tier A/B synthetic
+  calibration check at true zero exposure (optional / lowest priority)
+- [x] Probe 6 code (`probe6_synthetic_real_gap.py`) — built; still needs
+  held-out pages 100–109 rendered + instrument/baseline predictions
 
 ## Stage 6 — Sarvam transfer + triage cascade (days 34–36)
 
-- [ ] **Before spending any budget:** re-verify Sarvam's current
-  per-language OCR numbers against docs.sarvam.ai / their latest blog —
-  the original research pass is from February and Sarvam Vision 1.5 has
-  since shipped. Confirm the motivating 40-point spread still holds
-  before building the interview narrative on it.
+- [x] **Before spending any budget:** re-verify Sarvam's current
+  per-language OCR numbers — done 2026-08-25 (DECISIONS.md #6 Verified:
+  Kashmiri 55.93 / Santhali 80.32 still match sarvam.ai Vision blog;
+  spread holds).
 - [ ] Allocate the ~200-page budget per IMPLEMENTATION.md Stage 5
 - [ ] Fetch, cache, never re-fetch
 - [ ] Transfer analysis: pre-specify the rank-correlation statistic
@@ -136,13 +131,14 @@ from real layouts, not invented templates.
 
 ## Ongoing, throughout
 
-- [ ] Keep `BOOK.md` current — a chapter per completed stage/probe,
-  written close to when the work happens, not batched at the end
+- [x] `BOOK.md` teaching book written (rebuild narrative + App. E
+  reproduce commands); keep current as new verified results land
 - [ ] Keep `DECISIONS.md` current — append, don't rewrite
 - [x] Heavy scripts (OCR batches, training) written for Colab: one
   `--data-root`, no local-only paths, export into the IMPLEMENTATION.md
   output path (`run_baselines.py` + AGENTS.md; DECISIONS.md #32)
-- [x] `Makefile` / `make smoke-test` — intended no-data architecture
-  proof (blocked on fake-data script + Probe 1 path mismatch above)
+- [x] `Makefile` / `make smoke-test` — live architecture proof on fake
+  data (fake manifests + `src/probes/probe1_exposure.py` path fixed
+  in 645ae11; re-verified passing)
 - [ ] Before the interview: reread the whole `README.md` framing
   sentence out loud, make sure it still matches what actually got built

@@ -255,13 +255,12 @@ real data and is metric-only.
       (`natural` / `flattened` / `inverted`), 3 seeds each (9 runs —
       DECISIONS.md #14), identical data volume. In-process; skip-if
       checkpoint already at `total_steps` (DECISIONS.md #39). Fake-data
-      path: `scripts/make_fake_probe1_data.py` + `make probe1-smoke`.
-      Fake data carries no exposure signal. Real Probe 1 is blocked on
-      Stage 1 line-crop manifests (TODO.md). The makefile currently
-      `cd`s into `src/models/instrument` and invokes `probe1_exposure.py`
-      there; the orchestrator file is `src/probes/probe1_exposure.py`
-      (CLI flags also differ from makefile). `make smoke-test` (`smoke-test`
-      in makefile) is the intended no-GPU proof; wiring is a TODO blocker.
+      path: `scripts/make_fake_probe1_data.py` + `make probe1-smoke`
+      (three condition-specific manifests; wiring fixed 645ae11).
+      Fake data carries no exposure signal. Real Probe 1 needs the 9
+      Colab runs on `data/manifests/{hindi,bengali}_*.jsonl` (manifests
+      exist; FE fit still TODO). `make smoke-test` is the no-GPU
+      architecture proof and passes.
   - [ ] Fit per-glyph-cluster accuracy against log exposure with glyph
         fixed effects; the residual after controlling for exposure is the
         complexity estimate. Not built — needs the 9 runs on real
@@ -349,14 +348,12 @@ three baselines.
 
 ## Tooling (not in the original spec)
 
-- [x] BUILT — QUEUED `makefile` — `make smoke-test` is the architecture
+- [x] BUILT — VERIFIED `makefile` — `make smoke-test` is the architecture
       proof: Stage 0 tier self-tests, instrument `__main__` smokes, all 9
-      Probe 1 runs on fake line-crops, then `generate.py`. No GPU, no
-      `data/raw`. `make probe1-smoke` currently `cd`s into
-      `src/models/instrument` and runs `probe1_exposure.py` there; the
-      file actually lives at `src/probes/probe1_exposure.py` (TODO
-      blocker). `scripts/make_fake_probe1_data.py` is listed under Stage
-      2a. Same job as `make smoke-test` in README.
+      Probe 1 runs on fake line-crops (`scripts/make_fake_probe1_data.py`
+      → `src/probes/probe1_exposure.py`), then `generate.py`. No GPU, no
+      `data/raw`. Path/manifest bugs fixed in 645ae11; re-verified
+      passing. Same job as `make smoke-test` in README.
 
 ---
 
