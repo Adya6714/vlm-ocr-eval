@@ -629,6 +629,8 @@
       <a href="#tour" class="walk-only">Tour</a>
       <a href="#status">Ledger</a>
       <a href="#findings">Findings</a>
+      <a href="#conclusion">Spine</a>
+      <a href="#improve">Improve</a>
       <a href="#future">Future</a>
       <span class="mode-toggle" role="group" aria-label="Reading mode">
         <button type="button" id="modeWalk" aria-pressed="true">Walkthrough</button>
@@ -649,7 +651,7 @@
       <h2 class="section-title">A controlled OCR experiment</h2>
       <div class="abstract-box">
         <p>We’re building a controlled OCR experiment to separate data-exposure effects from intrinsic script difficulty, and then probing a model we own to understand whether its predictions, confidence, and errors are actually grounded in the visual input.</p>
-        <p>Stages 0–2a and the probe suite are the required path. Demo LoRA, structure metrics, transfer, and cascade are taught in BOOK.md but deferred this phase. Numbers recomputed in this checkout are <strong>measured</strong>; Colab write-ups without in-tree jsonl are <strong>reported</strong>.</p>
+        <p>Stages 0–2a and the probe suite are the required path. Demo LoRA, structure metrics, RLVR, transfer, cascade, and Decision&nbsp;#46 methodology upgrades are taught in BOOK.md but deferred this phase. Numbers recomputed in this checkout are <strong>measured</strong>; Colab write-ups without in-tree jsonl are <strong>reported</strong>.</p>
       </div>
     </div>
   </div>
@@ -1330,6 +1332,7 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
           <tr><td>Stage 2b prereq</td><td><span class="mono">benchmark_base_models.py</span> written, not executed</td><td><span class="status-tag notrun">Not run</span></td></tr>
           <tr><td>Probe 5b</td><td>Not started</td><td><span class="status-tag notrun">Not run</span></td></tr>
           <tr><td>Stage 2b / 3 / 5 / 6 full</td><td>Described in BOOK Ch.4–6, 8–9 — deferred this phase</td><td><span class="status-tag oos">Out of scope</span></td></tr>
+          <tr><td>Methodology upgrades</td><td>Equal-frequency bins, mechanistic Probe&nbsp;3, patch-shuffle, seed aggregation, etc. (Decision&nbsp;#46)</td><td><span class="status-tag oos">Not built</span></td></tr>
         </tbody>
       </table>
     </div>
@@ -1432,7 +1435,89 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
 </section>
 
 <!-- FUTURE -->
-<section id="future" class="mode-item part-two-section" style="--walk-order:14; --paper-order:13">
+
+<!-- CONCLUSION -->
+<section id="conclusion" class="mode-item part-two-section" style="--walk-order:14; --paper-order:13">
+  <div class="fig-rail">
+    <div class="fig-num walk-num">09.5</div>
+    <div class="fig-num paper-num">C</div>
+    <div class="fig-body">
+      <div class="section-kicker walk-label">BOOK · Conclusion</div>
+      <div class="section-kicker paper-label">Conclusion</div>
+      <h2 class="section-title">The scientific spine</h2>
+      <p class="lede">Step back from the modules. Three implied fixes — and what is deferred, not abandoned.</p>
+      <div class="kv-grid">
+        <div class="kv-card">
+          <h3>1 · Score fairly</h3>
+          <p>Score Indic OCR with grapheme-aware, Tier-1-aware metrics. On the order of one in five of Tesseract’s non-exact preds can be encoding variants — not wrong readings.</p>
+        </div>
+        <div class="kv-card">
+          <h3>2 · Design exposure</h3>
+          <p>Treat glyph exposure as something you design (natural / flattened / inverted, TV&nbsp;≤&nbsp;0.08), not something you observe after the fact.</p>
+        </div>
+        <div class="kv-card">
+          <h3>3 · Trust calibration</h3>
+          <p>Treat fluent, high-confidence failure as a calibration and routing problem — not only as “need more accuracy.”</p>
+        </div>
+      </div>
+      <p class="one-liner">The demo, RLVR, Sarvam transfer, and cascade are how those questions eventually meet production systems; they are deferred in this phase, not abandoned.</p>
+    </div>
+  </div>
+</section>
+
+<!-- IMPROVE -->
+<section id="improve" class="mode-item part-two-section" style="--walk-order:15; --paper-order:14">
+  <div class="fig-rail">
+    <div class="fig-num walk-num">09.7</div>
+    <div class="fig-num paper-num">I</div>
+    <div class="fig-body">
+      <div class="section-kicker walk-label">BOOK · What I would improve</div>
+      <div class="section-kicker paper-label">Methodology</div>
+      <h2 class="section-title">Weak spots already visible in the code — not generic advice</h2>
+      <p class="lede">Decision&nbsp;#46. None of these is built. They are the next checkable upgrades if the probes are treated as science rather than architecture proofs.</p>
+      <div class="scope-grid">
+        <div class="scope-row">
+          <div class="scope-tag"><span class="stage">1</span>Calibration</div>
+          <div class="scope-why">
+            <h4>Equal-frequency bins + ECE / Brier</h4>
+            <p>Fixed-width bins at n≈30 make singleton buckets look as authoritative as n=18. Adaptive binning and a summary ECE (plus Brier) fix the printer we already ship.</p>
+          </div>
+        </div>
+        <div class="scope-row">
+          <div class="scope-tag"><span class="stage">2</span>Probe 3</div>
+          <div class="scope-why">
+            <h4>Mechanistic, not only behavioral</h4>
+            <p>Extract cross-attention during generation — does attention move to the glyph, or stay diffuse? Zero retraining; independent of blank/noise confidence.</p>
+          </div>
+        </div>
+        <div class="scope-row">
+          <div class="scope-tag"><span class="stage">3</span>Controls</div>
+          <div class="scope-why">
+            <h4>Patch-shuffle</h4>
+            <p>Permute 14×14 patches on a real line: destroy global structure, keep local texture. Stricter than blank/noise.</p>
+          </div>
+        </div>
+        <div class="scope-row">
+          <div class="scope-tag"><span class="stage">4</span>Seeds</div>
+          <div class="scope-why">
+            <h4>Mean ± std across three seeds</h4>
+            <p>Site/README Probe&nbsp;3/5 numbers are seed0 alone. Decision&nbsp;#14 already required three — headlines should aggregate once artifacts exist.</p>
+          </div>
+        </div>
+        <div class="scope-row">
+          <div class="scope-tag"><span class="stage">5–7</span>Stats</div>
+          <div class="scope-why">
+            <h4>Mixed effects · kappa · bootstrap CIs</h4>
+            <p>Probe&nbsp;1 nesting; second labeler on a residual subsample; effect sizes with intervals instead of significance stars at this N.</p>
+          </div>
+        </div>
+      </div>
+      <p class="one-liner">The upgrades are specific and checkable — singleton calibration bins, behavioral-only Probe&nbsp;3, single-seed headlines — not “run more experiments.”</p>
+    </div>
+  </div>
+</section>
+
+<section id="future" class="mode-item part-two-section" style="--walk-order:16; --paper-order:15">
   <div class="fig-rail">
     <div class="fig-num walk-num">10</div>
     <div class="fig-num paper-num">9</div>
@@ -1443,7 +1528,7 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
       <div class="scope-grid">
         <div class="scope-row"><div class="scope-tag"><span class="stage">Demo</span>Ch.4</div><div class="scope-why"><h4>LoRA on a pretrained doc-VLM</h4><p>Shipping shape. Must stay separate from the instrument — frozen weights already contain exposure history.</p></div></div>
         <div class="scope-row"><div class="scope-tag"><span class="stage">Structure</span>Ch.5</div><div class="scope-why"><h4>Reading order + table binding</h4><p>Kendall tau vs complexity; cell↔header. Blocked on layout-bank gaps.</p></div></div>
-        <div class="scope-row"><div class="scope-tag"><span class="stage">RLVR</span>Ch.6</div><div class="scope-why"><h4>Reward − coverage</h4><p>Without coverage, a model raises accuracy by saying less.</p></div></div>
+        <div class="scope-row"><div class="scope-tag"><span class="stage">RLVR</span>Ch.6</div><div class="scope-why"><h4>Reward − coverage</h4><p>A model optimizes the reward you gave it. Character accuracy alone can be gamed by omitting uncertain spans. Planned reward includes coverage; the only ablation is removing that term (Decision&nbsp;#11). Sits behind the demo — blueprint, not built.</p></div></div>
         <div class="scope-row"><div class="scope-tag"><span class="stage">Transfer</span>Ch.8</div><div class="scope-why"><h4>Do findings rhyme at production scale?</h4><p>~200 Sarvam pages, cached; rank correlation. Null is still a finding.</p></div></div>
         <div class="scope-row"><div class="scope-tag"><span class="stage">Cascade</span>Ch.9</div><div class="scope-why"><h4>When to escalate</h4><p>Router quality offline against the cache — only after confidence predicts errors.</p></div></div>
       </div>
@@ -1452,7 +1537,7 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
 </section>
 
 <!-- DOCS -->
-<section id="docs" class="mode-item part-two-section" style="--walk-order:15; --paper-order:14">
+<section id="docs" class="mode-item part-two-section" style="--walk-order:17; --paper-order:16">
   <div class="fig-rail">
     <div class="fig-num walk-num">11</div>
     <div class="fig-num paper-num">R</div>
@@ -1467,6 +1552,8 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
         <div class="doc-row"><span class="doc-name"><a href="#instrument">Instrument</a></span><span class="doc-desc">BOOK Ch.3</span></div>
         <div class="doc-row"><span class="doc-name"><a href="#probes">Probes</a></span><span class="doc-desc">BOOK Ch.7</span></div>
         <div class="doc-row"><span class="doc-name"><a href="#status">Ledger</a></span><span class="doc-desc">what ran</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="#conclusion">Spine</a></span><span class="doc-desc">BOOK Conclusion</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="#improve">Improve</a></span><span class="doc-desc">Decision #46 methodology</span></div>
         <div class="doc-row"><span class="doc-name"><a href="./BOOK.md">BOOK.md</a></span><span class="doc-desc">full teaching path</span></div>
         <div class="doc-row"><span class="doc-name"><a href="https://github.com/Adya6714/vlm-ocr-eval">GitHub</a></span><span class="doc-desc">source</span></div>
       </div>
