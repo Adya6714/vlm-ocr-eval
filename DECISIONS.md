@@ -998,3 +998,32 @@ reversed. (c) is the cleaner long-term fix but costs a training-pipeline
 change mid-queue; extending the export by 10 pages reuses resumable
 export and leaves existing checkpoints valid.
 
+---
+
+### 46. Future methodology upgrades — documented, not implemented this phase
+
+**Decision:** record seven checkable methodology upgrades as accepted
+next work, not as interview-only talking points. They live in BOOK.md
+after the Conclusion. In brief: (1) replace Probe 5's fixed-width
+`np.linspace` bins with equal-frequency binning plus ECE (and Brier);
+(2) add cross-attention / occlusion introspection to Probe 3, no
+retrain; (3) add a 14×14 patch-shuffle control; (4) report Probe 3/5
+headlines as mean ± std across three seeds, not `seed0` alone;
+(5) mixed-effects Probe 1 (random intercepts per glyph class and seed);
+(6) second labeler + Cohen's kappa on a small hand-review subsample;
+(7) bootstrap effect-size intervals instead of p-values at N≈3 seeds /
+30 samples.
+
+**Alternatives considered:** (a) leave these as oral talking points
+only; (b) implement them now before Probe 1's nine real runs finish;
+(c) expand into a second research program (full annotation study,
+significance testing theater).
+
+**Why:** (a) loses the project's own "docs win" rule — BOOK.md is the
+source of truth, and "what would you improve?" is a near-certain
+question. (b) is out of stage order: aggregation and in-tree jsonl
+are the blocker, not missing theory. (c) would dilute the actual
+next task. These seven are implied by flaws already visible in
+`probe5_calibration.py`'s printer, Probe 3's blank/noise-only
+controls, and single-seed README/site reporting.
+

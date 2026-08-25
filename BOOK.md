@@ -13,7 +13,9 @@ teach you about that problem?**
 The test for every chapter is whether someone who has never opened this
 repo — and does not already know computer vision or Indic scripts —
 could read that chapter alone and come away understanding both the idea
-and why this project needed it.
+and why this project needed it. After the Conclusion, a short
+methodology section records what I would improve next — checkable
+upgrades, not a second research program.
 
 The chapters follow the order the work actually unfolded: first “how do
 you even measure whether OCR got something right?”, then “how do you
@@ -1652,155 +1654,471 @@ forms and table pages.
 
 ## Chapter 6 — Reinforcement Learning, From Scratch
 
-### Supervised learning versus learning from a reward
+This chapter is about **changing how we train the model**.
 
-Up to the demo’s supervised fine-tuning stage, training looks like this:
-the model produces a sequence, you compare it to the exact ground-truth
-string, you push it toward that string. That is supervised learning.
-It is powerful, and it is also limited. Some properties you care about
-— “did the table structure survive?”, “did you read the blocks in the
-right order?”, “did you cover the whole page?” — are awkward to express
-as next-token loss.
+So far, the project mainly uses **supervised learning**:
 
-**Reinforcement learning** flips the setup. The model acts (produces an
-entire reading). Afterwards you compute a **reward** — a number that
-says how good that reading was. Training pushes the model toward actions
-that raise reward. When the reward can be computed automatically from
-known structure (exact text, known table trees, known reading order),
-people call it RL from verifiable rewards (RLVR).
+> Here is the image, and here is the correct text. Learn to produce
+> this exact text.
 
-### Why rewards get gamed
+Chapter 6 asks:
 
-If your reward is “character accuracy” alone, a cunning policy can raise
-the score by **saying less**: omit uncertain spans, emit only the easy
-words, skip the footnote. Accuracy on what remains goes up; usefulness
-goes down. That is not a hypothetical. It is the failure mode this
-project plans to demonstrate on purpose.
+> What if instead we tell the model what makes an *entire* output good
+> or bad, and let it learn from a reward?
 
-The planned reward is therefore a sum with an explicit penalty:
+That is **reinforcement learning (RL)**.
 
-> character accuracy + structure match (TEDS) + reading-order
-> correlation − **coverage**
+### Supervised learning
 
-Coverage is the term that punishes omission. Decision #11 says the
-*only* RLVR ablation in scope is to remove that coverage term and
-quantify how much the model learns to shut up. A full sweep across every
-reward component would cost more than it teaches here.
+Suppose the image says `भारत एक देश है`. We give the model the image
+paired with that exact string. During training the model produces a
+sequence; we compare it against the ground truth and calculate a
+**loss**. The model learns: my output should become more like the
+ground-truth string.
 
-### Status in this phase
+That is very natural for OCR. Up to the demo’s supervised fine-tuning
+stage, that is the default training story.
 
-RLVR is not implemented yet; it sits behind the demo model. This chapter
-exists so that when someone builds it, they inherit the scientific bar:
-a verifiable reward, a known gaming mode, and one ablation that shows
-the mechanism rather than a spreadsheet of tiny deltas.
+### But exact text isn’t the whole problem
 
-> **What to remember.** A reward the model can game will be gamed —
-> and omitting text is the easiest game in OCR.
+Consider a document with a title, two columns, and a table. A model
+could recognize every character correctly but still:
+
+- put Column B before Column A
+- mix up table cells
+- skip a footnote
+- omit an entire paragraph
+
+So simply teaching “predict the next correct token” does not always
+capture everything we care about. We want to evaluate the **whole
+document output** — recognition *and* structure *and* whether anything
+was quietly left out. That connects directly to Chapter 5’s reading-
+order and table-binding concerns.
+
+### Reinforcement learning changes the setup
+
+Instead of comparing token-by-token against a single gold string during
+every step of generation, RL does something closer to:
+
+```text
+Image
+  ↓
+Model
+  ↓
+complete output
+  ↓
+evaluate the whole reading
+  ↓
+REWARD
+  ↓
+model learns to maximize reward
+```
+
+One complete reading might score 0.92; another, with swapped cities or
+missing rows, might score 0.65. Training pushes the model toward kinds
+of outputs that receive higher rewards.
+
+### What is RLVR?
+
+**RLVR = Reinforcement Learning with Verifiable Rewards.**
+
+The important word is **verifiable**. We are not asking a human “does
+this OCR output look good?” We have information that lets us
+**automatically** calculate whether the output is correct.
+
+Because the synthetic renderer from Chapter 2 knows the ground truth —
+correct text, correct reading order, correct table structure — we can
+score a full reading without a human in the loop. That is why owning
+the renderer is useful again here: controlled pages are not only
+training fuel; they are a source of automatic, checkable rewards.
+
+### The dangerous part: the model can game the reward
+
+This is probably the most important concept in the chapter.
+
+Suppose your reward is simply: how accurately did you recognize the
+text you actually output? The model might discover a clever strategy:
+**don’t output difficult text.**
+
+Imagine the page says:
+
+```text
+This is an easy sentence.
+This is a difficult sentence containing rare glyphs.
+This is another easy sentence.
+```
+
+The model could output only the easy sentences. If your metric only
+evaluates the text it produced, accuracy can look *higher* while the
+OCR system has become worse. It has learned: if I’m uncertain, shut
+up.
+
+That is **reward hacking** / **reward gaming**. It is not a
+hypothetical. It is the failure mode this project plans to demonstrate
+on purpose.
+
+### Coverage solves this particular problem
+
+The planned reward is a sum with an explicit anti-omission term
+(Decision #11):
+
+```text
+Reward =
+    character accuracy
+  + structure match (TEDS)
+  + reading-order quality
+  − coverage penalty
+```
+
+**Character accuracy** — did you recognize the text?  
+**Structure match (TEDS)** — did you preserve table / document
+structure? TEDS is a metric for whether a predicted table structure
+matches the reference.  
+**Reading-order quality** — did you put the blocks in the correct
+order? (Chapter 5’s Kendall-tau world.)  
+**Coverage** — did you actually cover the entire document? This is the
+crucial anti-gaming term.
+
+### A concrete example
+
+Suppose the page contains 100 characters.
+
+**Model A** reads all 100 but makes 10 mistakes → coverage 100%,
+accuracy about 90%.  
+
+**Model B** reads only the easiest 50 and gets them all right →
+coverage 50%, accuracy 100%.
+
+Without coverage, Model B looks better. With coverage, Model A gets
+the higher reward and Model B is penalized for omission. That is why
+the project explicitly includes coverage.
+
+### The planned experiment is deliberately small
+
+The project does not want dozens of RL experiments. It wants one
+particularly informative comparison (Decision #11):
+
+**Normal RLVR**
+
+```text
+accuracy + structure + reading order − coverage
+```
+
+versus **ablation** — remove coverage:
+
+```text
+accuracy + structure + reading order
+```
+
+Then ask: does the model start omitting difficult content? If it does,
+you have demonstrated **why coverage matters**.
+
+An **ablation** means: remove one component and see what changes. A
+full sweep across every reward term would cost more than it teaches
+here; the coverage-term removal is cheap (a single retrain) and points
+at the mechanism rather than a spreadsheet of tiny deltas.
+
+### Why this is not being built yet
+
+RLVR sits behind the **demo** model, not the instrument:
+
+```text
+Instrument
+   ↓
+Understand OCR behavior (probes)
+   ↓
+Demo pretrained VLM + LoRA
+   ↓
+Supervised fine-tuning
+   ↓
+RLVR
+```
+
+The instrument is about scientific diagnosis. The demo + RLVR path is
+about building a more production-like system and testing advanced
+training methods. So this chapter is currently a **design /
+blueprint**, not a completed experiment. When someone builds it, they
+inherit the scientific bar: a verifiable reward, a known gaming mode,
+and one ablation that shows the mechanism.
+
+### How the chapters connect here
+
+```text
+Chapter 2 — CONTROL THE DATA
+"What did we show the model?"
+      ↓
+Chapter 3 — BUILD AN INSTRUMENT
+"What did the model learn?"
+      ↓
+Chapter 5 — CHECK DOCUMENT STRUCTURE
+"Did it preserve order?"
+      ↓
+Chapter 6 — OPTIMIZE THE WHOLE OUTPUT
+"Can we reward the behavior we actually want?"
+```
+
+And Chapter 6 exposes an important ML lesson:
+
+> A model does not necessarily optimize what you intended. It
+> optimizes the reward you gave it.
+
+If the reward says that omitting difficult text is okay, the model can
+learn to omit difficult text.
+
+> **What to remember.** RLVR lets us optimize OCR for whole-document
+> quality, but the reward must include coverage — otherwise the model
+> can improve its score by simply leaving difficult content out.
 
 ---
 
 ## Chapter 7 — What Does the Model Actually Know (the Probe Suite)
 
-### The question that forced this chapter
+Chapter 7 is the payoff of everything in Chapters 0–6. The easiest way
+to understand it is:
 
-Accuracy answers “was the string right?” It does not answer:
+> We built a small OCR model not primarily to make it accurate, but so
+> we can open it up and investigate *why* it behaves the way it does.
 
-- Did accuracy track how often the glyph was shown?
-- When the model is wrong, what else did it almost say?
-- Is it reading the pixels, or guessing from language priors?
-- When it is confident, is it actually more often correct?
+Think of the instrument as a patient in a lab, and the probes as
+medical tests.
 
-Those are the probes. They are the project’s real deliverable. The
-instrument exists so these questions have somewhere to land.
+### First: what are we trying to find out?
 
-### Probe 1 — Exposure versus complexity
+Suppose the model reads an image and outputs `भारत`, and the correct
+answer is `भारत`. Accuracy = correct. That tells us almost nothing
+about **how the model arrived there**.
 
-Train the instrument nine times: three glyph-frequency conditions
-(natural / flattened / inverted) × three random seeds. Identical data
-volume. Three seeds are non-negotiable (Decision #14): with one seed,
-the whole spread could be noise.
+We really want to know:
 
-Then, for each grapheme cluster, relate accuracy to how often that
-cluster appeared (log exposure), with glyph identity controlled. The
-residual after accounting for exposure is a candidate estimate of
-**intrinsic visual complexity** — not an unexplained leftover, but the
-point of the fit.
+1. Does seeing a glyph more often make the model better at it?
+2. When it makes a mistake, what did it think the answer was?
+3. Is it actually looking at the image, or just guessing based on
+   language patterns?
+4. When it says “I’m 99% confident,” is it actually right 99% of the
+   time?
+
+Those four questions (plus fairness of scoring, plus a reality check
+on synthetic pages) are what the **probes** investigate. They are the
+project’s real deliverable. The instrument exists so these questions
+have somewhere to land.
+
+### Probe 1 — Does exposure make you better?
+
+This is probably the most important probe. It is the scientific
+question from Chapter 2, now asked of a trained model:
+
+> Is a glyph difficult because it is intrinsically difficult to
+> recognize, or because the model simply didn’t see it enough?
+
+Suppose `क` appears 10,000 times and `ज्ञ` appears 100 times, and the
+model gets 95% on `क` and 50% on `ज्ञ`. You cannot immediately say
+“`ज्ञ` is visually harder.” Maybe we simply didn’t train on enough
+`ज्ञ`. So we deliberately manipulate exposure.
+
+**The nine training runs.** Train the same architecture under three
+conditions × three random seeds (Decision #14):
+
+| Condition | Seed 1 | Seed 2 | Seed 3 |
+|---|---|---|---|
+| Natural | ✓ | ✓ | ✓ |
+| Flattened | ✓ | ✓ | ✓ |
+| Inverted | ✓ | ✓ | ✓ |
+
+Natural keeps the corpus histogram (common stays common). Flattened
+pushes exposure toward equal. Inverted gives rare glyphs much more
+exposure and common glyphs much less. **Total training volume stays
+matched** — otherwise someone could say the flattened model was better
+simply because it saw more data. The only major difference should be
+*which* glyphs received the exposure. Three seeds are non-negotiable:
+with one seed, the whole spread could be noise.
+
+Then, for every grapheme cluster, we know how many times the model saw
+it and how accurately it recognized it. Plot accuracy against (log)
+exposure. If accuracy strongly increases with exposure, that is
+evidence that **data exposure matters**.
+
+But we also want: after accounting for exposure, are some glyphs still
+systematically harder? Imagine `ज्ञ` is still substantially worse than
+its exposure would predict. That leftover is the **residual** — a
+candidate estimate of **intrinsic visual complexity**, not an
+unexplained leftover. That residual is the point of the fit.
 
 The orchestrator is `src/probes/probe1_exposure.py`. Real nine-run
 results depend on Colab training against the manifests in
 `data/manifests/`. Fake-data smoke proves orchestration only.
 
-### Probe 2 — Confusion structure
+### Probe 2 — What does the model almost say?
 
-When the model misreads a cluster, do not only look at the argmax.
-Look at the full next-token distribution. The runner-up mass tells you
-what the model *almost* said. From that you can build a confusion graph
-over glyph classes. This is nearly impossible against a closed API that
-only returns text. Owning the model is what makes Probe 2 possible.
-Code: `probe2_confusion_graph.py`.
+Normally we look at the final answer: image → `क`. Internally the
+model might have probabilities like `क` 52%, `ख` 35%, `ग` 8% — which
+is a very different state of mind from `क` 99% and everything else
+noise. In the first case it was **confused between `क` and `ख`**.
 
-### Probe 3 — Reading versus guessing
+From those runner-up masses we can build a **confusion graph** over
+glyph classes: edges that tell us which graphemes the model frequently
+confuses. That can reveal “the model frequently confuses visually
+similar conjuncts” rather than a single accuracy number.
 
-Feed the model a real line crop, a blank image of the same size, and a
-noise image matched to the crop’s mean and variance. If confidence on
-blank and noise stays almost as high as confidence on the real line,
-the model is not grounding its certainty in vision — it is leaning on
-what language “usually looks like.” That is the mechanistic account of
-why low-resource scripts can fail *fluently* instead of failing loudly.
+A closed API often returns only `"क"`. Our instrument exposes the
+logits / probabilities (`generate.py`’s top-k). That is one of the
+biggest reasons we built it. Code: `probe2_confusion_graph.py`.
+
+### Probe 3 — Is it actually looking at the image?
+
+Give the model three kinds of input of the same size:
+
+- **A** — a real line image (`भारत`)
+- **B** — a completely blank / white image
+- **C** — random noise matched to the crop’s mean and variance
+
+We would expect high confidence on A and low confidence on B and C,
+because there is nothing to read. Suppose instead we get something
+like real 99.29%, blank 98.98%, noise 98.77%. That is extremely
+suspicious: the model is incredibly confident even when there is
+nothing to read.
+
+That suggests it may be relying on a **language prior** — “given what
+I’ve seen during training, what text is likely?” — rather than “what
+does this image actually contain?” The output can look perfectly
+fluent. That is **guessing rather than reading**, and it is more
+dangerous than an obvious failure (`??????` at 20% confidence),
+because a user may trust a fluent, high-confidence wrong sentence.
 
 Code: `probe3_blank_control.py`. **Reported** (not re-verified in this
-checkout) for one Hindi natural/seed0 run: mean confidence about 0.9929
-on real lines, 0.9898 on blank, 0.9877 on matched noise — essentially
-no gap. If that holds under full aggregation, it is exactly the failure
-mode Probe 3 is designed to detect. It is also consistent with an
-undertrained small model; more steps would be needed to separate
-“hasn’t learned to use the image yet” from “this architecture never
-will.”
+checkout) for one Hindi natural/seed0 run: mean confidence about
+0.9929 on real lines, 0.9898 on blank, 0.9877 on matched noise —
+essentially no gap. If that holds under full aggregation, it is
+exactly the failure mode Probe 3 is designed to detect. It is also
+consistent with an undertrained small model; more steps would be
+needed to separate “hasn’t learned to use the image yet” from “this
+architecture never will.”
 
-### Probe 4 — Equivalence, again
+### Probe 4 — Are we being fair when we call something wrong?
 
-Re-run Stage 0’s Tier 1/2 machinery on the instrument’s own outputs.
-Same definition of correctness as the baselines. No new philosophy —
-just consistency.
+This reuses Chapter 1’s evaluation machinery: Tier 0 → Tier 1 →
+Tier 2 → human residual. We do not want a different definition of
+“wrong” for our own model than we used on Tesseract. If the instrument
+produces an alternative valid Indic encoding, we must not incorrectly
+punish it. Probe 4 = apply the same fairness rules to our instrument.
+No new philosophy — just consistency.
 
-### Probe 5 — Calibration under exposure
+### Probe 5 — Does confidence actually mean anything?
 
-Bucket predictions by confidence and ask whether higher buckets are
-actually more accurate. A calibrated model’s 70% bucket should be right
-about 70% of the time. Cross that curve with Probe 1’s exposure levels:
-does calibration break specifically for glyphs that were starved in the
-inverted condition? That crossing is the centerpiece question of the
-project.
+If the model says confidence = 70%, then across many examples about
+70% of those predictions should actually be correct. That is
+**calibration**.
+
+A well-calibrated model’s 50% / 70% / 90% / 99% buckets have roughly
+those accuracies. A badly calibrated model might sit at 99% confidence
+while being right 10% of the time — wildly overconfident. That is a
+huge practical problem.
+
+**Why combine Probe 5 with Probe 1?** We already know some glyphs were
+starved of exposure. Ask: does the model become particularly badly
+calibrated on glyphs it rarely saw? High exposure might look like
+confidence 90% / accuracy 88%; low exposure like confidence 95% /
+accuracy 30%. That is a much more useful finding than “our model has
+60% accuracy.” It tells us **when not to trust the model**. That
+crossing is the centerpiece question of the project.
 
 Code: `probe5_calibration.py`, with aggregation in
 `src/analysis/aggregate_probe_results.py`. **Reported** early result
 from the same checkpoint as Probe 3: nearly all mass in the 0.9–1.0
 confidence bucket while accuracy there was about 0.10 — confident and
-wrong. Again: treat as reported until jsonl lands in-tree.
+wrong. Treat as reported until jsonl lands in-tree.
 
-### Probe 5b — True zero exposure (not built yet)
+### Probe 5b — What if exposure is literally zero?
 
-Santhali (Ol Chiki) and Kashmiri (Perso-Arabic) are scripts the
-instrument will never have been trained on — not under-sampled, absent.
-If confidence stays high there, that is the sharpest version of the
-calibration failure. Optional in the current priority list; conceptually
-central to the motivation in Decision #6.
+Even stronger: train on Hindi / Devanagari, then give the model
+Santhali (Ol Chiki) or Kashmiri (Perso-Arabic) — scripts it has
+**never** seen during training, not under-sampled, *absent*. If it
+still says “I am 97% confident,” that is the sharpest version of
+confidence ≠ knowledge.
 
-### Probe 6 — Synthetic-to-real gap
+This probe is **not built yet** (`probe5b_zeroshot_floor.py`). It is
+optional in the current priority list; conceptually it is central to
+Decision #6’s script-scope motivation.
 
-Compare system behavior on Tier A/B synthetic pages versus Tier C real
-pages (and a tiny handwriting anecdote, explicitly qualitative). The
-question is whether the controlled world lied to you. Code exists
-(`probe6_synthetic_real_gap.py`); held-out pages and predictions still
-need to be produced on Colab.
+### Probe 6 — Did our synthetic world lie to us?
 
-### What purpose the suite serves together
+Chapter 2 created synthetic images for experimental control. The
+danger: the model performs well on beautiful synthetic pages and fails
+on real documents. Compare:
 
-One probe can be dismissed. Several probes that agree — “confidence
-does not track the image,” “confidence does not track correctness,”
-“starved glyphs behave differently” — become a diagnosis with an implied
-fix: change the training mixture, change the decoding policy, or
-refuse to trust high confidence on low-exposure scripts.
+- **Tier A** — synthetic + clean
+- **Tier B** — synthetic + blur / noise / skew / show-through
+- **Tier C** — actual scanned documents
+
+Imagine 92% / 75% / 48%. That says the controlled experiment may not
+transfer well to reality. Probe 6 is a **reality check on the
+experimental setup itself** (plus a tiny handwriting anecdote,
+explicitly qualitative). Code exists (`probe6_synthetic_real_gap.py`);
+held-out pages and predictions still need to be produced on Colab.
+
+### How all the probes fit together
+
+The project is not running six random experiments. They answer
+different pieces of one question:
+
+```text
+                 INSTRUMENT
+                     │
+       ┌─────────────┼──────────────┐
+       ↓             ↓              ↓
+   EXPOSURE       CONFUSION      GROUNDING
+   Probe 1        Probe 2        Probe 3
+       │             │              │
+ Does seeing      What does      Is it actually
+ more help?      it confuse?     looking?
+       │
+       └──────────────┬──────────────┘
+                      ↓
+                 Probe 4
+             Is our scoring fair?
+                      ↓
+                 Probe 5
+          Can I trust confidence?
+                      ↓
+                 Probe 6
+           Does this work in reality?
+```
+
+A possible scientific story (if the measurements hold) looks like:
+
+> Rare glyphs receive less exposure → their accuracy drops → the
+> model remains highly confident → blank-image tests show similar
+> confidence → some failures are likely language-prior-driven rather
+> than visual recognition → confidence can potentially identify cases
+> that need escalation.
+
+That is a much stronger conclusion than “our OCR model got 72%
+accuracy.” One probe can be dismissed. Several probes that agree
+become a diagnosis with an implied fix: change the training mixture,
+change the decoding policy, or refuse to trust high confidence on
+low-exposure scripts.
+
+### The entire project in one chain
+
+**Stage 0 — Define “wrong.”** Indic Unicode makes naïve OCR metrics
+misleading.  
+**Stage 1 — Control what the model sees.** You cannot study exposure
+if exposure is uncontrolled.  
+**Stage 2a — Build a model from scratch.** A pretrained model has
+already seen Indic data, so you cannot isolate exposure.  
+**Probes — Open the model up.** The six questions above.  
+**Eventually — Apply the findings.** If confidence is useful, use it
+as a router (Chapter 9): low confidence → stronger OCR / human; high
+confidence → accept. But only after demonstrating that confidence
+actually predicts errors.
+
+If someone asks what this project is actually about, one sentence:
+
+> We’re building a controlled OCR experiment to separate data-exposure
+> effects from intrinsic script difficulty, and then probing a model
+> we own to understand whether its predictions, confidence, and errors
+> are actually grounded in the visual input.
+
+That is the core of the entire repository.
 
 > **What to remember.** The point of owning the model is not to brag
 > about accuracy; it is to ask whether the model knows when it does not
@@ -1810,46 +2128,149 @@ refuse to trust high confidence on low-exposure scripts.
 
 ## Chapter 8 — Why You Can’t Learn Everything From an API
 
-### What a closed API gives you — and what it withholds
+Chapters 8 and 9 are the **“so what do we do with everything we
+learned?”** part of the project.
 
-A production OCR API typically returns text, sometimes layout, sometimes
-a confidence. It does not return:
+> Chapters 0–7 = understand the problem and diagnose the model.  
+> Chapter 8 = check whether the diagnosis applies to a real production
+> OCR system.  
+> Chapter 9 = turn the diagnosis into an operational decision: when
+> should we trust the model, and when should we escalate?
 
-- the full next-token distribution (Probe 2),
-- a blank-image control you instrument yourself under identical decoding
-  (Probe 3),
-- the training exposure of each glyph class (Probe 1),
-- or the freedom to re-run a thousand threshold sweeps without paying
-  per page.
+### Why not just use a production OCR API?
 
-So some questions are foreclosed entirely if you only ever call the API.
-That is not a moral complaint about vendors. It is a measurement fact.
+Suppose you send an image to an OCR API. You might get back text, and
+maybe a confidence score. That is useful for **evaluating the output**.
+But you generally do not get access to the model’s internals.
 
-### What transfer is for in this project
+You typically cannot ask:
 
-The instrument’s findings are causal claims on a small model. The open
-scientific question is whether those claims **rhyme** with a production
-system’s error structure: do the same glyph classes that hurt the
-instrument also hurt Sarvam, in roughly the same order?
+- “For this grapheme, what were your top 10 possible predictions?”
+  (Probe 2)
+- “Now take the exact same image, replace it with a blank, and tell me
+  what your model believes.” (Probe 3)
+- “How many times did this model see this particular glyph during
+  training?” (Probe 1)
 
-Stage 5 plans a pre-specified rank-correlation test with a permutation
-null — choose the statistic *before* looking at results — between
-per-glyph-class error rates on the instrument and on Sarvam, on both
-clean and degraded pages. Clean-only comparison is close to meaningless;
-systems often cluster on clean synthetic text and spread on real
-degradation (Decision #15).
+You also cannot re-run a thousand threshold sweeps without paying per
+page.
 
-### Budget is part of the science
+So there is a fundamental distinction:
 
-The paid budget is about 200 pages total. Decision #19 is therefore
-strict: every Sarvam page is fetched **once**, cached under
-`data/cache/`, and every later sweep (including Stage 6) runs offline
-against that cache. An escalation sweep that re-called the API per
-threshold would burn the budget on one experiment.
+**API**
+
+```text
+Image → [BLACK BOX] → Text
+```
+
+You can observe the input and output.
+
+**Our instrument**
+
+```text
+Image → encoder → decoder → probabilities → text
+```
+
+We control the whole thing, so we can inspect what happens inside.
+
+That is not a moral complaint about vendors. It is a measurement fact:
+some questions are foreclosed entirely if you only ever call the API.
+
+### So why use the API at all?
+
+The instrument is useful for discovering things like “rare-glyph
+exposure seems to cause this particular failure.” A legitimate
+objection follows:
+
+> Okay, you discovered that on your tiny 30–60M parameter model. Why
+> should I believe this matters for a real production OCR system?
+
+That is what **transfer** is asking. The instrument’s findings are
+causal claims on a small model. Stage 5 asks whether those claims
+**rhyme** with a production system’s error structure.
+
+### What “transfer” means here
+
+Suppose the instrument finds Glyph A at 10% error, B at 30%, C at 50%.
+Evaluate a production system such as Sarvam on the **same kinds of
+glyphs** and get 5%, 18%, 35%. The absolute numbers are not the same.
+That is fine. The interesting question is:
+
+> Do the same glyphs tend to be difficult for both systems?
+
+```text
+Instrument difficult glyphs
+             ↕
+       correlation?
+             ↕
+Production difficult glyphs
+```
+
+If yes, something learned from the small controlled instrument **might
+reflect a real property of the production OCR problem**. If no, that
+is also useful: “our causal findings on the small instrument don’t
+transfer.” That is not a failed experiment. That is a scientific
+finding.
+
+### Why rank correlation?
+
+We are not expecting instrument error = Sarvam error. The models are
+completely different sizes and architectures. We care about **ranking**:
+if both systems agree that A is easiest, B medium, C hardest, their
+rankings correlate even when the percentages differ.
+
+Stage 5 plans a **pre-specified rank-correlation test with a
+permutation null** — choose the statistic *before* looking at results.
+Otherwise you could look at the data first and then pick whatever
+statistic makes the result look strongest.
+
+### Why clean *and* degraded pages?
+
+Suppose you only test on perfect synthetic pages. Almost every OCR
+system may perform very well (97% vs 98%). There is not much
+information there. Introduce blur, noise, skew, show-through, real
+document variation, and systems start separating. Clean-only
+comparison is close to meaningless: systems often cluster on clean
+synthetic text and spread on real degradation (Decision #15).
+
+### Why the ~200-page budget matters
+
+This is not just an engineering detail. Suppose you have about 200
+paid API calls. You could accidentally do 200 images × 10 confidence
+thresholds × 5 experiments = 10,000 calls. The experiment becomes
+impossible.
+
+So Decision #19 is strict:
+
+> Call the API **once per page**. Save the result. Never call it again
+> for later analysis.
+
+```text
+                    Sarvam API
+                       ↓
+                    ~200 pages
+                       ↓
+                  CACHE (data/cache/)
+                       ↓
+        ┌──────────────┼──────────────┐
+        ↓              ↓              ↓
+     transfer       cascade        later
+     analysis       sweeps         probes
+```
+
+Everything after the API call happens **offline**. Separate expensive
+data collection from cheap analysis. An escalation sweep that re-called
+the API per threshold would burn the whole budget on one experiment.
 
 This stage is not built yet (`sarvam_client.py`, `transfer_analysis.py`).
-A null correlation would still be a finding: it would mean the small-
-model causal story does not transfer, which is information.
+A null correlation would still be a finding.
+
+If you explain Chapter 8 in a conversation, do not reduce it to “we’re
+comparing our model against Sarvam.” Say: the transfer experiment asks
+whether the error structure we discover *causally* in the controlled
+instrument is reflected in a production OCR system. We are not
+expecting identical accuracy; we are testing whether the ranking of
+difficult glyph classes correlates.
 
 > **What to remember.** An API can score a language; only a model you
 > own can tell you *why* — and transfer asks whether that “why” still
@@ -1859,39 +2280,156 @@ model causal story does not transfer, which is information.
 
 ## Chapter 9 — Deciding When to Trust a Machine and When to Ask for Help
 
-### Selective prediction
+Now suppose Probe 5 tells us something interesting: model confidence
+is useful for predicting whether an OCR result is correct. We can
+potentially turn that into a **routing system**.
 
-Sometimes the most responsible output is “I don’t know — ask a better
-system / a human.” That idea is called selective prediction or
-abstention. In this project’s framing, abstention means **escalation**:
-send the page to a stronger (and more expensive) OCR stack.
+### What is selective prediction?
+
+Imagine the small model processes a page. Easy page, confidence 98% —
+maybe we trust it. Difficult page, confidence 35% — instead of forcing
+an answer, we say: “I’m not confident enough. Send this somewhere
+better.”
+
+That is **abstention** or **selective prediction**. In this project’s
+terminology, **abstention = escalation**: send the page to a stronger
+(and more expensive) OCR stack.
+
+```text
+                    Image
+                      ↓
+                Small OCR model
+                      ↓
+               Confidence score
+                 /           \
+          High confidence   Low confidence
+                ↓               ↓
+             Accept       Strong OCR / human
+```
+
+The small model becomes a **router**. It does not need to be the best
+OCR system. It needs to be good at answering: “Do I think this
+particular page is safe for me to handle?” That is a very different
+objective from headline accuracy.
 
 Escalation only helps if the signal you escalate on is meaningful. A
 random coin flip is an escalation policy; it is just a bad one. Probe
 5’s confidence scores are the candidate signal.
 
-### How Stage 6 would measure that
+### Why not just escalate everything?
 
-Using the Stage 5 cache only (no new paid calls), sweep every confidence
-threshold and plot accuracy recovered versus fraction of pages
-escalated versus cost. Compare against three baselines: random
-escalation, layout-complexity escalation, and Tesseract-confidence
-escalation.
+Then the small model is useless. Every page → expensive OCR. Accuracy
+might be excellent, but you have gained nothing from the router. We
+want something like: 100 pages through the small model, 80 handled
+confidently, 20 sent to expensive OCR, while recovering most of the
+accuracy of the expensive system.
 
-The claim to defend is **router quality**: does the instrument’s
-confidence identify the pages that need help better than those
-baselines? The claim *not* to defend is “we saved money,” because the
-instrument is not expected to beat production OCR on raw accuracy
-(Decision #16). A cost-savings story built on a weak base model dies
-under one follow-up question. A router-quality story survives even if
-the base model is mediocre, because you are measuring the confidence
-signal, not the headline CER.
+### How do we test whether the router is actually good?
 
-### Status
+Using the Stage 5 cache only (no new paid calls), vary the confidence
+threshold and construct an **accuracy vs escalation tradeoff**:
 
-`cascade.py` is not built yet. Conceptually it depends on Probe 5 being
-real and on Stage 5’s cache existing. Teaching it now keeps the end of
-the pipeline visible: diagnosis → transfer → action.
+| Threshold | Pages escalated | Accuracy |
+|---|---:|---:|
+| 0.50 | 10% | 70% |
+| 0.70 | 20% | 78% |
+| 0.90 | 40% | 87% |
+| 0.95 | 60% | 92% |
+| 0.99 | 85% | 96% |
+
+Those numbers are **hypothetical** — the project has not produced these
+results yet. The table is the *shape* of the experiment, not a finding.
+
+A good router should identify the genuinely difficult pages. A bad
+router randomly escalates. So Stage 6 compares the instrument’s
+confidence against three baselines:
+
+1. **Random** — randomly choose 20% of pages.
+2. **Layout complexity** — complex-looking pages → escalate.
+3. **Tesseract confidence** — Tesseract says low confidence → escalate.
+
+Then ask: does our instrument’s confidence identify problematic pages
+**better than these simple alternatives**? That is the actual
+experiment (`cascade.py`, not built yet).
+
+### Why aren’t we claiming “we’ll save money”?
+
+This is a subtle but important distinction (Decision #16).
+
+The instrument itself is **not expected to be better OCR than a
+production system**. Saying “our model will reduce OCR costs by 50%”
+would be a huge claim that is not justified. A cost-savings story
+built on a weak base model dies under one follow-up question.
+
+The defensible claim is **router quality**:
+
+> Our model’s confidence is a useful signal for identifying pages that
+> should be escalated.
+
+If the router is good, *then* a production system could potentially
+use that signal to reduce unnecessary expensive processing. But the
+project does not need to prove the business economics to prove the
+scientific claim. A router-quality story survives even if the base
+model is mediocre, because you are measuring the **confidence signal**,
+not the headline CER.
+
+`cascade.py` depends on Probe 5 being real and on Stage 5’s cache
+existing. Teaching it now keeps the end of the pipeline visible:
+diagnosis → transfer → action.
+
+### How Chapters 8 and 9 connect
+
+```text
+                 OUR INSTRUMENT
+                       │
+                       ↓
+                     PROBES
+                       │
+       ┌───────────────┼───────────────┐
+       ↓               ↓               ↓
+   Exposure        Confidence       Errors
+                       │
+                       ↓
+                Transfer to
+              production OCR
+                       │
+               "Does it rhyme?"
+                       │
+                 If confidence
+                  is useful
+                       │
+                     ROUTER
+                    /        \
+               Accept      Escalate
+                              │
+                        Strong OCR /
+                           human
+```
+
+The project’s evolution, end to end:
+
+**Stage 0** — How do we define an OCR error?  
+**Stage 1** — How do we control what the model sees?  
+**Stage 2** — How do we build a model whose internals we control?  
+**Probes** — What is the model actually learning?  
+**Stage 5 / Chapter 8** — Do those findings tell us anything about
+production OCR?  
+**Stage 6 / Chapter 9** — Can we use the model’s confidence to decide
+when to trust it?
+
+If you explain Chapter 9 in a conversation:
+
+> If confidence proves informative, we can use the instrument as a
+> selective predictor or router: handle easy pages cheaply and
+> escalate uncertain pages to a stronger OCR system. The experiment
+> measures whether its confidence identifies hard pages better than
+> random, layout-based, or existing OCR-confidence baselines.
+
+That is the conceptual endpoint of the whole project:
+
+> Don’t just build an OCR model that produces answers. Build a system
+> that understands the limits of its own answers well enough to know
+> when it should ask for help.
 
 > **What to remember.** Confidence is only useful if it knows when to
 > hand the page to someone else — and that is a measurable claim, not a
@@ -1920,6 +2458,11 @@ open. That is the instrument. The probes are the questions. The demo,
 RLVR, Sarvam transfer, and cascade are how those questions eventually
 meet production systems; they are deferred in this phase, not abandoned.
 
+A fourth, more personal implied fix lives after this conclusion: the
+methodology upgrades I would make next (equal-frequency calibration
+bins, mechanistic Probe 3, seed aggregation). They are not built.
+They are the honest answer to “what would you improve?”
+
 If you only remember three implied fixes from the whole book, remember
 these:
 
@@ -1930,6 +2473,109 @@ these:
    problem — not only as “need more accuracy.”
 
 That is the scientific spine of the repository.
+
+---
+
+## What I would improve about this methodology
+
+This is not a new stage. It is the honest answer to “what is weak in
+your own design?” — grounded in flaws the current code and reporting
+already make visible, not in generic advice to “do more stats.” None
+of these items is built yet. They are the next checkable upgrades, in
+priority order, if the probes are going to be treated as science
+rather than architecture proofs.
+
+### 1. Fixed-width confidence bins are broken at this sample size
+
+`probe5_calibration.py` buckets with `np.linspace(0, 1, 11)` — ten
+fixed-width bins — and prints every occupied bin the same way:
+
+```text
+conf {range}: acc=… (n=…)
+```
+
+Default `--n-samples` is 30. At that N, some bins will be empty and
+some will contain one prediction. A singleton bucket (`n=1`, accuracy
+0.00 or 1.00) looks as authoritative in the table as a bucket with
+`n=18`. It is not.
+
+The standard fix is **adaptive (equal-frequency) binning**: sort
+predictions by confidence and split into equal-sized groups so every
+bucket carries the same statistical weight. Pair that with one summary
+number, **Expected Calibration Error (ECE)**, and ideally the **Brier
+score** too — ECE is known to be sensitive to how you choose bins;
+Brier score is not. Cheap to add, and directly motivated by a printer
+the repo already ships.
+
+### 2. Make Probe 3 mechanistic, not only behavioral
+
+Right now Probe 3 says “confidence barely changes on blank / noise” —
+a conclusion about the *output*. The instrument already has a ViT
+encoder and decoder cross-attention. Nothing stops you from extracting
+cross-attention weights at each generation step: does attention
+actually move toward the glyph being generated, or stay diffuse even
+on real images? If it is diffuse on real text, that is a second,
+independent line of evidence for the same “not reading” conclusion, at
+the level of mechanism rather than outcome.
+
+This requires **zero retraining** — introspection on an existing
+forward pass. Related techniques in vision: occlusion sensitivity
+(Zeiler & Fergus) and attention rollout for transformers. Probe 3
+today implements only `make_blank` and `make_matched_noise`.
+
+### 3. Add a stricter control than blank / matched noise
+
+Blank and matched-noise are good baselines. A sharper one is
+**patch-shuffle**: take a real line image, keep every 14×14 patch
+pixel-identical, permute their spatial arrangement, then feed it to
+the encoder. That destroys global structure while preserving local
+texture statistics exactly — stricter than noise, which has no texture
+at all. If confidence survives patch-shuffling too, the finding is
+more specific: not just “isn’t reading,” but “isn’t even using local
+stroke shape, only global image statistics.”
+
+### 4. Stop reporting one seed where Decision #14 already required three
+
+README and the site’s Probe 3/5 numbers are from `hindi/natural/seed0`
+alone. Decision #14 exists specifically so that seed noise is not
+presented as signal. Once aggregation runs, every headline number
+should be **mean ± std across the three seeds**, not one seed’s point
+estimate. This is free once the nine-run artifacts exist.
+
+### 5. Probe 1’s regression should respect nesting
+
+The planned fit is a plain fixed-effects regression (accuracy ~
+log(exposure) + glyph class). That treats every observation as
+independent. It is not: observations are nested within glyph class,
+within seed, within condition. A **mixed-effects model** (random
+intercepts per glyph class and per seed) accounts for that structure
+and would give real intervals on the complexity residual rather than a
+bare point estimate per glyph.
+
+### 6. One human labeling the residuals is a nameable gap
+
+Stage 0’s remaining genuine-error labels go through one person, with
+`hand_review_assist.py` suggesting and the human confirming. The
+standard fix in annotation-heavy eval is a second independent labeler
+on a random subsample (even 15–20 cases) and **Cohen’s kappa**. That
+does not require relabeling the whole UNREVIEWED pile. It shows the
+taxonomy is reproducible, not one person’s judgment calls.
+
+### 7. Effect sizes with bootstrap intervals, not significance stars
+
+With three seeds, a p-value is mostly decoration. The more defensible
+framing at this N: bootstrap over the ~30 probe samples within a run,
+report effect sizes with confidence intervals, and say explicitly that
+you are not claiming statistical significance — you are reporting a
+directional effect size with honestly stated uncertainty.
+
+These seven items are recorded as Decision #46 so they are not
+something you have to reconstruct from memory in a room.
+
+> **What to remember.** The methodology’s weak spots are already
+> visible in the code and the reporting conventions — singleton
+> calibration bins, behavioral-only Probe 3, single-seed headlines.
+> The upgrades are specific and checkable, not “run more experiments.”
 
 ---
 
@@ -1955,6 +2601,7 @@ Short map from `DECISIONS.md` into chapters. Full write-ups stay in
 | 18, 20–23, 26, 35 | Taxonomy / hand-review hardening | 1 |
 | 31–34, 42 | Baselines resume, timeouts, Paddle API | 1 |
 | 36–41, 43–45 | Instrument + line crops + Probe 6 details | 2, 3, 7 |
+| 46 | Future methodology upgrades (not built) | after Conclusion |
 
 ---
 
@@ -1969,7 +2616,10 @@ full corpus; Tier 2 validation set size; hand-review UNREVIEWED rows;
 real probe JSONL in-tree.
 
 **Described only (this phase):** demo LoRA stack; reading-order / table
-metrics; RLVR; Sarvam client + transfer; cascade; Probe 5b.
+metrics; RLVR; Sarvam client + transfer; cascade; Probe 5b;
+methodology upgrades in Decision #46 (equal-frequency bins / ECE,
+mechanistic Probe 3, patch-shuffle, mixed-effects Probe 1, kappa,
+bootstrap CIs).
 
 ---
 

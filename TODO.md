@@ -133,6 +133,10 @@ not invented templates.
 
 - [x] `BOOK.md` teaching book written (rebuild narrative + App. E
   reproduce commands); keep current as new verified results land
+- [ ] Methodology upgrades (DECISIONS.md #46 / BOOK after Conclusion):
+  equal-frequency Probe 5 bins + ECE/Brier; Probe 3 attention +
+  patch-shuffle; 3-seed mean±std; mixed-effects Probe 1; kappa on a
+  hand-review subsample; bootstrap CIs — not this phase
 - [ ] Keep `DECISIONS.md` current — append, don't rewrite
 - [x] Heavy scripts (OCR batches, training) written for Colab: one
   `--data-root`, no local-only paths, export into the IMPLEMENTATION.md
