@@ -9,7 +9,7 @@ with zero Indic pretraining exposure, runs probes against it, and (planned)
 transfers findings to a production API.
 
 **Live walkthrough:** [https://adya6714.github.io/vlm-ocr-eval/](https://adya6714.github.io/vlm-ocr-eval/)
-(`site/index.html` — Walkthrough / Paper modes, repo tour, findings).
+(repo-root [`index.html`](./index.html) — Walkthrough / Paper modes, repo tour, findings).
 
 Teaching rebuild path: **[`BOOK.md`](./BOOK.md)** (concept → code → evidence).
 Spec / why / tasks: `IMPLEMENTATION.md`, `DECISIONS.md`, `TODO.md`, `AGENTS.md`.
@@ -78,7 +78,7 @@ pytest -q
 
 | File | Role |
 |---|---|
-| [Live site](https://adya6714.github.io/vlm-ocr-eval/) | Interview walkthrough (GitHub Pages ← `site/`) |
+| [Live site](https://adya6714.github.io/vlm-ocr-eval/) | Interview walkthrough (GitHub Pages ← repo-root `index.html`) |
 | [`BOOK.md`](./BOOK.md) | Teaching narrative — rebuild from first principles |
 | [`IMPLEMENTATION.md`](./IMPLEMENTATION.md) | Module spec + status |
 | [`DECISIONS.md`](./DECISIONS.md) | Numbered design choices |
