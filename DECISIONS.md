@@ -967,3 +967,29 @@ not errored, so fixed height must be enforced at export time.
 
 **Verified:** 2026-08-25. Hindi dry run `--pages-per-mode 3`: all 266
 crops height 70 px (was 43/44 mixed); widths still 90–879.
+
+---
+
+### 45. Probe 6: resize Tier C to 70 px; score synthetic on held-out pages only
+
+**Decision:** Before instrument evaluation on Tier C real images, resize
+to the same **70 px** canonical height used for synthetic line crops
+(`resize_to_canonical_height` in `probe_utils.py`, aspect ratio
+preserved). For the instrument's *synthetic* side of Probe 6, do **not**
+score against the training manifests (pages 0–99); render held-out pages
+**100–109** via `export_manifest_scaled.py --pages-per-mode 110` and
+evaluate only those unseen lines.
+
+**Alternatives considered:** (a) feed raw Tier C heights (e.g. 254 px)
+straight into the encoder; (b) measure synthetic accuracy on
+`hindi_natural.jsonl` / sibling training manifests; (c) train/val split
+inside `LineDataset`.
+
+**Why:** (a) is OOD by construction against #44's fixed training height,
+so a synthetic-to-real gap would confound height mismatch with domain
+shift. (b) is train-set memorization — `train.py` loads the full
+manifest with no holdout — so the gap would look artificially small or
+reversed. (c) is the cleaner long-term fix but costs a training-pipeline
+change mid-queue; extending the export by 10 pages reuses resumable
+export and leaves existing checkpoints valid.
+

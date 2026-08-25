@@ -44,6 +44,22 @@ def load_model_and_tokenizer(output_root: Path, condition: str, seed: int, devic
     return model, tokenizer
 
 
+def resize_to_canonical_height(image: Image.Image, canonical_height: int = 70) -> Image.Image:
+    """
+    Real Tier C images arrive at whatever height they were scanned at
+    (e.g. 254px), far taller than the 70px canonical line-crop height
+    every synthetic training image uses (DECISIONS.md #44). Feeding
+    un-resized real images would be out-of-distribution by construction,
+    not a fair synthetic-to-real comparison. Resize to the same
+    canonical height, preserving aspect ratio, first.
+    """
+    if image.height == canonical_height:
+        return image
+    scale = canonical_height / image.height
+    new_width = max(1, round(image.width * scale))
+    return image.resize((new_width, canonical_height), Image.LANCZOS)
+
+
 def prepare_image_tensor(image: Image.Image, patch_size: int = PATCH_SIZE) -> torch.Tensor:
     if image.mode != "L":
         image = image.convert("L")
