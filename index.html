@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>vlm-ocr-eval — interview walkthrough</title>
+<title>vlm-ocr-eval — the idea, then what actually happened</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+
 
   :root{
     --paper:#F2F0E8;
@@ -463,6 +464,61 @@
   .abstract-box p{margin:0 0 12px;}
   .abstract-box p:last-child{margin:0;}
 
+  /* ---- part divider + Part Two tint ---- */
+  .part-divider{
+    order:var(--walk-order, 0);
+    padding:72px 0 64px;
+    border-bottom:none;
+  }
+  body[data-mode="paper"] .part-divider{order:var(--paper-order, 0);}
+  .part-divider-inner{
+    max-width:1080px; margin:0 auto; padding:0 28px;
+    text-align:center;
+  }
+  .part-divider-rule{
+    height:0; border:none; border-top:1px solid var(--ink);
+    margin:0 auto 28px; max-width:280px; opacity:0.55;
+  }
+  .part-divider-voice{
+    font-family:'Fraunces', serif; font-weight:400; font-style:italic;
+    font-size:1.12rem; color:var(--ink-soft); max-width:42ch; margin:0 auto;
+    line-height:1.45;
+  }
+  .part-two-section{
+    background:var(--paper-raised);
+  }
+  .part-two-section .fig-rail,
+  .part-two-section.hero .hero-inner{position:relative;}
+  .part-two-banner{
+    font-family:'IBM Plex Mono', monospace; font-size:0.72rem;
+    text-transform:uppercase; letter-spacing:0.12em; color:#C45C26;
+    margin:0 0 8px;
+  }
+  .tag-illustrative{
+    display:inline-block; margin-top:10px;
+    font-family:'IBM Plex Mono', monospace; font-size:0.7rem;
+    text-transform:uppercase; letter-spacing:0.1em;
+    color:var(--ochre); border:1px solid var(--ochre);
+    border-radius:3px; padding:3px 8px;
+  }
+  .status-tag{
+    display:inline-block;
+    font-family:'IBM Plex Mono', monospace; font-size:0.68rem;
+    text-transform:uppercase; letter-spacing:0.08em;
+    border-radius:3px; padding:2px 7px; margin-left:8px;
+  }
+  .status-tag.done{color:var(--ink-blue); border:1px solid var(--ink-blue);}
+  .status-tag.partial{color:#C45C26; border:1px solid #C45C26;}
+  .status-tag.notrun{color:var(--ochre); border:1px solid var(--ochre);}
+  .status-tag.oos{color:var(--ink-soft); border:1px solid var(--hairline-strong);}
+  table.data td .status-tag{margin-left:0;}
+  .reported-banner{
+    font-family:'IBM Plex Mono', monospace; font-size:0.7rem;
+    text-transform:uppercase; letter-spacing:0.1em; color:var(--ochre);
+    border:1px solid var(--ochre); border-radius:3px;
+    display:inline-block; padding:4px 10px; margin-bottom:14px;
+  }
+
 
 </style>
 </head>
@@ -471,18 +527,19 @@
 
 <div class="topbar">
   <div class="topbar-inner">
-    <div class="brand">vlm-ocr-eval <span class="dim">/ interview walkthrough</span></div>
+    <div class="brand">vlm-ocr-eval <span class="dim">/ the idea · what happened</span></div>
     <nav class="navlinks">
-      <a href="#what">What</a>
-      <a href="#why">Why</a>
-      <a href="#question">Question</a>
-      <a href="#how">How</a>
-      <a href="#probes">Probes</a>
-      <a href="#findings">Results</a>
-      <a href="#future">Not built</a>
+      <a href="#hero">Idea</a>
+      <a href="#method">Method</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#flow">Flow</a>
+      <a href="#tour" class="walk-only">Tour</a>
+      <a href="#status">Ledger</a>
+      <a href="#findings">Findings</a>
+      <a href="#motivation">Motivation</a>
       <a href="#compute">Compute</a>
-      <a href="#tour" class="walk-only">Files</a>
-      <a href="#map">Map</a>
+      <a href="#future">Future</a>
+      <a href="#docs">Map</a>
       <span class="mode-toggle" role="group" aria-label="Reading mode">
         <button type="button" id="modeWalk" aria-pressed="true">Walkthrough</button>
         <button type="button" id="modePaper" aria-pressed="false">Paper</button>
@@ -493,7 +550,7 @@
 
 <div class="mode-root">
 
-<!-- ========== ABSTRACT (paper) ========== -->
+<!-- ========== PAPER ABSTRACT ========== -->
 <section id="abstract" class="mode-item paper-only" style="--walk-order:0; --paper-order:1">
   <div class="fig-rail">
     <div class="fig-num paper-num">A</div>
@@ -502,173 +559,95 @@
       <h2 class="section-title">Diagnosing Indic OCR: exposure, encoding, and confidence</h2>
       <div class="abstract-box">
         <p>Published Indic OCR scores mix two causes — how often a script was seen in training, and how hard it is to read — and they often count valid alternate Unicode spellings as errors. This project builds apparatus to separate those effects.</p>
-        <p><strong>What exists:</strong> a Stage&nbsp;0 taxonomy over Tesseract/Surya/PaddleOCR; a HarfBuzz renderer that sets glyph-cluster frequencies (natural / flattened / inverted); a ~19.5M from-scratch instrument model; and probes that ask whether the model is reading or guessing.</p>
-        <p><strong>Measured:</strong> ~20.4% of Tesseract non-exact predictions are Tier&nbsp;1 encoding variants; glyph-frequency TV ≤&nbsp;0.08. <strong>Reported (Colab):</strong> one early checkpoint stayed ~0.99 confident on blank images with ~0.10 accuracy in its top confidence bucket. Demo LoRA, Sarvam transfer, and cascade are designed but not built — <a href="#future">Not built</a>
-      <a href="#compute">Compute</a>.</p>
+        <p><strong>Design:</strong> a Stage&nbsp;0 taxonomy; a HarfBuzz renderer with a glyph-frequency dial; a from-scratch instrument model; probes that ask whether confidence comes from reading or guessing. An API cannot answer Probes&nbsp;2/3/5 — you need a model you own.</p>
+        <p><strong>What actually ran</strong> is below the divider: Stages&nbsp;0–1 measured in-tree; Hindi 2a reported from Colab; Bengali partial; Probe&nbsp;6 / 5b / Stage&nbsp;2b–6 out of scope or not run. See <a href="#status">Status ledger</a>.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ========== 01 WHAT ========== -->
-<header class="hero mode-item walk-only" id="what" style="--walk-order:1; --paper-order:0">
+<!-- ========== PART ONE: HERO ========== -->
+<header class="hero mode-item walk-only" id="hero" style="--walk-order:1; --paper-order:0">
   <div class="hero-inner">
-    <div class="hero-kicker">Interview walkthrough · 10–15 minutes</div>
-    <h1>What I built, why, and how</h1>
-    <p class="hero-sub">This is a diagnostic research codebase for Indic document OCR — not a product and not a leaderboard. Use the sections in order: <strong>what</strong> it is → <strong>why</strong> it exists → the <strong>question</strong> → <strong>how</strong> the architecture answers it → <strong>why these probes</strong> → <strong>results</strong>.</p>
+    <div class="hero-kicker">Part One · The Idea</div>
+    <h1>Does confidence come from <em>reading</em> — or from guessing?</h1>
+    <p class="hero-sub">A CER number cannot tell fluent language-prior guessing from genuine vision. Blank/noise controls, runner-up mass, and per-step confidence require opening the model — an API that returns text alone cannot answer Probes&nbsp;2, 3, or&nbsp;5. This project designs the apparatus to ask those questions on purpose.</p>
 
     <div class="status-strip">
-      <span class="pill done">Built: taxonomy · renderer · instrument · probes</span>
-      <span class="pill pending">Probe 1/5 — hindi 9/9 trained; early results reported</span>
-      <span class="pill amber">Bengali — quota-limited, partial</span>
-      <span class="pill out">Not built: demo VLM · transfer · cascade</span>
+      <span class="pill done">Done: Stage 0 · Stage 1 · Hindi 2a (9/9 reported)</span>
+      <span class="pill amber">Partial: Bengali sweep (quota)</span>
+      <span class="pill pending">Not run: Probe 6 · 2b prereq · Probe 5b</span>
+      <span class="pill out">Out of scope: Stage 2b / 3 / 5 / 6 full</span>
     </div>
 
-    <div class="kv-grid" style="margin-top:40px;">
-      <div class="kv-card">
-        <h3>What</h3>
-        <p>Four working pieces under <span class="mono" style="font-size:0.85rem;">src/</span>: error taxonomy, controlled page renderer, from-scratch ~19.5M reader, probe suite that opens its confidence.</p>
+    <div class="signature" style="margin-top:48px;">
+      <div class="signature-label">Mechanism — how Probe 3 would be tested (click)</div>
+      <div class="glyph-row" id="glyphRow">
+        <div class="glyph" data-cond="real" tabindex="0" role="button" aria-label="Real line of text"></div>
+        <div class="glyph" data-cond="real" tabindex="0" role="button" aria-label="Real line of text"></div>
+        <div class="glyph" data-cond="real" tabindex="0" role="button" aria-label="Real line of text"></div>
+        <div class="glyph blank" data-cond="blank" tabindex="0" role="button" aria-label="Blank image"></div>
+        <div class="glyph noise" data-cond="noise" tabindex="0" role="button" aria-label="Random noise image"></div>
       </div>
-      <div class="kv-card">
-        <h3>Why</h3>
-        <p>Production Indic OCR still shows ~40-point gaps across languages. A low score could mean “rarely seen” or “hard to see” — benchmarks alone cannot tell which. You need a model you own.</p>
+      <div class="readout" id="readout">
+        <span class="cond">click a block above</span>
+        <div class="note">Same checkpoint, three inputs: real / blank / matched noise. The readout shows illustrative mean per-step confidence from one early Colab sample — not a settled proof.</div>
       </div>
-      <div class="kv-card">
-        <h3>How</h3>
-        <p>Measure carefully → set glyph exposure on purpose → train a blank instrument → ask whether it is reading or guessing. Details in the sections below.</p>
-      </div>
+      <span class="tag-illustrative">Illustrative — see Part Two for status</span>
+      <p class="signature-caption">If blank ≈ real, the confidence number is not measuring the image. Part Two labels the Colab figures as REPORTED.</p>
     </div>
+
     <details class="say-this">
       <summary>SAY THIS</summary>
-      <div class="say-body"><p>I'd open with this screen. “I didn't ship an OCR product — I built a diagnostic stack so I can tell encoding noise from real misreads, control what the model saw, and check whether confidence means anything.”</p></div>
+      <div class="say-body"><p>“The question is reading vs guessing. An API can't run blank-image controls or hand me runner-up mass — so I designed an instrument I own. The click demo is the mechanism; the ledger below is what actually ran.”</p></div>
     </details>
   </div>
 </header>
 
-<!-- ========== 02 WHY ========== -->
-<section id="why" class="mode-item" style="--walk-order:2; --paper-order:2">
+<!-- ========== §01 METHOD ========== -->
+<section id="method" class="mode-item" style="--walk-order:2; --paper-order:3">
   <div class="fig-rail">
     <div class="fig-num walk-num">01</div>
     <div class="fig-num paper-num">1</div>
     <div class="fig-body">
-      <div class="section-kicker walk-label">Why this exists</div>
-      <div class="section-kicker paper-label">1. Motivation</div>
-      <h2 class="section-title">A machine sees pixels, not letters — and Indic OCR is still uneven</h2>
-      <p class="lede">A page is a grid of RGB numbers. Modern readers generate text one visual unit at a time from that grid. English clean-print OCR is mostly solved; Indic document OCR is not, for three tangled reasons.</p>
+      <div class="section-kicker walk-label">The core idea</div>
+      <div class="section-kicker paper-label">1. Method</div>
+      <h2 class="section-title">Three pieces of apparatus — no run numbers required</h2>
+      <p class="lede">Each piece exists because a CER table cannot answer one of the questions above.</p>
 
       <div class="kv-grid">
         <div class="kv-card">
-          <h3>Data skew</h3>
-          <p>Training data is dominated by high-resource languages. A model only gets good at what it has seen enough of.</p>
+          <h3>Equivalence tiers</h3>
+          <p>When two strings differ, is that a real misread — or the same reading in different bytes? Tier&nbsp;1 encoding and Tier&nbsp;2 phonetic equivalence keep alternate Unicode spellings from counting as OCR failure.</p>
         </div>
         <div class="kv-card">
-          <h3>Script geometry</h3>
-          <p>Devanagari/Bengali conjuncts, matras, and the shirorekha are a harder visual problem than Latin — one “letter” is often several Unicode code points (a grapheme cluster).</p>
+          <h3>Exposure dial</h3>
+          <p>When a language scores low, is it rarely seen or hard to see? Hold volume fixed and set glyph-cluster frequencies to natural / flattened / inverted — so exposure is a dial, not a corpus accident.</p>
         </div>
         <div class="kv-card">
-          <h3>Causes tangle</h3>
-          <p>A low language score could be exposure starvation, intrinsic difficulty, or both. A benchmark table cannot untangle that. Untangling requires controlling training exposure and owning the model.</p>
+          <h3>Confidence as target</h3>
+          <p>When the model is sure, is it reading the image or guessing from language priors? Blank/noise controls and calibration buckets need per-step confidence and runner-up mass — which means owning the model.</p>
         </div>
       </div>
 
-      <table class="data">
-        <caption>Sarvam Indic OCR Bench — word accuracy (checked 2026-08-25 against their Vision launch post)</caption>
-        <thead>
-          <tr><th>Language</th><th>Sarvam Vision</th><th>Gemini 3 Pro</th><th>Google Cloud Vision</th><th>Surya</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>Hindi — best</td><td>95.91</td><td>95.12</td><td>90.94</td><td>81.85</td></tr>
-          <tr><td>Santhali</td><td>80.32</td><td>64.02</td><td>54.79</td><td>31.24</td></tr>
-          <tr class="highlight"><td>Kashmiri — worst</td><td>55.93</td><td>44.46</td><td>33.41</td><td>9.76</td></tr>
-        </tbody>
-      </table>
-      <p class="prose" style="font-size:0.86rem; color:var(--ink-soft);">~40-point spread on their own frontier document model. That is the practical “why bother,” not a stale citation.</p>
-
       <details class="say-this">
         <summary>SAY THIS</summary>
-        <div class="say-body"><p>I'd say: the gap is still there on Sarvam Vision. But I don't stop at “Kashmiri is hard” — I ask whether that's exposure or geometry, and whether confidence is honest. That needs apparatus, not another CER table.</p></div>
+        <div class="say-body"><p>“Encoding-aware scoring, an exposure dial, an openable model. Everything else in the repo exists to land one of those three.”</p></div>
       </details>
     </div>
   </div>
 </section>
 
-<!-- ========== 03 QUESTION ========== -->
-<section id="question" class="mode-item" style="--walk-order:3; --paper-order:3">
+<!-- ========== §02 ARCHITECTURE ========== -->
+<section id="architecture" class="mode-item" style="--walk-order:3; --paper-order:4">
   <div class="fig-rail">
     <div class="fig-num walk-num">02</div>
     <div class="fig-num paper-num">2</div>
     <div class="fig-body">
-      <div class="section-kicker walk-label">The research question</div>
-      <div class="section-kicker paper-label">2. Research question</div>
-      <h2 class="section-title">Three questions a CER number cannot answer</h2>
-      <p class="lede">Before architecture: what I actually needed to know.</p>
-
-      <p class="story-q">1. When two strings differ, is that a real misread — or the same reading in different bytes?</p>
-      <p class="story-a">Indic orthography allows many valid encodings (anusvara vs nasal, danda vs period, ZWJ/ZWNJ). If you call those “errors,” every engine looks worse than it is, and later “improvements” can be fake.</p>
-
-      <p class="story-q">2. When a language scores low, is it rarely seen, or intrinsically hard to see?</p>
-      <p class="story-a">You cannot answer that from a fixed corpus alone. You need to <em>set</em> glyph exposure while holding data volume fixed — natural / flattened / inverted — and train under each condition.</p>
-
-      <p class="story-q">3. When the model is confident, is it reading the image — or guessing from language priors?</p>
-      <p class="story-a">A closed API returns text (sometimes a score). It will not give blank-image controls, full next-token distributions, or per-glyph exposure. So some questions are foreclosed unless you own a model you can open.</p>
-
-      <details class="say-this">
-        <summary>SAY THIS</summary>
-        <div class="say-body"><p>This is the slide I'd slow down on. “CER is not enough. I needed encoding-aware scoring, an exposure dial, and an openable model. Everything in the repo exists to answer one of those three.”</p></div>
-      </details>
-    </div>
-  </div>
-</section>
-
-<!-- ========== 04 HOW / ARCHITECTURE STORY ========== -->
-<section id="how" class="mode-item" style="--walk-order:4; --paper-order:4">
-  <div class="fig-rail">
-    <div class="fig-num walk-num">03</div>
-    <div class="fig-num paper-num">3</div>
-    <div class="fig-body">
-      <div class="section-kicker walk-label">How I answered it</div>
-      <div class="section-kicker paper-label">3. Method</div>
-      <h2 class="section-title">Four stages — each exists because of one of those questions</h2>
-      <p class="lede">Walk this top to bottom. Paths and outputs are concrete; the order is the research order.</p>
-
-      <div class="step-rail">
-        <div class="step">
-          <div class="step-n">0</div>
-          <div>
-            <h3>Measure carefully — error taxonomy</h3>
-            <p>Run Tesseract / Surya / PaddleOCR on real GlotOCR pages. Classify each prediction: exact → Tier&nbsp;1 encoding → Tier&nbsp;2 phonetic (ISO&nbsp;15919) → human residual (genuine misread, dropped matra, order break, hallucination). Align at grapheme clusters, not code points.</p>
-            <div class="mono-paths">src/eval/* → data/predictions/error_taxonomy.csv</div>
-            <p style="margin-top:8px;"><strong>Measured:</strong> of Tesseract’s 152 non-exact preds (n=180 total), 31 (20.4%) were Tier&nbsp;1 — not real errors. Large UNREVIEWED remains.</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-n">1</div>
-          <div>
-            <h3>Control what the model sees — renderer dial</h3>
-            <p>HarfBuzz shapes Indic text; layouts come from real documents; degradation is a measured distribution. Glyph-cluster frequencies are set to natural / flattened / inverted at matched volume (TV ≤&nbsp;0.08). Tier&nbsp;A = dial only; B = degraded; C = real passthrough. Export line crops at 70px for training.</p>
-            <div class="mono-paths">src/renderer/* · export_* → data/manifests/*_*.jsonl</div>
-            <p style="margin-top:8px;"><strong>Measured Hindi GT TV:</strong> 0.000 / 0.047 / 0.005 · Tier&nbsp;A mean render ~82&nbsp;ms.</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-n">2a</div>
-          <div>
-            <h3>Own an openable model — the instrument</h3>
-            <p>From-scratch ViT encoder + autoregressive decoder (~19.5M), grapheme-cluster vocabulary (not BPE), zero Indic pretraining. fp16 on free Colab T4. <span class="mono" style="font-size:0.85rem;">generate.py</span> returns text, per-step confidence, and top-k — what probes need. Not meant to beat Tesseract.</p>
-            <div class="mono-paths">src/models/instrument/* → checkpoints (often Colab / Drive)</div>
-            <p style="margin-top:8px;">A separate pretrained “demo” LoRA model is for shipping shape later — deliberately not the same weights as the instrument.</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-n">4</div>
-          <div>
-            <h3>Ask what it knows — the probe suite</h3>
-            <p>Accuracy alone cannot tell reading from guessing. Probes are the deliverable; the instrument exists so they have somewhere to land. Next section explains each probe before the numbers.</p>
-            <div class="mono-paths">src/probes/* → data/probe_results/*.jsonl</div>
-          </div>
-        </div>
-      </div>
-
+      <div class="section-kicker walk-label">Architecture</div>
+      <div class="section-kicker paper-label">2. Architecture</div>
+      <h2 class="section-title">Two models on purpose — instrument vs demo</h2>
+      <p class="lede">The instrument is trained from scratch with zero Indic pretraining so Probes&nbsp;1–3 and&nbsp;5 have somewhere to land. The demo (LoRA on a pretrained doc-VLM) is a different project shape — designed, not built this phase.</p>
 
       <div class="figure">
         <div class="diagram-frame">
@@ -689,8 +668,8 @@
             <rect x="176" y="100" width="120" height="40" rx="3" class="node-box"/>
             <text x="236" y="124" class="node-text small" text-anchor="middle">decoder.py</text>
             <rect x="312" y="100" width="128" height="40" rx="3" class="node-box"/>
-            <text x="376" y="118" class="node-text small" text-anchor="middle">9 checkpoints</text>
-            <text x="376" y="130" class="node-text small" text-anchor="middle">3 mode × 3 seed</text>
+            <text x="376" y="118" class="node-text small" text-anchor="middle">designed 3×3</text>
+            <text x="376" y="130" class="node-text small" text-anchor="middle">mode × seed</text>
 
             <line x1="160" y1="120" x2="176" y2="120" class="edge"/>
             <line x1="296" y1="120" x2="312" y2="120" class="edge"/>
@@ -713,27 +692,27 @@
             <text x="470" y="108" class="node-text small">not gated on</text>
           </svg>
         </div>
-        <div class="figure-caption">Fig. 1 — solid outline = built and run. Dashed = designed, deliberately not built this phase.</div>
+        <div class="figure-caption">Fig. 1 — designed split. Solid = instrument path. Dashed = demo path (not this phase).</div>
       </div>
 
       <details class="say-this">
         <summary>SAY THIS</summary>
-        <div class="say-body"><p>I'd walk 0 → 1 → 2a with a finger. “Taxonomy so scores mean something. Renderer so exposure is a dial. Instrument so I can open confidence. Probes are the questions.” Left solid, right dashed = not built this phase.</p></div>
+        <div class="say-body"><p>“Left is the openable instrument. Right is shipping shape later. They stay separate so pretrained exposure never contaminates the dial.”</p></div>
       </details>
     </div>
   </div>
 </section>
 
-<!-- ========== DATA FLOW ========== -->
-<section id="dataflow" class="mode-item" style="--walk-order:5; --paper-order:5">
+<!-- ========== §03 DATA FLOW ========== -->
+<section id="flow" class="mode-item" style="--walk-order:4; --paper-order:5">
   <div class="fig-rail">
-    <div class="fig-num walk-num">04</div>
-    <div class="fig-num paper-num">3b</div>
+    <div class="fig-num walk-num">03</div>
+    <div class="fig-num paper-num">3</div>
     <div class="fig-body">
-      <div class="section-kicker walk-label">How it runs end-to-end</div>
-      <div class="section-kicker paper-label">3. Experimental setup — flow</div>
-      <h2 class="section-title">Images in → CSV, manifests, checkpoints, probe JSONL out</h2>
-      <p class="lede">Same GlotOCR corpus feeds Stage&nbsp;0 and Stage&nbsp;1. Long jobs resume when Colab dies.</p>
+      <div class="section-kicker walk-label">Data flow</div>
+      <div class="section-kicker paper-label">3. Designed flow</div>
+      <h2 class="section-title">Designed flow — images in, probes out</h2>
+      <p class="lede">Same corpus feeds taxonomy and the renderer. Training is a designed 3×3 (mode × seed). Long jobs resume when Colab dies. This diagram is the wiring, not a completion claim.</p>
 
       <div class="figure">
         <div class="diagram-frame">
@@ -749,8 +728,8 @@
             <text x="120" y="150" class="node-text small" text-anchor="middle">Tesseract / Surya / PaddleOCR</text>
             <text x="120" y="166" class="node-text small" text-anchor="middle">Tier 1 / Tier 2 equivalence</text>
             <text x="120" y="182" class="node-text small" text-anchor="middle">→ error_taxonomy.csv</text>
-            <text x="120" y="204" class="node-text small" text-anchor="middle" font-weight="600">~20.4% of Tesseract's</text>
-            <text x="120" y="218" class="node-text small" text-anchor="middle">apparent errors: not errors</text>
+            <text x="120" y="204" class="node-text small" text-anchor="middle">encoding / phonetic tiers</text>
+            <text x="120" y="218" class="node-text small" text-anchor="middle">→ error_taxonomy.csv</text>
 
             <line x1="220" y1="55" x2="270" y2="55" class="edge"/>
             <line x1="270" y1="55" x2="270" y2="170" class="edge"/>
@@ -778,7 +757,7 @@
             <text x="885" y="130" class="node-text small" text-anchor="middle">train.py</text>
             <text x="885" y="150" class="node-text small" text-anchor="middle">3 modes</text>
             <text x="885" y="164" class="node-text small" text-anchor="middle">× 3 seeds</text>
-            <text x="885" y="184" class="node-text small" text-anchor="middle" font-weight="600">9 checkpoints</text>
+            <text x="885" y="184" class="node-text small" text-anchor="middle" font-weight="600">designed 3×3</text>
             <text x="885" y="200" class="node-text small" text-anchor="middle">resumable mid-run</text>
 
             <line x1="885" y1="250" x2="885" y2="290" class="edge blue"/>
@@ -796,175 +775,478 @@
             <line x1="220" y1="345" x2="500" y2="345" class="edge" stroke-dasharray="3 3"/>
           </svg>
         </div>
-        <div class="figure-caption">Fig. 2 — blue = verified against real data. Ochre = probe layer. Dashed = Tier C join for Probe 6.</div>
+        <div class="figure-caption">Fig. 2 — designed pipeline. What actually completed is in the status ledger below the divider.</div>
       </div>
 
       <details class="say-this">
         <summary>SAY THIS</summary>
-        <div class="say-body"><p>Left to right: GlotOCR → taxonomy CSV or line manifests → nine train runs → probes. Wiring check with no GPU: <span class="mono">make smoke-test</span> (fake data — no scientific findings).</p></div>
+        <div class="say-body"><p>“GlotOCR → taxonomy or manifests → train runs → probes. Wiring check with no GPU: <span class="mono">make smoke-test</span>.”</p></div>
       </details>
     </div>
   </div>
 </section>
 
-<!-- ========== PROBES WHY ========== -->
-<section id="probes" class="mode-item" style="--walk-order:7; --paper-order:6">
+<!-- ========== §04 REPOSITORY TOUR ========== -->
+<section id="tour" class="mode-item walk-only" style="--walk-order:5; --paper-order:0">
+  <div class="fig-rail">
+    <div class="fig-num">04</div>
+    <div class="fig-body">
+      <div class="section-kicker">Repository tour</div>
+      <h2 class="section-title">Every real module under src/ and scripts/</h2>
+      <p class="lede">One card per file: path, what it does, why it exists — grouped by stage. Status pills cross-reference IMPLEMENTATION.md.</p>
+      <div class="tour-stage">
+        <h3 class="tour-stage-title">Stage 0 — Error taxonomy</h3>
+        <div class="tour-grid">
+          <div class="file-card">
+            <span class="fc-pill pending">in progress</span>
+            <div class="fc-path">src/eval/run_baselines.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Runs Tesseract, Surya, and PaddleOCR over every image in {data_root}/raw/{language}/images/ and saves raw predictions.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Why this exists: Stage 0&#x27;s error taxonomy needs (ground_truth, predicted) pairs per engine. This script produces the &quot;predicted&quot; half — it does not judge correctness, that&#x27;s error_taxonomy.py&#x27;s job…</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill done">verified</span>
+            <div class="fc-path">src/eval/error_taxonomy.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Stage 0&#x27;s actual deliverable: for every prediction any engine made, classify it as EXACT MATCH, TIER 1 (encoding variant), TIER 2 (phonetic variant), a genuine-error taxonomy label (from…</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Why this exists: this is the report IMPLEMENTATION.md Stage 0 calls &quot;the input to the interview&#x27;s strongest single claim&quot; -- what fraction of reported OCR errors are actually just encoding/phonetic…</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill done">verified</span>
+            <div class="fc-path">src/eval/equivalence_tables.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Hand-curated lookup of same-sound, different-bytes Unicode pairs so the scorer can mark those diffs as not errors.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Tier 1 is an uncontroversial encoding fact, kept separate from phonetic judgment calls.</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill pending">queued</span>
+            <div class="fc-path">src/eval/transliteration_equivalence.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Tier 2: phonetic/transliteration equivalence.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Unlike Tier 1 (equivalence_tables.py), this is a judgment call, not an uncontroversial encoding fact: are two differently-spelled strings the &quot;same word&quot;? Handled by transliterating both into a…</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill done">done</span>
+            <div class="fc-path">src/eval/hand_review.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Side-by-side viewer for Stage 0&#x27;s hand-reading pass.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Why this exists: IMPLEMENTATION.md Stage 0 requires reading real engine output by hand BEFORE writing error_taxonomy.py, so the taxonomy categories come from what you actually observe, not from…</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill done">done</span>
+            <div class="fc-path">src/eval/hand_review_assist.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Suggested taxonomy labels for Stage 0&#x27;s UNEXPLAINED hand-review cases.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Why a separate file: hand_review.py is the interactive viewer and should stay that. The suggestion logic is a guess with a checkable right answer on constructed pairs, so it needs its own tests and…</p>
+          </div>
+        </div>
+      </div>
+      <div class="tour-stage">
+        <h3 class="tour-stage-title">Stage 1 — Renderer</h3>
+        <div class="tour-grid">
+          <div class="file-card">
+            <span class="fc-pill done">done</span>
+            <div class="fc-path">src/renderer/render.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>HarfBuzz-backed page renderer: text in, image + grapheme-cluster GT out.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Why this exists: everything Probe 1 needs — controlled glyph exposure, exact per-cluster boxes, known layout complexity — has to come from a renderer we own. Calling someone else&#x27;s OCR corpus gives…</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill done">done</span>
+            <div class="fc-path">src/renderer/glyph_frequency.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Glyph-cluster frequency control — the Stage 1 knob Probe 1 turns.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Why this exists: Probe 1 asks whether accuracy tracks *exposure* or *visual complexity*. That question is only answerable if exposure is a dial we can set, not a property of whatever corpus we…</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill pending">in progress</span>
+            <div class="fc-path">src/renderer/degradation_profile.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Empirical scan-degradation distribution, measured off real pages.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Why this exists: Probe 1 (Tier A) has to hold degradation fixed so the only moving part is glyph frequency. Probes 2–5 (Tier B) need the opposite — pages that are damaged the way Indian paper…</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill pending">in progress</span>
+            <div class="fc-path">src/renderer/layout_sources.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Layout template bank, sourced from real documents rather than hand-drawn frames.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Why this exists: Probe 1 needs the *glyph-frequency* variable isolated, but every other probe (and the demo model) has to see pages that look like documents, not like a typesetting demo. A 2026…</p>
+          </div>
+        </div>
+      </div>
+      <div class="tour-stage">
+        <h3 class="tour-stage-title">Stage 2a — The instrument</h3>
+        <div class="tour-grid">
+          <div class="file-card">
+            <span class="fc-pill pending">queued</span>
+            <div class="fc-path">src/models/instrument/tokenizer.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Grapheme-cluster tokenizer for the instrument model (Stage 2a).</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Why grapheme clusters and not BPE: see DECISIONS.md #2. Probe 1 needs to measure exposure per VISUAL unit -- BPE&#x27;s frequency-driven merges would tangle &quot;how often the vision encoder saw this glyph&quot;…</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill pending">queued</span>
+            <div class="fc-path">src/models/instrument/encoder.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>A small Vision Transformer trained from scratch with no pretrained weights.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Zero pretraining exposure is what makes Probe 1&#x27;s exposure manipulation causal.</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill pending">queued</span>
+            <div class="fc-path">src/models/instrument/decoder.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Small autoregressive decoder for the instrument model (Stage 2a).</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Generates grapheme-cluster tokens one at a time, cross-attending to the encoder&#x27;s image features (encoder.py) at every step -- this is the &quot;reading&quot; half described in BOOK.md Chapter 0: given the…</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill pending">queued</span>
+            <div class="fc-path">src/models/instrument/train.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Training loop for the instrument model (Stage 2a).</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>INTERFACE DEPENDENCY, read before using: this expects a &quot;manifest&quot; JSONL file with one line-level training example per row: {&quot;image_path&quot;: &quot;path/to/line_crop.png&quot;, &quot;text&quot;: &quot;ground truth string&quot;}</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill pending">queued</span>
+            <div class="fc-path">src/models/instrument/generate.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Autoregressive generation for the instrument model.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Why this exists: train.py only computes loss via teacher forcing (scoring the model against a known-correct sequence) -- it never actually generates text from a new image. Every probe that reads a…</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill pending">queued</span>
+            <div class="fc-path">scripts/make_fake_probe1_data.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Generates tiny fake line-crop images + manifests, purely for smoke- testing the instrument pipeline (tokenizer, encoder, decoder, train.py, probe1_exposure.py) without needing Stage 1&#x27;s real renderer…</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Noise line-crops + manifest — not a finding. Images are random noise, not rendered text. This proves the training/generation/checkpointing machinery works; it does not and cannot produce a real…</p>
+          </div>
+        </div>
+      </div>
+      <div class="tour-stage">
+        <h3 class="tour-stage-title">Data pipeline</h3>
+        <div class="tour-grid">
+          <div class="file-card">
+            <span class="fc-pill pending">in progress</span>
+            <div class="fc-path">src/data_pipeline/fetch_glotocr.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Pulls Stage 0&#x27;s ground-truth image/text pairs from GlotOCR-bench (cis-lmu/GlotOCR-bench on Hugging Face) and saves them into data/raw/{hindi,bengali,santhali,kashmiri}/ as image files plus a…</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Why this exists: Stage 0 needs (image, ground_truth_text) pairs to measure OCR engine error rates against. Manually collecting and transcribing documents doesn&#x27;t scale and introduces exactly the kind…</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill pending">in progress</span>
+            <div class="fc-path">src/data_pipeline/export_line_manifest.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Crop line-level images out of a rendered page and write Stage 2a&#x27;s manifest.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Why this exists: `train.py` (Stage 2a) reads JSONL rows of `{&quot;image_path&quot;, &quot;text&quot;}` line crops. `render.py` paints full pages and now records `PageGT.lines` with page-space boxes (DECISIONS.md #41)…</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill pending">in progress</span>
+            <div class="fc-path">src/data_pipeline/export_manifest_scaled.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Scaled export driver: render N pages per (script, mode), crop to lines, write one manifest per (script, mode).</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Why this exists: `export_line_manifest.py` is the page→line-crop adapter for a single `RenderedPage`. Probe 1 / `train.py` need hundreds of those rows per glyph-frequency condition. This module is…</p>
+          </div>
+        </div>
+      </div>
+      <div class="tour-stage">
+        <h3 class="tour-stage-title">Probes</h3>
+        <div class="tour-grid">
+          <div class="file-card">
+            <span class="fc-pill pending">queued</span>
+            <div class="fc-path">src/probes/probe1_exposure.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Probe 1 orchestrator: runs the instrument model&#x27;s training 9 times -- 3 glyph-frequency conditions (natural / flattened / inverted) x 3 seeds each -- per DECISIONS.md #14.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>This sits ABOVE train.py&#x27;s own resumability (which resumes a single run mid-training if a Colab session dies). This file adds a second, run-level layer: if the orchestrator itself is restarted, it…</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill out">open</span>
+            <div class="fc-path">src/probes/probe2_confusion_graph.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Probe 2, confusion graph.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>At each generation step, step_top_k holds the top-5 candidates. This probe aggregates, across many real images, how often each runner-up candidate shows up behind the chosen token, weighted by the…</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill out">open</span>
+            <div class="fc-path">src/probes/probe3_blank_control.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Feeds real, blank, and matched-noise images and compares confidence and text to see whether the model is reading or guessing.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>If blank/noise confidence tracks real-image confidence, the number isn&#x27;t measuring vision — it&#x27;s language-prior guessing.</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill out">open</span>
+            <div class="fc-path">src/probes/probe5_calibration.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Probe 5, calibration.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Question: when the model is confident, is it actually more likely to be right? Bucket real crop predictions by mean step confidence, compare against actual correctness in each bucket. A well…</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill out">open</span>
+            <div class="fc-path">src/probes/probe6_synthetic_real_gap.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Probe 6 -- synthetic-to-real accuracy gap, metric-only, per system.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Compares each system&#x27;s accuracy on Tier C (real) against the same system&#x27;s accuracy on Tier A/B (synthetic), reports the gap per system. Reuses Stage 0&#x27;s equivalence methodology (tier1/tier2) so real…</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill pending">in progress</span>
+            <div class="fc-path">src/probes/probe_utils.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Shared helpers for probes that load a trained Stage 2a checkpoint and run it against real images.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Part of the diagnostic pipeline described in IMPLEMENTATION.md.</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill pending">in progress</span>
+            <div class="fc-path">src/probes/generate_instrument_predictions.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Generates instrument predictions for image/text pairs, writing the {&quot;prediction&quot;,&quot;ground_truth&quot;} shape Probe 6 expects.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Part of the diagnostic pipeline described in IMPLEMENTATION.md.</p>
+          </div>
+        </div>
+      </div>
+      <div class="tour-stage">
+        <h3 class="tour-stage-title">Analysis</h3>
+        <div class="tour-grid">
+          <div class="file-card">
+            <span class="fc-pill pending">in progress</span>
+            <div class="fc-path">src/analysis/aggregate_probe_results.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Aggregates Probe 3 + Probe 5 results across all condition/seed runs for one script (hindi or bengali) into one comparison table.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Part of the diagnostic pipeline described in IMPLEMENTATION.md.</p>
+          </div>
+          <div class="file-card">
+            <span class="fc-pill pending">in progress</span>
+            <div class="fc-path">src/analysis/check_result_freshness.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Checks whether a probe result file is stale relative to the checkpoint it was generated from -- compares the checkpoint&#x27;s mtime against the probe result file&#x27;s recorded generation time.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Part of the diagnostic pipeline described in IMPLEMENTATION.md.</p>
+          </div>
+        </div>
+      </div>
+      <div class="tour-stage">
+        <h3 class="tour-stage-title">Stage 2b prerequisite</h3>
+        <div class="tour-grid">
+          <div class="file-card">
+            <span class="fc-pill pending">prerequisite</span>
+            <div class="fc-path">src/models/demo/benchmark_base_models.py</div>
+            <p class="fc-line"><span class="fc-k">What it does</span>Stage 2b prerequisite: benchmark candidate base VLMs for T4 memory fit.</p>
+            <p class="fc-line why"><span class="fc-k">Why it exists</span>Two modes: --inspect just print attention-related module names (needed to set LoRA&#x27;s target_modules correctly per model -- do NOT guess this, run inspect first) (default) wrap with LoRA at the given…</p>
+          </div>
+        </div>
+      </div>
+
+      <details class="say-this">
+        <summary>SAY THIS</summary>
+        <div class="say-body"><p>“If they point at a path, this is the appendix. Prefer the idea sections above unless they dig.”</p></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ========== DIVIDER ========== -->
+<div class="part-divider mode-item" id="divider" style="--walk-order:6; --paper-order:6">
+  <div class="part-divider-inner">
+    <hr class="part-divider-rule" />
+    <p class="part-divider-voice">Everything above is the design. Everything below is what actually happened against a free Colab T4 under a hard deadline.</p>
+  </div>
+</div>
+
+<!-- ========== §05 STATUS LEDGER ========== -->
+<section id="status" class="mode-item part-two-section" style="--walk-order:7; --paper-order:7">
   <div class="fig-rail">
     <div class="fig-num walk-num">05</div>
     <div class="fig-num paper-num">4</div>
     <div class="fig-body">
-      <div class="section-kicker walk-label">Why these probes</div>
-      <div class="section-kicker paper-label">4. Probes</div>
-      <h2 class="section-title">The questions accuracy cannot ask</h2>
-      <p class="lede">Each probe exists because a specific failure mode is invisible to CER. Read the “why” column before the numbers on the next section.</p>
+      <div class="part-two-banner">Part Two · What actually happened</div>
+      <div class="section-kicker walk-label">Status ledger</div>
+      <div class="section-kicker paper-label">4. Status</div>
+      <h2 class="section-title">What ran, and what didn’t</h2>
+      <p class="lede">One row per stage/probe. Colab JSONLs that are not synced into this checkout are labeled REPORTED in findings below — matching BOOK.md’s convention.</p>
 
       <table class="data">
         <thead>
-          <tr><th>Probe</th><th>Why it exists</th><th>How it works</th></tr>
+          <tr><th>Stage</th><th>What ran</th><th>Status</th></tr>
         </thead>
         <tbody>
           <tr>
-            <td>1 Exposure</td>
-            <td>Separate “rarely seen” from “hard to see”</td>
-            <td>Train 3 modes × 3 seeds; fit accuracy vs log exposure with glyph fixed effects</td>
+            <td>Stage 0 — taxonomy</td>
+            <td>Real GlotOCR pages through Tesseract / Surya / PaddleOCR; Tier&nbsp;1 tables; hand-review assist</td>
+            <td><span class="status-tag done">Done</span></td>
           </tr>
           <tr>
-            <td>2 Confusion</td>
-            <td>Closed APIs hide what the model almost said</td>
-            <td>Aggregate runner-up mass from top-k into a confusion graph</td>
+            <td>Stage 1 — renderer</td>
+            <td>HarfBuzz dial + line manifests; Tier A/B verified against real data</td>
+            <td><span class="status-tag done">Done</span></td>
           </tr>
           <tr>
-            <td>3 Blank/noise</td>
-            <td>Fluent failure can be language-prior guessing</td>
-            <td>Same checkpoint on real / blank / matched noise; compare confidence</td>
+            <td>Stage 2a — instrument (Hindi)</td>
+            <td>9/9 checkpoints trained on Colab. Result JSONLs generated there; git sync to this repo unconfirmed — treat findings as REPORTED, not verified in-tree</td>
+            <td><span class="status-tag done">Done</span></td>
           </tr>
           <tr>
-            <td>4 Equivalence</td>
-            <td>Instrument must use the same notion of “correct” as Stage&nbsp;0</td>
-            <td>Re-run Tier 1/2 on instrument outputs</td>
+            <td>Bengali sweep</td>
+            <td>Started; hit Colab GPU quota mid-run across two accounts</td>
+            <td><span class="status-tag partial">Partial</span></td>
           </tr>
           <tr>
-            <td>5 Calibration</td>
-            <td>High confidence must mean higher accuracy — especially on starved glyphs</td>
-            <td>Bucket by confidence; check accuracy; cross with Probe&nbsp;1 exposure</td>
+            <td>Probe 6</td>
+            <td>Code complete; held-out pages + baseline predictions not generated</td>
+            <td><span class="status-tag notrun">Not run</span></td>
           </tr>
           <tr>
-            <td>5b Zero-shot</td>
-            <td>True zero exposure (Santhali/Kashmiri never trained)</td>
-            <td>Inference only — not built yet</td>
+            <td>Stage 2b prereq — base VRAM</td>
+            <td><span class="mono">benchmark_base_models.py</span> written, not executed</td>
+            <td><span class="status-tag notrun">Not run</span></td>
           </tr>
           <tr>
-            <td>6 Synth→real</td>
-            <td>Controlled world might lie</td>
-            <td>Compare Tier A/B vs Tier C with the same scorer</td>
+            <td>Probe 5b</td>
+            <td>Not started</td>
+            <td><span class="status-tag notrun">Not run</span></td>
+          </tr>
+          <tr>
+            <td>Stage 2b / 3 / 5 / 6 full</td>
+            <td>Deliberately deferred — different project shape. See <a href="#future">Future work</a>.</td>
+            <td><span class="status-tag oos">Out of scope</span></td>
           </tr>
         </tbody>
       </table>
 
-      <p class="prose">Together: if confidence does not track the image, does not track correctness, and starved glyphs behave differently, that is a diagnosis with an implied fix — change the mixture, change decoding, or refuse to trust high confidence on low-exposure scripts.</p>
-
-      <div class="signature" style="margin-top:36px;">
-        <div class="signature-label">Demo — Probe 3 idea (click). Same checkpoint, three inputs.</div>
-        <div class="glyph-row" id="glyphRow">
-          <div class="glyph" data-cond="real" tabindex="0" role="button" aria-label="Real line of text"></div>
-          <div class="glyph" data-cond="real" tabindex="0" role="button" aria-label="Real line of text"></div>
-          <div class="glyph" data-cond="real" tabindex="0" role="button" aria-label="Real line of text"></div>
-          <div class="glyph blank" data-cond="blank" tabindex="0" role="button" aria-label="Blank image"></div>
-          <div class="glyph noise" data-cond="noise" tabindex="0" role="button" aria-label="Random noise image"></div>
-        </div>
-        <div class="readout" id="readout">
-          <span class="cond">click a block above</span>
-          <div class="note">Real / blank / noise. The number is mean per-step confidence. If blank ≈ real, certainty is not from the image.</div>
-        </div>
-        <p class="signature-caption">Reported early Colab run (hindi / natural / seed&nbsp;0, n=30). Full numbers in <a href="#findings">Results</a>.</p>
-      </div>
-
       <details class="say-this">
         <summary>SAY THIS</summary>
-        <div class="say-body"><p>This is the part I'd lead with after the architecture. “Probe 3 is the soundbite — confidence barely drops on a blank page. Probe 5 says that same certainty is only right one time in ten. That's why the project exists.”</p></div>
+        <div class="say-body"><p>“Above the line is the design. This table is the honest inventory — Done, Partial, Not run, Out of scope.”</p></div>
       </details>
     </div>
   </div>
 </section>
 
-<!-- ========== RESULTS ========== -->
-<section id="findings" class="mode-item" style="--walk-order:8; --paper-order:7">
+<!-- ========== §06 FINDINGS ========== -->
+<section id="findings" class="mode-item part-two-section" style="--walk-order:8; --paper-order:8">
   <div class="fig-rail">
     <div class="fig-num walk-num">06</div>
     <div class="fig-num paper-num">5</div>
     <div class="fig-body">
-      <div class="section-kicker walk-label">Results</div>
-      <div class="section-kicker paper-label">5. Results</div>
-      <h2 class="section-title">What the numbers say — measured vs reported</h2>
-      <p class="lede"><em>Measured</em> = from files in this checkout. <em>Reported</em> = Colab write-up; probe JSONL not in-tree yet.</p>
+      <div class="section-kicker walk-label">Findings (reported)</div>
+      <div class="section-kicker paper-label">5. Findings</div>
+      <h2 class="section-title">Probe 3 and Probe 5 — as BOOK.md states them</h2>
+      <p class="lede">Numbers below are copied from BOOK.md Chapter&nbsp;7. They are not re-derived in this checkout.</p>
 
-      <div class="evidence-grid">
+      <span class="reported-banner">REPORTED — see ledger above</span>
+
+      <div class="finding-callout">
+        <div class="fc-label">Probe 3 — REPORTED — see ledger above</div>
+        <p>hindi / natural / seed&nbsp;0: mean confidence <strong>0.9929</strong> real · <strong>0.9898</strong> blank · <strong>0.9877</strong> noise.</p>
+      </div>
+      <div class="finding-callout">
+        <div class="fc-label">Probe 5 — REPORTED — see ledger above</div>
+        <p>Same checkpoint: mass in the top confidence bucket with accuracy <strong>~0.10</strong> there.</p>
+      </div>
+
+      <div class="evidence-grid" style="margin-top:28px;">
         <div class="evidence-card">
           <div class="ev-tag">Measured · Stage 0</div>
           <h3>Encoding noise is real</h3>
-          <p>Tesseract n=180: 28 exact (15.6%). Of 152 non-exact, <span class="ev-num">31 (20.4%)</span> Tier&nbsp;1; 13 genuine-labeled; 108 UNREVIEWED. Surya n=222: ~47% exact; ~16.9% of non-exact are Tier&nbsp;1.</p>
-        </div>
-        <div class="evidence-card">
-          <div class="ev-tag">Measured · Stage 1 / 2a</div>
-          <h3>Dial works; model is small</h3>
-          <p>Hindi GT TV: <span class="ev-num">0.000 / 0.047 / 0.005</span>. Tier&nbsp;A ~82&nbsp;ms. Instrument <span class="ev-num">~19.5M</span> params. Line-crop manifests at 100 pages/mode exist.</p>
+          <p>Of Tesseract non-exact preds, <span class="ev-num">~20.4%</span> were Tier&nbsp;1 encoding variants — not real errors (BOOK.md / in-tree taxonomy).</p>
         </div>
         <div class="evidence-card">
           <div class="ev-tag reported">Reported · Probes 3 / 5</div>
           <h3>Early confidence signal</h3>
-          <p>One hindi/natural/seed0 checkpoint, ~5000 steps, n=30. Consistent with undertraining; more steps needed to separate “hasn’t learned the image yet” from “never will.”</p>
+          <p>One hindi/natural/seed0 checkpoint. Consistent with undertraining; more steps needed before claiming structural ungrounded confidence.</p>
+        </div>
+        <div class="evidence-card">
+          <div class="ev-tag">Convention</div>
+          <h3>BOOK.md labeling</h3>
+          <p>Checkpoint and <span class="mono" style="font-size:0.8rem;">data/probe_results/*.jsonl</span> are not in this checkout — treat Colab probe numbers as unreproduced until Appendix&nbsp;E is run locally.</p>
         </div>
       </div>
 
-      <div class="finding-callout">
-        <div class="fc-label">Probe 3 — reported</div>
-        <p>Mean confidence <strong>0.9929</strong> real · <strong>0.9898</strong> blank · <strong>0.9877</strong> noise. Barely any gap.</p>
-      </div>
-      <div class="finding-callout">
-        <div class="fc-label">Probe 5 — reported</div>
-        <p>All 30 samples in the 0.90–1.00 confidence bucket; accuracy there <strong>0.10</strong>.</p>
-      </div>
-
-      <p class="prose">Spine: (1)&nbsp;stop calling alternate encodings errors; (2)&nbsp;treat glyph exposure as something you set; (3)&nbsp;treat fluent high-confidence failure as calibration/routing, not only CER.</p>
-
       <details class="say-this">
         <summary>SAY THIS</summary>
-        <div class="say-body"><p>I'd say measured vs reported out loud. “20% Tier&nbsp;1 is in-repo. The blank-page confidence is an early Colab signal I'm honest about — and it's exactly the failure mode the probes are for.”</p></div>
+        <div class="say-body"><p>“I’d say REPORTED out loud. 20% Tier&nbsp;1 is measured in-repo. The blank-page confidence is an early Colab signal — and exactly the failure mode the probes are for.”</p></div>
       </details>
     </div>
   </div>
 </section>
 
-<!-- ========== LIMITS ========== -->
-<section id="limitations" class="mode-item" style="--walk-order:11; --paper-order:10">
+<!-- ========== §07 MOTIVATION ========== -->
+<section id="motivation" class="mode-item part-two-section" style="--walk-order:9; --paper-order:2">
   <div class="fig-rail">
-    <div class="fig-num walk-num">09</div>
-    <div class="fig-num paper-num">9</div>
+    <div class="fig-num walk-num">07</div>
+    <div class="fig-num paper-num">M</div>
     <div class="fig-body">
-      <div class="section-kicker walk-label">Limits</div>
-      <div class="section-kicker paper-label">9. Limitations</div>
-      <h2 class="section-title">Bound by a free Colab T4</h2>
-      <p class="lede">fp16 (no bf16), small instrument, early probe sample sizes. More compute changes how much weight the numbers can carry — not the design.</p>
-      <ul class="compute-list">
-        <li><strong>Longer training</strong> — separates undertraining from structural ungrounded confidence.</li>
-        <li><strong>Larger source corpus</strong> — less reuse when rendering 100 pages/mode.</li>
-        <li><strong>Full probe sampling</strong> — n=30 was for time; full manifests tighten every number.</li>
-        <li><strong>All four languages</strong> — Bengali nine-run; Santhali/Kashmiri need font/render path for 5b.</li>
-      </ul>
+      <div class="section-kicker walk-label">Motivation</div>
+      <div class="section-kicker paper-label">Motivation</div>
+      <h2 class="section-title">Why bother — the gap is still there</h2>
+      <p class="lede">Verified against Sarvam’s Vision launch numbers (fetched 2026-08-25). This table is not “reported from Colab.”</p>
+
+      <table class="data">
+        <caption>Sarvam Indic OCR Bench — word accuracy (checked 2026-08-25 against their Vision launch post)</caption>
+        <thead>
+          <tr><th>Language</th><th>Sarvam Vision</th><th>Gemini 3 Pro</th><th>Google Cloud Vision</th><th>Surya</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Hindi — best</td><td>95.91</td><td>95.12</td><td>90.94</td><td>81.85</td></tr>
+          <tr><td>Santhali</td><td>80.32</td><td>64.02</td><td>54.79</td><td>31.24</td></tr>
+          <tr class="highlight"><td>Kashmiri — worst</td><td>55.93</td><td>44.46</td><td>33.41</td><td>9.76</td></tr>
+        </tbody>
+      </table>
+      <p class="prose" style="font-size:0.86rem; color:var(--ink-soft);">~40-point spread on their own frontier document model. That is the practical “why bother.”</p>
+
+      <details class="say-this">
+        <summary>SAY THIS</summary>
+        <div class="say-body"><p>“The gap is still there on Sarvam Vision. I don’t stop at ‘Kashmiri is hard’ — I ask exposure vs geometry, and whether confidence is honest.”</p></div>
+      </details>
     </div>
   </div>
 </section>
 
-<!-- ========== NOT BUILT ========== -->
-<section id="future" class="mode-item" style="--walk-order:9; --paper-order:8">
+<!-- ========== §08 COMPUTE LEDGER ========== -->
+<section id="compute" class="mode-item part-two-section" style="--walk-order:10; --paper-order:9">
   <div class="fig-rail">
     <div class="fig-num walk-num">08</div>
+    <div class="fig-num paper-num">6</div>
+    <div class="fig-body">
+      <div class="section-kicker walk-label">Compute ledger</div>
+      <div class="section-kicker paper-label">6. Compute ledger</div>
+      <h2 class="section-title">Started, then cut off — or ready and not run</h2>
+      <p class="ledger-intro">Different from <a href="#future">Future work</a>: that section is design scope. This section is runs that were started (or ready) and stopped by free-tier GPU limits — or never executed.</p>
+      <p class="ledger-note">Quota-cut · amber accent</p>
+
+      <div class="ledger-grid">
+        <div class="ledger-row">
+          <div class="ledger-col">
+            <h3>Bengali full sweep</h3>
+            <div class="col-label">What ran</div>
+            <p>Same 9-run structure as Hindi started; hit Colab GPU quota mid-sweep across two Google accounts.</p>
+          </div>
+          <div class="ledger-col">
+            <div class="col-label" style="margin-top:2.1rem;">What full scale would show</div>
+            <p>Complete Bengali 3×3. One early Hindi signal (not a finding): inverted/seed2 showed 0% accuracy across every sampled confidence bucket (spread 0.3–0.9), unlike natural/seed0’s single-bucket overconfidence — exactly why the 9-run design exists.</p>
+          </div>
+        </div>
+        <div class="ledger-row">
+          <div class="ledger-col">
+            <h3>Probe 6 — synthetic-to-real gap</h3>
+            <div class="col-label">What ran</div>
+            <p>Code built; held-out pages and baseline predictions not generated.</p>
+          </div>
+          <div class="ledger-col">
+            <div class="col-label" style="margin-top:2.1rem;">What full scale would show</div>
+            <p>Whether synthetic findings hold on Tier&nbsp;C held-out pages with the same scorer — unknown until run.</p>
+          </div>
+        </div>
+        <div class="ledger-row">
+          <div class="ledger-col">
+            <h3>Stage 2b prereq — base VRAM</h3>
+            <div class="col-label">What ran</div>
+            <p><span class="mono" style="font-size:0.85rem;">benchmark_base_models.py</span> written; not executed.</p>
+          </div>
+          <div class="ledger-col">
+            <div class="col-label" style="margin-top:2.1rem;">What full scale would show</div>
+            <p>Peak T4 VRAM under LoRA for SmolDocling-256M vs LightOnOCR-1B — the pick before any demo adapter training.</p>
+          </div>
+        </div>
+        <div class="ledger-row">
+          <div class="ledger-col">
+            <h3>Probe 5b — zero-shot floor</h3>
+            <div class="col-label">What ran</div>
+            <p>Not started.</p>
+          </div>
+          <div class="ledger-col">
+            <div class="col-label" style="margin-top:2.1rem;">What full scale would show</div>
+            <p>Inference-only floor on Santhali/Kashmiri images already under <span class="mono" style="font-size:0.85rem;">data/raw/</span>.</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="ledger-close">None of this changes the design — it changes how much weight the numbers above can carry.</p>
+
+      <details class="say-this">
+        <summary>SAY THIS</summary>
+        <div class="say-body"><p>“Quota cut Bengali mid-sweep. Probe&nbsp;6 and the VRAM benchmark never ran. inverted/seed2’s zero-across-buckets is one seed — why I planned nine runs.”</p></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ========== §09 FUTURE ========== -->
+<section id="future" class="mode-item part-two-section" style="--walk-order:11; --paper-order:10">
+  <div class="fig-rail">
+    <div class="fig-num walk-num">09</div>
     <div class="fig-num paper-num">7</div>
     <div class="fig-body">
-      <div class="section-kicker walk-label">Not built this phase</div>
+      <div class="section-kicker walk-label">Future work</div>
       <div class="section-kicker paper-label">7. Future work</div>
       <h2 class="section-title">Designed on purpose — not abandoned</h2>
-      <p class="lede">Each item has a reason it waits. Nothing here should be described as shipped. Back to <a href="#how">How</a> for what did ship.</p>
+      <p class="lede">Each item has a reason it waits. Nothing here should be described as shipped.</p>
 
       <div class="scope-grid">
         <div class="scope-row">
@@ -1005,360 +1287,38 @@
       </div>
       <details class="say-this">
         <summary>SAY THIS</summary>
-        <div class="say-body"><p>I'd name what's missing before they ask. “Demo, structure metrics, transfer, cascade — designed, gated on time/T4, not because the instrument failed.”</p></div>
+        <div class="say-body"><p>“Demo, structure metrics, transfer, cascade — designed, gated on time/T4, not because the instrument failed.”</p></div>
       </details>
     </div>
   </div>
 </section>
 
-<section id="compute" class="mode-item" style="--walk-order:10; --paper-order:9">
+<!-- ========== §10 DOCS MAP ========== -->
+<section id="docs" class="mode-item part-two-section" style="--walk-order:12; --paper-order:11">
   <div class="fig-rail">
-    <div class="fig-num walk-num">08.5</div>
-    <div class="fig-num paper-num">8</div>
-    <div class="fig-body">
-      <div class="section-kicker walk-label">Compute ledger</div>
-      <div class="section-kicker paper-label">8. Compute ledger</div>
-      <h2 class="section-title">Started, then cut off by Colab quota</h2>
-      <p class="ledger-intro">This is not the same as <a href="#future">Not built</a>
-      <a href="#compute">Compute</a>. That section is design scope — things deliberately deferred. This section is runs that were <em>started</em> (or ready to start) and stopped by free-tier GPU limits mid-project.</p>
-      <p class="ledger-note">Quota-cut · not a redesign</p>
-
-      <div class="ledger-grid">
-        <div class="ledger-row">
-          <div class="ledger-col">
-            <h3>Bengali full sweep</h3>
-            <div class="col-label">What ran</div>
-            <p>Training started for the same 9-run structure as Hindi (3 glyph-frequency conditions × 3 seeds). Hit Colab GPU quota mid-sweep across two separate Google accounts before completing.</p>
-          </div>
-          <div class="ledger-col">
-            <div class="col-label" style="margin-top:2.1rem;">What full-scale would show</div>
-            <p>Same 9-run structure as Hindi. One early Hindi signal worth flagging honestly: the inverted/seed2 run showed 0% accuracy across every sampled confidence bucket (0.3–0.9) despite a non-degenerate confidence spread — unlike natural/seed0’s single-bucket overconfidence. If that generalizes, inverted (rare-glyph-heavy) may need more than 5000 steps to learn anything at all — a distinct failure mode from natural’s confident-but-wrong pattern. That is <em>one seed</em>, not a finding — exactly why the 9-run design exists.</p>
-          </div>
-        </div>
-        <div class="ledger-row">
-          <div class="ledger-col">
-            <h3>Probe 6 — synthetic-to-real gap</h3>
-            <div class="col-label">What ran</div>
-            <p>Code built and import-tested; resize-to-70px for Tier C and held-out-page methodology decided. Not yet run for real numbers.</p>
-          </div>
-          <div class="ledger-col">
-            <div class="col-label" style="margin-top:2.1rem;">What full-scale would show</div>
-            <p>Needs held-out pages 100–109 rendered, plus baselines (Tesseract/Surya/PaddleOCR) against the synthetic line-crop layout — a path the baseline script was never tested against. Genuinely unknown until run, not assumed to work.</p>
-          </div>
-        </div>
-        <div class="ledger-row">
-          <div class="ledger-col">
-            <h3>Stage 2b prerequisite — base VRAM</h3>
-            <div class="col-label">What ran</div>
-            <p><span class="mono" style="font-size:0.85rem;">benchmark_base_models.py</span> is written but not executed — the <span class="mono" style="font-size:0.85rem;">--inspect</span> step to enumerate real LoRA <span class="mono" style="font-size:0.85rem;">target_modules</span> never completed.</p>
-          </div>
-          <div class="ledger-col">
-            <div class="col-label" style="margin-top:2.1rem;">What full-scale would show</div>
-            <p>One peak-VRAM number per candidate (SmolDocling-256M vs LightOnOCR-1B) under LoRA — the measurement that picks the demo base before any adapter training.</p>
-          </div>
-        </div>
-        <div class="ledger-row">
-          <div class="ledger-col">
-            <h3>Probe 5b — zero-shot floor</h3>
-            <div class="col-label">What ran</div>
-            <p>Not started.</p>
-          </div>
-          <div class="ledger-col">
-            <div class="col-label" style="margin-top:2.1rem;">What full-scale would show</div>
-            <p>Cheapest remaining result: real Santhali/Kashmiri images already sit under <span class="mono" style="font-size:0.85rem;">data/raw/</span>; inference-only, no training.</p>
-          </div>
-        </div>
-      </div>
-
-      <p class="ledger-close">None of this changes the design — it changes how much weight the numbers above can carry. That distinction is deliberate, not a hedge.</p>
-
-      <details class="say-this">
-        <summary>SAY THIS</summary>
-        <div class="say-body"><p>I'd separate this from “not built.” Quota cut me off mid-Bengali sweep and before Probe 6 / the VRAM benchmark. The inverted/seed2 zero-accuracy blip is one seed — it's why I planned nine runs, not a claim I'm willing to ship alone.</p></div>
-      </details>
-    </div>
-  </div>
-</section>
-
-<section id="tour" class="mode-item walk-only" style="--walk-order:6; --paper-order:0">
-  <div class="fig-rail">
-    <div class="fig-num">T</div>
-    <div class="fig-body">
-      <div class="section-kicker">Repository tour</div>
-      <h2 class="section-title">Every module, in plain language</h2>
-      <p class="lede">Technical appendix for the interview — only open if they point at a path. Prefer the story sections above.</p>
-
-      <div class="tour-stage">
-        <h3 class="tour-stage-title">Stage 0 — Error taxonomy</h3>
-        <div class="tour-grid">
-          <div class="file-card">
-            <span class="fc-pill pending">in progress</span>
-            <div class="fc-path">src/eval/run_baselines.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Runs Tesseract, Surya, and PaddleOCR on every image in the raw data folders and saves each engine's raw text predictions.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Stage 0's error taxonomy needs ground-truth/prediction pairs per engine; this script produces the prediction half without judging correctness.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill done">verified</span>
-            <div class="fc-path">src/eval/error_taxonomy.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Classifies every engine prediction as an exact match, encoding variant, phonetic variant, a genuine-error label, or still unreviewed — then reports the fractions per engine.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>This is Stage 0's deliverable: the interview claim rests on how many apparent OCR errors are really just encoding or phonetic variants.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill done">verified</span>
-            <div class="fc-path">src/eval/equivalence_tables.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>A hand-curated lookup of same-sound, different-bytes Unicode pairs so the scorer can mark those diffs as not errors.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Tier 1 is an uncontroversial encoding fact, kept separate from phonetic judgment calls.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill pending">queued</span>
-            <div class="fc-path">src/eval/transliteration_equivalence.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Checks whether two differently spelled strings are the same word by transliterating both to ISO 15919 Latin and comparing.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Tier 2 is a judgment call about sameness, reported separately from Tier 1 so arguable matches never inflate the encoding-noise number.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill done">done</span>
-            <div class="fc-path">src/eval/hand_review.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Interactive side-by-side viewer that walks ground truth against each engine's prediction and records human labels for unexplained diffs.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Stage 0 requires reading real engine output by hand before writing the taxonomy, so categories come from observation rather than guessing.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill done">done</span>
-            <div class="fc-path">src/eval/hand_review_assist.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Suggests one of four residual error labels (or an explicit no-fit) for unexplained hand-review cases; the human still confirms or overrides.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Keeps suggestion logic testable and out of the interactive prompt loop.</p>
-          </div>
-        </div>
-      <details class="say-this">
-        <summary>SAY THIS</summary>
-        <div class="say-body"><p>I'd open with Stage 0 if they ask what I actually measured before building anything. About one in five of Tesseract's apparent Hindi errors were Tier 1 encoding noise — same word, different bytes — not misreads.</p><p>The hand-review pass is load-bearing: the taxonomy categories come from sitting with real diffs, not from inventing buckets first.</p></div>
-      </details>
-      </div>
-      <div class="tour-stage">
-        <h3 class="tour-stage-title">Stage 1 — Renderer</h3>
-        <div class="tour-grid">
-          <div class="file-card">
-            <span class="fc-pill done">done</span>
-            <div class="fc-path">src/renderer/render.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Turns text into a page image plus exact per-grapheme ground truth and boxes, using HarfBuzz for Indic shaping.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Probe 1 needs controlled glyph exposure and exact boxes from a renderer we own — someone else's corpus gives images but not the dial.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill done">done</span>
-            <div class="fc-path">src/renderer/glyph_frequency.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Resamples or synthesizes source text so grapheme-cluster frequencies match natural, flattened, or inverted targets within a fixed tolerance.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Probe 1 can only ask whether accuracy tracks exposure if exposure is a dial we set, not a property of whatever corpus we downloaded.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill pending">in progress</span>
-            <div class="fc-path">src/renderer/degradation_profile.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Measures blur, noise, skew, and show-through from real scanned pages and stores them as a sampleable distribution.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Hardcoding damage numbers would make the degraded condition a fiction; measuring off real scans makes it a distribution we can defend.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill pending">in progress</span>
-            <div class="fc-path">src/renderer/layout_sources.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Builds a reusable bank of real document layouts (Internet Archive, India.gov PDFs, Wikipedia Indic pages) instead of hand-drawn frames.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Invented templates would put the project on the wrong side of the clean-synthetic vs. real-scan accuracy gap.</p>
-          </div>
-        </div>
-      <details class="say-this">
-        <summary>SAY THIS</summary>
-        <div class="say-body"><p>The renderer isn't a data utility — it's the experimental apparatus. Glyph frequency is a dial I set, verified within TV ≤ 0.08 of target, so Probe 1 can make something closer to a causal claim about exposure.</p><p>Layout bank and degradation profile are still partial: extractors exist, but the real-document pools aren't finished, and I say that out loud.</p></div>
-      </details>
-      </div>
-      <div class="tour-stage">
-        <h3 class="tour-stage-title">Stage 2a — The instrument</h3>
-        <div class="tour-grid">
-          <div class="file-card">
-            <span class="fc-pill pending">queued</span>
-            <div class="fc-path">src/models/instrument/tokenizer.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Builds a grapheme-cluster vocabulary from the training corpus — visual units, not BPE subwords.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Probe 1 needs exposure per visual unit; BPE merges would tangle how often the encoder saw a glyph with how the tokenizer segmented it.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill pending">queued</span>
-            <div class="fc-path">src/models/instrument/encoder.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>A small Vision Transformer trained from scratch with no pretrained weights.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Zero pretraining exposure is what makes Probe 1's exposure manipulation causal instead of a rounding error.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill pending">queued</span>
-            <div class="fc-path">src/models/instrument/decoder.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>A small autoregressive decoder that emits grapheme-cluster tokens while cross-attending to the encoder's image features.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>This is the reading half: given the image and tokens so far, predict what comes next.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill pending">queued</span>
-            <div class="fc-path">src/models/instrument/train.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Resumable fp16 training loop that wires encoder and decoder on line-crop manifests and checkpoints mid-run.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Colab sessions die; checkpointing and resume are the normal path, and T4 has no bf16 so training stays in fp16.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill pending">queued</span>
-            <div class="fc-path">src/models/instrument/generate.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Greedy decode from a new image, returning text, token ids, per-step confidence, and top-k alternatives.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Training only scores known sequences; every probe that reads a fresh image needs actual generation plus confidence and runner-up mass.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill pending">queued</span>
-            <div class="fc-path">scripts/make_fake_probe1_data.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Writes tiny noise line-crop images and manifests so the instrument pipeline can smoke-test without the real renderer.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Proves training and checkpointing machinery works; it cannot produce a scientific finding.</p>
-          </div>
-        </div>
-      <details class="say-this">
-        <summary>SAY THIS</summary>
-        <div class="say-body"><p>I built a ~19M model from scratch with zero Indic pretraining on purpose. A closed API returns text; it does not return runner-up distributions, per-step confidence, or blank-image behaviour.</p><p>Everything here is queued on smoke or early runs — real Probe 1 still waits on full line-crop manifests.</p></div>
-      </details>
-      </div>
-      <div class="tour-stage">
-        <h3 class="tour-stage-title">Data pipeline</h3>
-        <div class="tour-grid">
-          <div class="file-card">
-            <span class="fc-pill done">done</span>
-            <div class="fc-path">src/data_pipeline/export_line_manifest.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Crops line images out of a rendered page and writes the {image_path, text} JSONL shape train.py expects.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>The renderer paints full pages with line boxes; the instrument trains on line crops — this is the adapter between those shapes.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill pending">in progress</span>
-            <div class="fc-path">src/data_pipeline/export_manifest_scaled.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Batch driver that renders many pages per script and glyph-frequency mode, crops lines, and writes one resumable manifest per mode.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Probe 1 and train.py need hundreds of line-crop rows per condition; a killed Colab session must be able to resume.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill done">done</span>
-            <div class="fc-path">src/data_pipeline/fetch_glotocr.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Downloads GlotOCR-bench image/text pairs into data/raw/{language}/ with plain and degraded images plus ground_truth.jsonl.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Stage 0 needs real ground-truth pairs without hand-transcribing; GlotOCR already supplies clean and degraded tiers that map to Tier A/B.</p>
-          </div>
-        </div>
-      <details class="say-this">
-        <summary>SAY THIS</summary>
-        <div class="say-body"><p>train.py wants line crops; render.py paints pages. The export scripts are the boring adapter that unblocks training, and they're written to resume when Colab dies mid-batch.</p><p>GlotOCR fetch is how Stage 0 got real ground truth without me hand-transcribing documents.</p></div>
-      </details>
-      </div>
-      <div class="tour-stage">
-        <h3 class="tour-stage-title">Probes</h3>
-        <div class="tour-grid">
-          <div class="file-card">
-            <span class="fc-pill pending">queued</span>
-            <div class="fc-path">src/probes/probe1_exposure.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Orchestrates nine instrument training runs — three glyph-frequency conditions times three seeds — skipping any run that already finished.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Three seeds per condition are required so an exposure-vs-complexity spread cannot be dismissed as seed noise.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill out">open</span>
-            <div class="fc-path">src/probes/probe2_confusion_graph.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Builds a confusion graph from runner-up token probabilities across many images — what the model almost said, not just what it said.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Closed APIs never return this distribution; owning the model is what makes the confusion structure observable.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill out">open</span>
-            <div class="fc-path">src/probes/probe3_blank_control.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Feeds real, blank, and matched-noise images and compares confidence and text to see whether the model is reading or guessing.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>If blank/noise confidence tracks real-image confidence, the number isn't measuring vision — it's language-prior guessing.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill out">open</span>
-            <div class="fc-path">src/probes/probe5_calibration.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Buckets predictions by confidence and checks whether higher confidence actually means higher correctness, using Stage 0 Tier 1/2 equivalence.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>A well-calibrated model's confidence buckets should track accuracy; divergence is the finding.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill out">open</span>
-            <div class="fc-path">src/probes/probe6_synthetic_real_gap.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Compares each system's accuracy on real documents versus synthetic pages and reports the gap, using the same Tier 1/2 scoring.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Metric-only check that synthetic findings still hold on real pages — it aggregates existing predictions, it does not run OCR.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill done">done</span>
-            <div class="fc-path">src/probes/probe_utils.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Shared helpers for loading a trained checkpoint and resizing real images to the canonical 70px line height before probing.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Extracted so probes do not duplicate load/resize logic; unresized real images would be out-of-distribution by construction.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill done">done</span>
-            <div class="fc-path">src/probes/generate_instrument_predictions.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Runs the instrument on image/text pairs and writes the prediction/ground_truth JSONL shape Probe 6 expects.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Bridge between trained checkpoints and Probe 6's metric-only aggregator, including resizing real Tier C images first.</p>
-          </div>
-        </div>
-      <details class="say-this">
-        <summary>SAY THIS</summary>
-        <div class="say-body"><p>Probe 3 is the soundbite: confidence barely drops on a blank page. Probe 5 says that same checkpoint's top-confidence bucket is only about 10% accurate.</p><p>I'd stress these are early, single-condition numbers — hindi/natural/seed0, 30 samples — not a final claim.</p></div>
-      </details>
-      </div>
-      <div class="tour-stage">
-        <h3 class="tour-stage-title">Analysis</h3>
-        <div class="tour-grid">
-          <div class="file-card">
-            <span class="fc-pill done">done</span>
-            <div class="fc-path">src/analysis/aggregate_probe_results.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Rolls Probe 3 and Probe 5 results across all condition/seed runs for one script into a single comparison table.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Nine runs are only useful once they can be read as one table rather than nine separate files.</p>
-          </div>
-          <div class="file-card">
-            <span class="fc-pill done">done</span>
-            <div class="fc-path">src/analysis/check_result_freshness.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Compares a probe result file's recorded generation time against the checkpoint's modification time to flag stale results.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Stops you from quoting probe numbers that were generated from an older checkpoint than the one you think you have.</p>
-          </div>
-        </div>
-      <details class="say-this">
-        <summary>SAY THIS</summary>
-        <div class="say-body"><p>Once you've got nine condition/seed runs, you need one table, not nine files. Aggregate is that rollup; freshness checking stops me from quoting stale probe JSON against a newer checkpoint.</p></div>
-      </details>
-      </div>
-      <div class="tour-stage">
-        <h3 class="tour-stage-title">Stage 2b prerequisite</h3>
-        <div class="tour-grid">
-          <div class="file-card">
-            <span class="fc-pill pending">prerequisite</span>
-            <div class="fc-path">src/models/demo/benchmark_base_models.py</div>
-            <p class="fc-line"><span class="fc-k">What it does</span>Benchmarks SmolDocling-256M vs LightOnOCR-1B for T4 peak VRAM under LoRA, or inspects attention module names for target_modules.</p>
-            <p class="fc-line why"><span class="fc-k">Why it exists</span>Prerequisite before picking a demo base model: measure T4 peak VRAM under LoRA for both candidates.</p>
-          </div>
-        </div>
-      <details class="say-this">
-        <summary>SAY THIS</summary>
-        <div class="say-body"><p>Stage 2b itself is future work, but I already wrote the T4 memory benchmark so I don't pick SmolDocling vs LightOnOCR by vibes. That's the one prerequisite that exists today.</p></div>
-      </details>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<section id="map" class="mode-item" style="--walk-order:12; --paper-order:11">
-  <div class="fig-rail">
-    <div class="fig-num walk-num">09</div>
+    <div class="fig-num walk-num">10</div>
     <div class="fig-num paper-num">R</div>
     <div class="fig-body">
       <div class="section-kicker walk-label">On this page</div>
       <div class="section-kicker paper-label">References</div>
-      <h2 class="section-title">Suggested path through this presentation</h2>
-      <p class="lede">Stay on this site in the interview. Jump only between these sections.</p>
+      <h2 class="section-title">Suggested path</h2>
+      <p class="lede">Part One for the design. Part Two for what ran. Stay on this site in the interview.</p>
       <div class="docs-list">
-        <div class="doc-row primary"><span class="doc-name"><a href="#what">What</a></span><span class="doc-desc">30-second pitch</span></div>
-        <div class="doc-row"><span class="doc-name"><a href="#why">Why</a></span><span class="doc-desc">pixels, Indic hardness, Sarvam gap</span></div>
-        <div class="doc-row"><span class="doc-name"><a href="#question">Question</a></span><span class="doc-desc">encoding · exposure · confidence</span></div>
-        <div class="doc-row"><span class="doc-name"><a href="#how">How</a></span><span class="doc-desc">Stages 0 → 1 → 2a → probes</span></div>
-        <div class="doc-row"><span class="doc-name"><a href="#probes">Probes</a></span><span class="doc-desc">why each exists + blank demo</span></div>
-        <div class="doc-row"><span class="doc-name"><a href="#findings">Results</a></span><span class="doc-desc">measured vs reported numbers</span></div>
-        <div class="doc-row"><span class="doc-name"><a href="#future">Not built</a>
-      <a href="#compute">Compute</a></span><span class="doc-desc">demo · transfer · cascade</span></div>
-        <div class="doc-row"><span class="doc-name"><a href="#tour">Files</a></span><span class="doc-desc">only if they ask about a path</span></div>
+        <div class="doc-row primary"><span class="doc-name"><a href="#hero">Idea</a></span><span class="doc-desc">question + mechanism demo</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="#method">Method</a></span><span class="doc-desc">tiers · dial · confidence</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="#architecture">Architecture</a></span><span class="doc-desc">instrument vs demo</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="#flow">Flow</a></span><span class="doc-desc">designed pipeline</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="#tour">Tour</a></span><span class="doc-desc">every module</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="#status">Ledger</a></span><span class="doc-desc">what ran</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="#findings">Findings</a></span><span class="doc-desc">REPORTED Probe 3/5</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="#motivation">Motivation</a></span><span class="doc-desc">Sarvam table (verified)</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="#compute">Compute</a></span><span class="doc-desc">quota-cut ledger</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="#future">Future</a></span><span class="doc-desc">out of scope grid</span></div>
         <div class="doc-row"><span class="doc-name"><a href="https://github.com/Adya6714/vlm-ocr-eval">GitHub</a></span><span class="doc-desc">source code</span></div>
       </div>
-      <details class="say-this">
-        <summary>SAY THIS</summary>
-        <div class="say-body"><p>I'd run What → Why → Question → How → Probes → Results. Files only if they dig into a module. GitHub if they want the code.</p></div>
-      </details>
     </div>
   </div>
 </section>
-
 
 </div><!-- /.mode-root -->
 
@@ -1366,17 +1326,17 @@
   <div class="wrap-wide">
     <div>
       <div class="fmark">vlm-ocr-eval</div>
-      <p class="fnote">Interview presentation of a diagnostic research codebase for Indic OCR. Not a product. Unbuilt stages and unreproduced numbers are labeled here.</p>
+      <p class="fnote">Part One is the design. Part Two is what ran on a free Colab T4. Unbuilt stages and unreproduced numbers are labeled.</p>
     </div>
-    <div class="mono" style="font-size:0.8rem; color:var(--ink-soft);">make smoke-test → architecture wiring, no GPU</div>
+    <div class="mono" style="font-size:0.8rem; color:var(--ink-soft);">GitHub Pages serves repo-root index.html</div>
   </div>
 </footer>
 
 <script>
   const data = {
-    real:  { conf: '0.9929', flat:false, note:'Real rendered line, hindi/natural/seed0. This is the baseline — the model reading actual text.' },
-    blank: { conf: '0.9898', flat:true,  note:'Solid blank image. Confidence dropped by only 0.0031 from real. It is almost as "sure" about nothing.' },
-    noise: { conf: '0.9877', flat:true,  note:'Random noise, matched to real crops\' mean and variance. Still within 0.005 of the real-image confidence.' }
+    real:  { conf: '0.9929', flat:false, note:'Illustrative — real rendered line (hindi/natural/seed0 sample). Mechanism demo, not settled proof.' },
+    blank: { conf: '0.9898', flat:true,  note:'Illustrative — blank image. Confidence barely moves. If this pattern holds, certainty is not from the image.' },
+    noise: { conf: '0.9877', flat:true,  note:'Illustrative — matched noise. Still near the real-image confidence. See Part Two for REPORTED status.' }
   };
   const readout = document.getElementById('readout');
   document.querySelectorAll('.glyph').forEach(el=>{
