@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>vlm-ocr-eval — a diagnostic instrument for Indic OCR</title>
+<title>vlm-ocr-eval — what we built for Indic OCR diagnostics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -412,23 +412,23 @@
 
 </style>
 </head>
-<body data-mode="walkthrough">
+<body data-mode="paper">
 
 <div class="topbar">
   <div class="topbar-inner">
-    <div class="brand">vlm-ocr-eval <span class="dim">/ diagnostic instrument</span></div>
+    <div class="brand">vlm-ocr-eval <span class="dim">/ what we built</span></div>
     <nav class="navlinks">
-      <a href="#idea" class="walk-only">Idea</a>
-      <a href="#pipeline" class="walk-only">Pipeline</a>
-      <a href="#tour" class="walk-only">Repo tour</a>
-      <a href="#findings">Findings</a>
-      <a href="#motivation">Motivation</a>
-      <a href="#future">Future work</a>
+      <a href="#built" class="walk-only">What we built</a>
+      <a href="#pipeline" class="walk-only">How it runs</a>
+      <a href="#tour" class="walk-only">Files</a>
+      <a href="#findings">Results</a>
+      <a href="#motivation">Why</a>
+      <a href="#future">Not built</a>
       <a href="#docs">Docs</a>
       <a href="#abstract" class="paper-only">Abstract</a>
       <span class="mode-toggle" role="group" aria-label="Reading mode">
-        <button type="button" id="modeWalk" aria-pressed="true">Walkthrough</button>
-        <button type="button" id="modePaper" aria-pressed="false">Paper</button>
+        <button type="button" id="modeWalk" aria-pressed="false">Walkthrough</button>
+        <button type="button" id="modePaper" aria-pressed="true">Paper</button>
       </span>
     </nav>
   </div>
@@ -441,11 +441,11 @@
     <div class="fig-num paper-num">A</div>
     <div class="fig-body">
       <div class="section-kicker paper-label">Abstract</div>
-      <h2 class="section-title">A diagnostic instrument for Indic document OCR</h2>
+      <h2 class="section-title">What this repository is</h2>
       <div class="abstract-box">
-        <p>This repository asks a narrow question: when a document VLM misreads Devanagari or Bengali, <em>why</em> — and can we tell the difference between a model that cannot see the glyph and a model that is confidently guessing from its language prior?</p>
-        <p>Answering that requires a model you own end to end. So this project builds a small instrument from scratch (~19.5M params, zero Indic pretraining), with a controlled glyph-frequency renderer and a Stage&nbsp;0 equivalence taxonomy — then probes confidence on blank and real images.</p>
-        <p><strong>Measured</strong> in-checkout: ~20.4% of Tesseract non-exact preds are Tier&nbsp;1 encoding noise; glyph-frequency TV ≤&nbsp;0.08. <strong>Reported</strong> (Colab; jsonl not in tree): Probe&nbsp;3 confidence barely drops on blank pages; Probe&nbsp;5 top-bucket accuracy ≈0.10. Stages 2b, 3, 5, 6, and Probe&nbsp;5b remain deliberately out of scope.</p>
+        <p><strong>vlm-ocr-eval</strong> is a working codebase for diagnosing Indic OCR failures — not a shipped OCR product and not a leaderboard. It contains: (1)&nbsp;scripts that run Tesseract/Surya/PaddleOCR and classify diffs with a two-tier equivalence table; (2)&nbsp;a HarfBuzz renderer that can force glyph frequencies to natural / flattened / inverted; (3)&nbsp;a ~19.5M from-scratch vision encoder + decoder trained on line crops; (4)&nbsp;probe scripts that feed the model real, blank, and noise images and check whether confidence tracks correctness.</p>
+        <p><strong>Measured here:</strong> ~20.4% of Tesseract’s non-exact Hindi/Bengali predictions are Tier&nbsp;1 encoding variants; glyph-frequency TV hits ≤&nbsp;0.08 on the Hindi GT slice. <strong>Reported from Colab (jsonl not in-tree):</strong> one early checkpoint stayed ~0.99 confident on blank pages and was only ~10% accurate in its top confidence bucket.</p>
+        <p>A LoRA “demo” VLM, reading-order metrics, Sarvam API transfer, and a triage cascade are specified but not built in this phase. Full rebuild path: <span class="mono" style="font-size:0.9rem;">BOOK.md</span>.</p>
       </div>
     </div>
   </div>
@@ -453,16 +453,14 @@
 
 <header class="hero mode-item walk-only" style="--walk-order:1; --paper-order:0" id="hero">
   <div class="hero-inner">
-    <div class="hero-kicker">Research apparatus — not a product</div>
-    <h1>Confidence isn't <em>reading.</em><br>Here's how to tell the difference.</h1>
-    <p class="hero-sub">A small OCR model, built from scratch with zero Indic pretraining, exists for one reason: to measure whether a model's confidence comes from actually seeing the glyph, or from guessing what a script "usually" contains. This is the instrument, and what it found.</p>
+    <div class="hero-kicker">Codebase · Indic OCR diagnostics · free Colab T4</div>
+    <h1>What we built, and what it outputs</h1>
+    <p class="hero-sub">This repo is a small research pipeline: run existing OCR engines on Hindi/Bengali pages, render controlled training images, train a tiny from-scratch reader (~19.5M params), then probe it. Below is the one result that is easy to demo — same checkpoint on real / blank / noise — then the inventory of what actually exists in the tree.</p>
 
     <div class="status-strip">
-      <span class="pill done">Stage 0 — error taxonomy: done</span>
-      <span class="pill done">Stage 1 — renderer: done</span>
-      <span class="pill done">Stage 2a — instrument: trained</span>
-      <span class="pill pending">Probes 1 / 5 — aggregating</span>
-      <span class="pill out">Stage 2b / 3 / 5 / 6 — future work</span>
+      <span class="pill done">Built: taxonomy + renderer + instrument + probes</span>
+      <span class="pill pending">Probe 3/5 numbers: reported (not in-tree jsonl)</span>
+      <span class="pill out">Not built: demo VLM, Sarvam transfer, cascade</span>
     </div>
 
     <div class="signature">
@@ -478,38 +476,71 @@
         <span class="cond">click a block above</span>
         <div class="note">Real / blank / noise — hindi, natural, seed 0, 30 samples each. The number is the model's own mean confidence in what it generated.</div>
       </div>
-      <p class="signature-caption">This is Probe 3. It doesn't ask "is the model accurate" — it asks whether the model's <em>certainty</em> changes when there's nothing to read. If it doesn't, the confidence number isn't measuring vision.</p>
+      <p class="signature-caption">Probe 3 in one sentence: take one trained checkpoint, feed it a real line, a blank image, and matched noise, and record mean confidence. If blank ≈ real, the model is not using the image to set confidence. Numbers below are from one Colab run (hindi / natural / seed 0, n=30) — labeled <em>reported</em> in BOOK.md.</p>
     </div>
   </div>
 </header>
 
-<section id="idea" class="mode-item" style="--walk-order:2; --paper-order:3">
+<section id="built" class="mode-item" style="--walk-order:2; --paper-order:3">
   <div class="fig-rail">
     <div class="fig-num walk-num">01</div>
     <div class="fig-num paper-num">2</div>
     <div class="fig-body">
-      <div class="section-kicker walk-label">The core idea</div>
-      <div class="section-kicker paper-label">2. Method</div>
-      <h2 class="section-title">Three things this isn't: CER, a benchmark, a leaderboard entry</h2>
-      <p class="lede">Three deliberate departures from "run OCR, compute error rate" — each one is a methodological choice, not a shortcut.</p>
+      <div class="section-kicker walk-label">Inventory</div>
+      <div class="section-kicker paper-label">2. Method — what exists in the tree</div>
+      <h2 class="section-title">Four working pieces (and what each file produces)</h2>
+      <p class="lede">Skip the slogans. This is the deliverable: runnable Python under <span class="mono" style="font-size:0.9rem;">src/</span>, with status from IMPLEMENTATION.md.</p>
 
-      <div class="kv-grid">
+      <table class="data">
+        <caption>Built pieces only — deferred stages are listed later under “Not built”</caption>
+        <thead>
+          <tr><th>Piece</th><th>What it does</th><th>Main paths</th><th>Output you can point at</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Stage 0 taxonomy</td>
+            <td>Run Tesseract / Surya / PaddleOCR; classify each prediction as exact, Tier&nbsp;1 encoding match, Tier&nbsp;2 phonetic match, genuine, or unreviewed</td>
+            <td class="mono" style="font-size:0.78rem;">src/eval/*.py</td>
+            <td class="mono" style="font-size:0.78rem;">data/predictions/error_taxonomy.csv</td>
+          </tr>
+          <tr>
+            <td>Stage 1 renderer</td>
+            <td>Paint pages with HarfBuzz; force glyph-cluster frequencies to natural / flattened / inverted; crop lines to 70px</td>
+            <td class="mono" style="font-size:0.78rem;">src/renderer/* · export_*.py</td>
+            <td class="mono" style="font-size:0.78rem;">data/manifests/*_*.jsonl</td>
+          </tr>
+          <tr>
+            <td>Stage 2a instrument</td>
+            <td>~19.5M ViT encoder + AR decoder, grapheme-cluster vocab, fp16 training, greedy generate with per-step confidence</td>
+            <td class="mono" style="font-size:0.78rem;">src/models/instrument/*</td>
+            <td>checkpoints (often off-tree / Colab)</td>
+          </tr>
+          <tr>
+            <td>Probe suite</td>
+            <td>Scripts for exposure runs, blank/noise control, calibration, confusion graph, synthetic-vs-real gap</td>
+            <td class="mono" style="font-size:0.78rem;">src/probes/*</td>
+            <td class="mono" style="font-size:0.78rem;">data/probe_results/*.jsonl</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="kv-grid" style="margin-top:28px;">
         <div class="kv-card">
-          <h3>Not every diff is an error</h3>
-          <p>Devanagari has many same-sound, different-byte encodings — ZWJ/ZWNJ joiners, khanda-ta, anusvara vs. conjunct nasal, danda vs. period. A two-tier equivalence check (encoding-level, then phonetic-level via ISO 15919) separates real misreads from formatting noise. On real Tesseract output, about one in five apparent errors was Tier&nbsp;1 encoding noise, not a misread.</p>
+          <h3>1. Score carefully</h3>
+          <p>Devanagari can write the same reading with different bytes (joiners, anusvara vs nasal, danda vs period). Stage&nbsp;0 marks those as Tier&nbsp;1 before calling them errors. <strong>Measured:</strong> ~20.4% of Tesseract non-exact preds on this corpus.</p>
         </div>
         <div class="kv-card">
-          <h3>Exposure is a dial, not an observation</h3>
-          <p>Rather than correlating accuracy against whatever frequencies happen to occur, the renderer <em>sets</em> glyph-cluster frequency directly — natural, flattened, inverted — matched on data volume, verified within TV&nbsp;≤&nbsp;0.08 of target. Nine training runs (3 conditions × 3 seeds) turn a correlation into something closer to a causal claim.</p>
+          <h3>2. Control the training text</h3>
+          <p>The renderer does not just dump a corpus — it rebuilds text so rare glyphs become common or vice versa, volume-matched, TV ≤&nbsp;0.08. That is how Probe&nbsp;1 can vary exposure on purpose.</p>
         </div>
         <div class="kv-card">
-          <h3>Confidence is what's being measured</h3>
-          <p>A model that fails loudly is manageable. One that fails fluently on a low-resource script is dangerous. The blank/noise control (above) and the calibration probe exist to catch exactly that — confidence that doesn't track correctness.</p>
+          <h3>3. Own the logits</h3>
+          <p>A closed API returns a string. This instrument returns text, confidence, and top-k at each step — so blank-image and calibration probes are possible. It is small and blank on purpose; it is not meant to beat Tesseract.</p>
         </div>
       </div>
       <details class="say-this">
         <summary>Say this</summary>
-        <div class="say-body"><p>The one-liner: this isn't another CER leaderboard. I separate encoding noise from real misreads, I set glyph exposure as a causal dial, and I treat confidence as the thing worth measuring — because fluent overconfidence on a low-resource script is the failure mode that actually ships.</p></div>
+        <div class="say-body"><p>I'd start with the table, not the thesis. Four pieces: taxonomy over real engines, a renderer with a glyph-frequency dial, a from-scratch ~19.5M reader, and probes that open its confidence. Everything else on the roadmap is explicitly not built yet.</p></div>
       </details>
     </div>
   </div>
@@ -520,10 +551,10 @@
     <div class="fig-num walk-num">02</div>
     <div class="fig-num paper-num">3</div>
     <div class="fig-body">
-      <div class="section-kicker walk-label">Architecture</div>
+      <div class="section-kicker walk-label">How it runs</div>
       <div class="section-kicker paper-label">3. Experimental setup</div>
-      <h2 class="section-title">Two models, on purpose</h2>
-      <p class="lede">The instrument has to start blank to isolate the exposure variable. The demo doesn't — it exists to look like a real system, and is future work (see §06).</p>
+      <h2 class="section-title">The model we trained vs the model we did not</h2>
+      <p class="lede">Left side exists in <span class="mono" style="font-size:0.9rem;">src/models/instrument/</span> and has been smoke-tested / trained. Right side is a written design only (LoRA on a pretrained doc-VLM) — dashed on purpose.</p>
 
       <div class="figure">
         <div class="diagram-frame">
@@ -572,7 +603,7 @@
       </div>
       <details class="say-this">
         <summary>Say this</summary>
-        <div class="say-body"><p>Two models on purpose. The instrument starts blank so exposure is isolatable. The demo is meant to look like a real system — and I deliberately didn't build it this phase, because it's a different project shape, not because the instrument failed.</p></div>
+        <div class="say-body"><p>If they ask "where's the production OCR?" — there isn't one. The blank-slate model is the microscope. The LoRA demo is the planned production-shaped twin; I didn't build it this phase because it's a separate training project, not because the instrument failed.</p></div>
       </details>
     </div>
   </div>
@@ -585,8 +616,8 @@
     <div class="fig-body">
       <div class="section-kicker walk-label">Data flow</div>
       <div class="section-kicker paper-label">3. Experimental setup — data flow</div>
-      <h2 class="section-title">From a 60-line corpus to nine checkpoints</h2>
-      <p class="lede">Everything downstream of the renderer is resumable by construction — Colab sessions are assumed to die mid-run.</p>
+      <h2 class="section-title">End-to-end: images in, JSONL and checkpoints out</h2>
+      <p class="lede">Concrete path: GlotOCR pages → baselines + taxonomy CSV; same text → renderer → line-crop manifests → train.py (3 modes × 3 seeds) → probe JSONL. Every long job is written to resume when Colab dies.</p>
 
       <div class="figure">
         <div class="diagram-frame">
@@ -653,7 +684,7 @@
       </div>
       <details class="say-this">
         <summary>Say this</summary>
-        <div class="say-body"><p>I'd walk them left to right: real corpus into Stage 0 taxonomy, same corpus into the renderer dial, line-crop manifests into nine checkpoints, then the probes. Everything after the renderer is resumable because Colab dies — that's not polish, that's how the runs actually finished.</p></div>
+        <div class="say-body"><p>Walk the diagram left to right with a finger: GlotOCR, then either Stage 0 CSV or Stage 1 manifests, then train, then probes. If they ask how to reproduce, I point at BOOK Appendix E and <span class="mono">make smoke-test</span> for the no-GPU wiring check.</p></div>
       </details>
     </div>
   </div>
@@ -664,9 +695,9 @@
   <div class="fig-rail">
     <div class="fig-num">T</div>
     <div class="fig-body">
-      <div class="section-kicker">Repository tour</div>
-      <h2 class="section-title">Every file, in plain language</h2>
-      <p class="lede">Scroll this before or during an interview. For any path someone points at: what it does, why it exists, and where it stands in IMPLEMENTATION.md.</p>
+      <div class="section-kicker">File index</div>
+      <h2 class="section-title">What each Python module is for</h2>
+      <p class="lede">Not marketing — a map of <span class="mono" style="font-size:0.9rem;">src/</span>. Path, one-line job, one-line reason, status pill from IMPLEMENTATION.md.</p>
 
       <div class="tour-stage">
         <h3 class="tour-stage-title">Stage 0 — Error taxonomy</h3>
@@ -915,10 +946,10 @@
     <div class="fig-num walk-num">04</div>
     <div class="fig-num paper-num">4</div>
     <div class="fig-body">
-      <div class="section-kicker walk-label">Findings so far</div>
+      <div class="section-kicker walk-label">Results</div>
       <div class="section-kicker paper-label">4. Results</div>
-      <h2 class="section-title">Early, single-condition, reported as such</h2>
-      <p class="lede">BOOK.md distinguishes <em>measured</em> (reproduced in this checkout) from <em>reported</em> (Colab write-up; probe jsonl not checked in). Both kinds appear below — labeled.</p>
+      <h2 class="section-title">Numbers — measured in-repo vs reported from Colab</h2>
+      <p class="lede">If a number cannot be reproduced from files in this checkout, it is labeled <em>reported</em>. That distinction is from BOOK.md; keep it in any interview answer.</p>
 
       <div class="evidence-grid">
         <div class="evidence-card">
@@ -948,7 +979,7 @@
         <p>Every one of 30 sampled predictions landed in the top confidence bucket (0.90–1.00). Actual accuracy in that bucket: <strong>0.10</strong>. When this checkpoint says it's nearly certain, it's right about one time in ten.</p>
       </div>
 
-      <p class="prose">Read together: at this training scale, the instrument isn't grounding its confidence in the image or in correctness. That's an expected, legible failure mode for a small model at 5000 steps on a thin corpus — not a contradiction of the design, but exactly the kind of thing the probe suite exists to surface before it reaches production. Three independent lines already converge without deferred stages: encoding variants are first-class noise, exposure can be set as a dial, and owning decode-time confidence is what makes blank-control askable.</p>
+      <p class="prose">So far: Stage&nbsp;0 shows encoding noise is a real fraction of “errors”; Stage&nbsp;1 shows we can set glyph exposure on purpose; the instrument + probes show we can ask whether confidence comes from the image. Probe&nbsp;3/5 on one early checkpoint say confidence is not grounded yet — expected at that scale, and the reason the probe suite exists. Reproduce commands: BOOK Appendix&nbsp;E.</p>
       <details class="say-this">
         <summary>Say this</summary>
         <div class="say-body"><p>This is the part I'd lead with — the model's confidence barely dropped when I showed it a blank image. That's not a bug, that's the whole reason this project exists: to catch exactly that kind of silent overconfidence before it ships.</p><p>And I'd immediately add the honesty caveat: one checkpoint, thirty samples, early training. The signal is coherent; it is not a final claim.</p></div>
@@ -962,10 +993,10 @@
     <div class="fig-num walk-num">05</div>
     <div class="fig-num paper-num">1</div>
     <div class="fig-body">
-      <div class="section-kicker walk-label">Why this, why now</div>
+      <div class="section-kicker walk-label">Why bother</div>
       <div class="section-kicker paper-label">1. Motivation</div>
-      <h2 class="section-title">The gap survived Sarvam's own newest model</h2>
-      <p class="lede">Verified 2026-08-25 directly against Sarvam Vision's launch page — not an old citation. Sarvam Vision is a brand-new, 3B-parameter, frontier document model. Kashmiri is still its worst-performing language.</p>
+      <h2 class="section-title">Production Indic OCR still has a ~40-point language gap</h2>
+      <p class="lede">Checked 2026-08-25 against Sarvam Vision’s launch post. Their own bench: Hindi ≈96 word accuracy, Kashmiri ≈56 — same model family. That spread is the practical reason to build diagnostics, not another “we beat CER by 0.3” page.</p>
 
       <table class="data">
         <caption>Sarvam Indic OCR Bench — word accuracy, selected rows (full table: 22 languages)</caption>
@@ -992,10 +1023,10 @@
     <div class="fig-num walk-num">06</div>
     <div class="fig-num paper-num">6</div>
     <div class="fig-body">
-      <div class="section-kicker walk-label">Deliberately out of scope, this phase</div>
+      <div class="section-kicker walk-label">Not built this phase</div>
       <div class="section-kicker paper-label">6. Future work</div>
-      <h2 class="section-title">What isn't built, and why not</h2>
-      <p class="lede">Named clearly rather than left implicit. Each of these is a real design, not an afterthought — just gated on more time than a compressed build allows.</p>
+      <h2 class="section-title">Specified in IMPLEMENTATION.md, not executed</h2>
+      <p class="lede">These are real designs with reasons — not a vague backlog. Nothing below should be described as shipped.</p>
 
       <div class="scope-grid">
         <div class="scope-row">
@@ -1054,10 +1085,10 @@
     <div class="fig-num walk-num">07</div>
     <div class="fig-num paper-num">5</div>
     <div class="fig-body">
-      <div class="section-kicker walk-label">Constraints, stated plainly</div>
+      <div class="section-kicker walk-label">Limits</div>
       <div class="section-kicker paper-label">5. Limitations</div>
-      <h2 class="section-title">What more compute would buy</h2>
-      <p class="lede">Everything here ran on a free Colab T4. That bounded real decisions — worth being explicit about what it bounds.</p>
+      <h2 class="section-title">Bound by a free Colab T4</h2>
+      <p class="lede">fp16 (no bf16), ~19.5M instrument, 5000-step early probes, 30-sample probe runs. More GPU time would change how much weight the numbers can carry — not the design.</p>
 
       <ul class="compute-list">
         <li><strong>Longer training</strong> — the overconfidence above is consistent with undertraining. 10–50× the steps would separate "hasn't learned to use the image yet" from "systematically fails to ground confidence in vision" — currently indistinguishable from the data.</li>
@@ -1079,10 +1110,10 @@
     <div class="fig-num walk-num">08</div>
     <div class="fig-num paper-num">R</div>
     <div class="fig-body">
-      <div class="section-kicker walk-label">Documentation map</div>
+      <div class="section-kicker walk-label">Docs</div>
       <div class="section-kicker paper-label">References</div>
-      <h2 class="section-title">Where the reasoning actually lives</h2>
-      <p class="lede">This page is the interview walkthrough. BOOK.md is the rebuild path — concept → code → evidence. Spec and why live next to it.</p>
+      <h2 class="section-title">Read these for the full paper-length path</h2>
+      <p class="lede">This page is a short front door. BOOK.md is the chapter-by-chapter rebuild. IMPLEMENTATION.md is the checkbox truth.</p>
 
       <div class="docs-list">
         <div class="doc-row primary"><span class="doc-name"><a href="https://github.com/Adya6714/vlm-ocr-eval/blob/main/BOOK.md">BOOK.md</a></span><span class="doc-desc">teaching narrative — rebuild from first principles (Ch. 0–9 + reproduce commands)</span></div>
@@ -1106,7 +1137,7 @@
   <div class="wrap-wide">
     <div>
       <div class="fmark">vlm-ocr-eval</div>
-      <p class="fnote">A diagnostic apparatus and a worked argument about methodology — not an OCR product, not a benchmark, not a dataset contribution. Where a stage is unbuilt, it says so. Where a number is provisional, it says so.</p>
+      <p class="fnote">Working research code for Indic OCR diagnostics. Not a product, not a benchmark release. Unbuilt stages and unreproduced numbers are labeled. Start at BOOK.md if you want the full path.</p>
     </div>
     <div class="mono" style="font-size:0.8rem; color:var(--ink-soft);">make smoke-test → passes clean, no GPU required</div>
   </div>
@@ -1147,7 +1178,8 @@
     try {
       const saved = localStorage.getItem('vlm-ocr-eval-mode');
       if (saved === 'paper' || saved === 'walkthrough') setMode(saved);
-    } catch(e){}
+      else setMode('paper');
+    } catch(e){ setMode('paper'); }
   })();
 </script>
 
