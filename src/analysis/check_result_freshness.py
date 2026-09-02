@@ -38,8 +38,8 @@ def main() -> None:
     for f in sorted(results_dir.glob("probe*_*.jsonl")):
         # filenames look like probe3_hindi_natural_seed0.jsonl
         parts = f.stem.split("_")
-        condition, seed_part = parts[-2], parts[-1]
-        ckpt = ckpt_dir / f"checkpoint_{condition}_{seed_part}.pt"
+        script, condition, seed_part = parts[-3], parts[-2], parts[-1]
+        ckpt = ckpt_dir / f"checkpoint_{script}_{condition}_{seed_part}.pt"
         check_freshness(f, ckpt)
 
 

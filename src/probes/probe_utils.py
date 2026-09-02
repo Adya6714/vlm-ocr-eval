@@ -25,23 +25,80 @@ if _INSTRUMENT_DIR not in sys.path:
 
 from generate import generate
 from tokenizer import GraphemeTokenizer
-from train import InstrumentModel, PATCH_SIZE
+from train import (
+    InstrumentModel,
+    PATCH_SIZE,
+    checkpoint_path,
+    snapshot_checkpoint_path,
+    tokenizer_path,
+    verify_checkpoint_matches_run,
+    verify_tokenizer_matches_checkpoint,
+)
 
 
-def load_model_and_tokenizer(output_root: Path, condition: str, seed: int, device: torch.device):
-    tokenizer_path = output_root / f"tokenizer_{condition}.json"
-    ckpt_path = output_root / f"checkpoint_{condition}_seed{seed}.pt"
-    if not tokenizer_path.exists():
-        raise FileNotFoundError(f"no tokenizer at {tokenizer_path}")
+def load_tokenizer(output_root: Path, script: str, condition: str) -> GraphemeTokenizer:
+    """Load the condition's frozen vocabulary (shared across step snapshots)."""
+    tok_path = Path(tokenizer_path(str(output_root), script, condition))
+    if not tok_path.exists():
+        raise FileNotFoundError(f"no tokenizer at {tok_path}")
+    return GraphemeTokenizer.load(str(tok_path))
+
+
+def load_model_from_checkpoint_file(
+    ckpt_path: Path,
+    tokenizer: GraphemeTokenizer,
+    script: str,
+    condition: str,
+    device: torch.device,
+) -> tuple[InstrumentModel, dict]:
+    """
+    Load weights from an explicit checkpoint path (main resume file or a
+    step snapshot). Used by probe3_training_curve.py to evaluate
+    multiple training steps without duplicating load/verify logic.
+    """
     if not ckpt_path.exists():
         raise FileNotFoundError(f"no checkpoint at {ckpt_path}")
-    tokenizer = GraphemeTokenizer.load(str(tokenizer_path))
     model = InstrumentModel(vocab_size=len(tokenizer))
     ckpt = torch.load(ckpt_path, map_location=device)
+    verify_checkpoint_matches_run(ckpt, script, condition)
+    verify_tokenizer_matches_checkpoint(tokenizer, ckpt)
     model.load_state_dict(ckpt["model_state"])
     model.to(device)
     model.eval()
+    return model, ckpt
+
+
+def load_model_and_tokenizer(
+    output_root: Path, script: str, condition: str, seed: int, device: torch.device,
+):
+    tokenizer = load_tokenizer(output_root, script, condition)
+    ckpt_path = Path(checkpoint_path(str(output_root), script, condition, seed))
+    model, _ = load_model_from_checkpoint_file(
+        ckpt_path, tokenizer, script, condition, device,
+    )
     return model, tokenizer
+
+
+def resolve_checkpoint_for_step(
+    output_root: Path, script: str, condition: str, seed: int, step: int,
+) -> Path:
+    """
+    Prefer an immutable step snapshot; fall back to the main resume
+    checkpoint only when its stored step matches the requested step.
+    """
+    snap = Path(snapshot_checkpoint_path(str(output_root), script, condition, seed, step))
+    if snap.exists():
+        return snap
+    main = Path(checkpoint_path(str(output_root), script, condition, seed))
+    if main.exists():
+        ckpt = torch.load(main, map_location="cpu")
+        if ckpt.get("step") == step:
+            return main
+    raise FileNotFoundError(
+        f"no checkpoint for step {step} under {output_root} "
+        f"(looked for {snap.name} and main file with matching step). "
+        f"Retrain with train.py --keep-snapshots to retain intermediate weights."
+    )
 
 
 def resize_to_canonical_height(image: Image.Image, canonical_height: int = 70) -> Image.Image:

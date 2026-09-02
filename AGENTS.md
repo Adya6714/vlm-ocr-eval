@@ -145,6 +145,13 @@ Concretely, every such script:
   path `IMPLEMENTATION.md` already specified for that stage. Do not
   invent a second Colab-only output layout. For Stage 0 baselines
   that path is `data/predictions/{engine}/{language}.jsonl`.
+- **Probe result jsonl files: commit and push immediately.** Files
+  under `data/probe_results/` are small and must land in git right
+  after generation — before starting any other Colab run. Do not treat
+  them like `data/predictions/` (heavy, regenerable, gitignored). If
+  `git push` is rejected for divergent branches, resolve it (`git pull
+  --rebase`, then push) before moving on; unpushed Colab probe results
+  have already been lost once when a fresh clone wiped them.
 
 The long-running-scripts rules above still apply — Colab sessions
 die, which is why those rules exist. Checkpoint into the data root;

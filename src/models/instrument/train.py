@@ -136,37 +136,108 @@ def collate_batch(batch, pad_id: int):
     return images_batch, image_padding_batch, target_ids, target_padding
 
 
-def checkpoint_path(output_root: str, condition: str, seed: int) -> str:
+SCRIPT_CHOICES = ("hindi", "bengali")
+
+
+def checkpoint_path(output_root: str, script: str, condition: str, seed: int) -> str:
     """
-    One checkpoint path per (condition, seed) pair -- Probe 1 runs 9
-    independent training runs (3 conditions x 3 seeds, DECISIONS.md
-    #14), and resuming must never mix them. This function is the
-    single source of truth for where a given run's checkpoint lives,
-    used both when saving and when checking for a resume on startup.
+    One checkpoint path per (script, condition, seed) triple -- Probe 1
+    runs 9 independent training runs per script (3 conditions x 3
+    seeds, DECISIONS.md #14), and Hindi/Bengali runs must never share
+    a path even when condition/seed match (DECISIONS.md #47). This
+    function is the single source of truth for where a given run's
+    checkpoint lives, used both when saving and when checking for a
+    resume on startup.
+
+    Overwritten every args.checkpoint_every steps during training;
+    intermediate weights are lost unless --keep-snapshots is set
+    (DECISIONS.md #48).
     """
-    return os.path.join(output_root, f"checkpoint_{condition}_seed{seed}.pt")
+    return os.path.join(output_root, f"checkpoint_{script}_{condition}_seed{seed}.pt")
+
+
+def snapshot_checkpoint_path(
+    output_root: str, script: str, condition: str, seed: int, step: int,
+) -> str:
+    """
+    Immutable per-step weight snapshot for Probe 3's training-curve
+    analysis. Only written when train() is called with
+    --keep-snapshots; the main checkpoint_path() file is still
+    overwritten for resume.
+    """
+    return os.path.join(
+        output_root, f"checkpoint_{script}_{condition}_seed{seed}_step{step}.pt",
+    )
+
+
+def tokenizer_path(output_root: str, script: str, condition: str) -> str:
+    """
+    One tokenizer file per (script, condition) pair. Vocabulary is built
+    from that script's manifest, so Hindi and Bengali must not share a
+    tokenizer path (they have different grapheme inventories).
+    """
+    return os.path.join(output_root, f"tokenizer_{script}_{condition}.json")
+
+
+def checkpoint_vocab_size(ckpt: dict) -> int:
+    """Embedding rows in the saved decoder -- must match len(tokenizer)."""
+    return ckpt["model_state"]["decoder.token_embed.weight"].shape[0]
+
+
+def verify_checkpoint_matches_run(ckpt: dict, script: str, condition: str) -> None:
+    """
+    Refuse to resume when checkpoint metadata disagrees with the current
+    run. Silent cross-script resume caused real data loss (Bengali
+    tokenizer overwrote Hindi at the old shared path).
+    """
+    ckpt_script = ckpt.get("script")
+    ckpt_condition = ckpt.get("condition")
+    if ckpt_script != script or ckpt_condition != condition:
+        raise ValueError(
+            f"checkpoint/run mismatch: checkpoint has script={ckpt_script!r} "
+            f"condition={ckpt_condition!r}, but this run requested "
+            f"script={script!r} condition={condition!r}. "
+            f"Refusing to resume — loading a checkpoint from a different "
+            f"script or condition would silently corrupt training."
+        )
+
+
+def verify_tokenizer_matches_checkpoint(tokenizer: GraphemeTokenizer, ckpt: dict) -> None:
+    """
+    Catch tokenizer/checkpoint pairs from different runs before
+    load_state_dict raises an opaque embedding shape error.
+    """
+    ckpt_vocab = checkpoint_vocab_size(ckpt)
+    tok_vocab = len(tokenizer)
+    if tok_vocab != ckpt_vocab:
+        raise ValueError(
+            f"tokenizer/checkpoint vocabulary size mismatch: tokenizer has "
+            f"{tok_vocab} entries but checkpoint embeddings expect "
+            f"{ckpt_vocab}. These are from different runs — the tokenizer "
+            f"and checkpoint must come from the same training run."
+        )
 
 
 def train(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"device: {device}")
 
-    ckpt_path = checkpoint_path(args.output_root, args.condition, args.seed)
+    ckpt_path = checkpoint_path(args.output_root, args.script, args.condition, args.seed)
     os.makedirs(args.output_root, exist_ok=True)
 
     # --- tokenizer: build fresh, or load if resuming (AGENTS.md
     # resumability -- a resumed run must use the SAME vocabulary,
     # not a re-built one that could assign different ids) ---
-    tokenizer_path = os.path.join(args.output_root, f"tokenizer_{args.condition}.json")
-    if os.path.exists(tokenizer_path):
-        print(f"loading existing tokenizer -> {tokenizer_path}")
-        tokenizer = GraphemeTokenizer.load(tokenizer_path)
+    tok_path = tokenizer_path(args.output_root, args.script, args.condition)
+    if os.path.exists(tok_path):
+        print(f"loading existing tokenizer -> {tok_path}")
+        tokenizer = GraphemeTokenizer.load(tok_path)
     else:
         print("building tokenizer from manifest...")
         texts = [json.loads(line)["text"] for line in open(args.manifest, encoding="utf-8")]
         tokenizer = GraphemeTokenizer()
         tokenizer.build_vocab(texts, min_freq=5)
-        tokenizer.save(tokenizer_path)
+        tokenizer.save(tok_path)
     print(f"vocab size: {len(tokenizer)}")
 
     dataset = LineDataset(args.manifest, tokenizer)
@@ -185,6 +256,8 @@ def train(args):
     if os.path.exists(ckpt_path):
         print(f"resuming from checkpoint -> {ckpt_path}")
         ckpt = torch.load(ckpt_path, map_location=device)
+        verify_checkpoint_matches_run(ckpt, args.script, args.condition)
+        verify_tokenizer_matches_checkpoint(tokenizer, ckpt)
         model.load_state_dict(ckpt["model_state"])
         optimizer.load_state_dict(ckpt["optimizer_state"])
         start_step = ckpt["step"]
@@ -234,7 +307,7 @@ def train(args):
                 elapsed = time.time() - t0
                 steps_per_sec = args.log_every / elapsed if elapsed > 0 else 0
                 remaining = (args.total_steps - step) / steps_per_sec if steps_per_sec > 0 else float("inf")
-                print(f"[{args.condition} seed={args.seed}] step {step}/{args.total_steps}  "
+                print(f"[{args.script} {args.condition} seed={args.seed}] step {step}/{args.total_steps}  "
                       f"loss={loss.item():.4f}  {steps_per_sec:.2f} steps/s  "
                       f"ETA {remaining/60:.1f} min")
                 t0 = time.time()
@@ -243,14 +316,23 @@ def train(args):
             # save regularly, not just at the end, so a killed Colab
             # session loses at most args.checkpoint_every steps of work
             if step % args.checkpoint_every == 0:
-                torch.save({
+                ckpt_payload = {
                     "model_state": model.state_dict(),
                     "optimizer_state": optimizer.state_dict(),
                     "step": step,
+                    "loss": float(loss.item()),
+                    "script": args.script,
                     "condition": args.condition,
                     "seed": args.seed,
-                }, ckpt_path)
+                }
+                torch.save(ckpt_payload, ckpt_path)
                 print(f"  checkpoint saved -> {ckpt_path} (step {step})")
+                if getattr(args, "keep_snapshots", False):
+                    snap_path = snapshot_checkpoint_path(
+                        args.output_root, args.script, args.condition, args.seed, step,
+                    )
+                    torch.save(ckpt_payload, snap_path)
+                    print(f"  snapshot saved -> {snap_path}")
 
     print(f"training complete: {step} steps")
 
@@ -259,6 +341,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", required=True,
                          help="JSONL manifest: one {'image_path', 'text'} per line")
+    parser.add_argument("--script", required=True, choices=list(SCRIPT_CHOICES),
+                         help="Writing system this run trains on (hindi or bengali)")
     parser.add_argument("--condition", required=True,
                          choices=["natural", "flattened", "inverted"],
                          help="Probe 1 glyph-frequency condition this run corresponds to")
@@ -271,5 +355,9 @@ if __name__ == "__main__":
     parser.add_argument("--total-steps", type=int, default=5000)
     parser.add_argument("--log-every", type=int, default=50)
     parser.add_argument("--checkpoint-every", type=int, default=200)
+    parser.add_argument("--keep-snapshots", action="store_true",
+                         help="Also write immutable per-step snapshot files "
+                              "(checkpoint_{script}_{condition}_seed{seed}_step{N}.pt) "
+                              "for probe3_training_curve.py. Default off to save Drive space.")
     args = parser.parse_args()
     train(args)

@@ -70,6 +70,7 @@ probe1-smoke:
 	@echo "data carries no real exposure signal to measure."
 	python3 scripts/make_fake_probe1_data.py
 	python3 src/probes/probe1_exposure.py \
+		--script hindi \
 		--natural-manifest /tmp/fake_lines/natural.jsonl \
 		--flattened-manifest /tmp/fake_lines/flattened.jsonl \
 		--inverted-manifest /tmp/fake_lines/inverted.jsonl \

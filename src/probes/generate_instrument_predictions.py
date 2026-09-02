@@ -20,10 +20,10 @@ from probe_utils import load_model_and_tokenizer, run_generate, resize_to_canoni
 
 
 def run(manifest_path: Path, image_key: str, text_key: str, output_root: Path,
-        condition: str, seed: int, n_samples: int, out_path: Path,
+        script: str, condition: str, seed: int, n_samples: int, out_path: Path,
         device_str: str = "cpu") -> None:
     device = torch.device(device_str)
-    model, tokenizer = load_model_and_tokenizer(output_root, condition, seed, device)
+    model, tokenizer = load_model_and_tokenizer(output_root, script, condition, seed, device)
 
     rows = [json.loads(l) for l in manifest_path.read_text(encoding="utf-8").splitlines()]
     if n_samples and n_samples < len(rows):
@@ -46,6 +46,7 @@ def main() -> None:
     ap.add_argument("--manifest", required=True)
     ap.add_argument("--image-key", default="image_path")
     ap.add_argument("--text-key", default="text")
+    ap.add_argument("--script", required=True, choices=["hindi", "bengali"])
     ap.add_argument("--output-root", required=True)
     ap.add_argument("--condition", required=True)
     ap.add_argument("--seed", type=int, required=True)
@@ -54,7 +55,7 @@ def main() -> None:
     ap.add_argument("--device", default="cpu")
     args = ap.parse_args()
     run(Path(args.manifest), args.image_key, args.text_key, Path(args.output_root),
-        args.condition, args.seed, args.n_samples, Path(args.out), args.device)
+        args.script, args.condition, args.seed, args.n_samples, Path(args.out), args.device)
 
 
 if __name__ == "__main__":

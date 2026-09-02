@@ -124,10 +124,10 @@ if __name__ == "__main__":
     ckpt_path = None
     tokenizer_path = None
     for root in candidate_roots:
-        candidate_ckpt = os.path.join(root, "checkpoint_natural_seed0.pt")
+        candidate_ckpt = os.path.join(root, "checkpoint_hindi_natural_seed0.pt")
         if os.path.exists(candidate_ckpt):
             ckpt_path = candidate_ckpt
-            tokenizer_path = os.path.join(root, "tokenizer_natural.json")
+            tokenizer_path = os.path.join(root, "tokenizer_hindi_natural.json")
             break
 
     if ckpt_path is None:

@@ -48,7 +48,11 @@ _INSTRUMENT_DIR = os.path.normpath(
 )
 sys.path.insert(0, _INSTRUMENT_DIR)
 
-from train import train as run_training, checkpoint_path
+from train import (
+    train as run_training,
+    checkpoint_path,
+    SCRIPT_CHOICES,
+)
 
 CONDITIONS = ["natural", "flattened", "inverted"]
 SEEDS = [0, 1, 2]
@@ -65,9 +69,10 @@ class Args:
     time budget.
     """
 
-    def __init__(self, manifest, condition, seed, output_root,
+    def __init__(self, manifest, script, condition, seed, output_root,
                  batch_size, lr, total_steps, log_every, checkpoint_every):
         self.manifest = manifest
+        self.script = script
         self.condition = condition
         self.seed = seed
         self.output_root = output_root
@@ -78,7 +83,7 @@ class Args:
         self.checkpoint_every = checkpoint_every
 
 
-def run_is_complete(output_root: str, condition: str, seed: int, total_steps: int) -> bool:
+def run_is_complete(output_root: str, script: str, condition: str, seed: int, total_steps: int) -> bool:
     """
     A run counts as complete if its checkpoint exists AND has already
     reached total_steps -- not just "a checkpoint file exists," since
@@ -88,14 +93,14 @@ def run_is_complete(output_root: str, condition: str, seed: int, total_steps: in
     a single source of truth (the checkpoint itself) instead of two
     things that could drift out of sync.
     """
-    path = checkpoint_path(output_root, condition, seed)
+    path = checkpoint_path(output_root, script, condition, seed)
     if not os.path.exists(path):
         return False
     ckpt = torch.load(path, map_location="cpu")
     return ckpt["step"] >= total_steps
 
 
-def run_probe1(manifests: dict, output_root: str, total_steps: int,
+def run_probe1(manifests: dict, script: str, output_root: str, total_steps: int,
                 batch_size: int = 32, lr: float = 3e-4,
                 log_every: int = 50, checkpoint_every: int = 200) -> None:
     """
@@ -108,8 +113,8 @@ def run_probe1(manifests: dict, output_root: str, total_steps: int,
     print(f"Probe 1: {len(plan)} runs planned ({len(CONDITIONS)} conditions x {len(SEEDS)} seeds)")
 
     for condition, seed in plan:
-        if run_is_complete(output_root, condition, seed, total_steps):
-            print(f"[{condition} seed={seed}] already complete, skipping")
+        if run_is_complete(output_root, script, condition, seed, total_steps):
+            print(f"[{script} {condition} seed={seed}] already complete, skipping")
             continue
 
         if condition not in manifests:
@@ -118,9 +123,10 @@ def run_probe1(manifests: dict, output_root: str, total_steps: int,
                 f"Probe 1 needs all three: {CONDITIONS}. Got: {list(manifests.keys())}"
             )
 
-        print(f"\n{'='*60}\n[{condition} seed={seed}] starting\n{'='*60}")
+        print(f"\n{'='*60}\n[{script} {condition} seed={seed}] starting\n{'='*60}")
         args = Args(
             manifest=manifests[condition],
+            script=script,
             condition=condition,
             seed=seed,
             output_root=output_root,
@@ -142,6 +148,7 @@ if __name__ == "__main__":
     parser.add_argument("--natural-manifest", required=True)
     parser.add_argument("--flattened-manifest", required=True)
     parser.add_argument("--inverted-manifest", required=True)
+    parser.add_argument("--script", required=True, choices=list(SCRIPT_CHOICES))
     parser.add_argument("--output-root", default="checkpoints")
     parser.add_argument("--total-steps", type=int, default=5000)
     parser.add_argument("--batch-size", type=int, default=32)
@@ -156,6 +163,6 @@ if __name__ == "__main__":
         "inverted": args.inverted_manifest,
     }
     run_probe1(
-        manifests, args.output_root, args.total_steps,
+        manifests, args.script, args.output_root, args.total_steps,
         args.batch_size, args.lr, args.log_every, args.checkpoint_every,
     )

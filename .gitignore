@@ -20,6 +20,12 @@ venv/
 *.bak
 
 # Generated / heavy data (rebuild or fetch locally / from Colab)
+data/*
+!data/manifests/
+!data/manifests/**
+# Small probe result jsonl files must be committed (see AGENTS.md).
+!data/probe_results/
+
 data/cache/
 data/raw/
 data/predictions/

@@ -67,6 +67,7 @@ Heavy compute: Colab, one `--data-root`. Architecture without findings: `make sm
 python src/data_pipeline/export_manifest_scaled.py --script hindi --pages-per-mode 100
 python src/models/instrument/train.py \
   --manifest data/manifests/hindi_natural.jsonl \
+  --script hindi \
   --output-root <checkpoints> --condition natural --seed 0
 python src/eval/error_taxonomy.py
 pytest -q

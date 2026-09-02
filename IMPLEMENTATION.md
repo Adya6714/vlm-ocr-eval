@@ -276,6 +276,12 @@ real data and is metric-only.
       exposure levels — this is the mechanistic account of why low-exposure
       languages hallucinate fluently instead of failing loudly.
       `src/probes/probe3_blank_control.py`
+- [ ] **Probe 3b — Training-curve disambiguation.** Re-run Probe 3's
+      real-vs-blank confidence comparison at multiple training steps to
+      separate "confidence ungrounded in the image" from "simply
+      undertrained." Requires `train.py --keep-snapshots` on a fresh run
+      (default resume checkpoint overwrites intermediates).
+      `src/probes/probe3_training_curve.py`
 - [ ] **Probe 4 — Encoding/phonetic equivalence.** Already built,
       Stage 0. Re-run here against the instrument's own outputs.
 - [ ] **Probe 5 — Calibration under exposure.** Does confidence predict

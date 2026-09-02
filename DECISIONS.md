@@ -1027,3 +1027,56 @@ next task. These seven are implied by flaws already visible in
 `probe5_calibration.py`'s printer, Probe 3's blank/noise-only
 controls, and single-seed README/site reporting.
 
+---
+
+### 47. Script-scoped checkpoint and tokenizer paths; resume guards
+
+**Decision:** Checkpoint and tokenizer filenames include the writing
+system (`hindi` / `bengali`) as the first key after the prefix:
+`checkpoint_{script}_{condition}_seed{seed}.pt` and
+`tokenizer_{script}_{condition}.json`. `train.py` requires `--script`.
+Checkpoints store `script` alongside `condition` and `seed`. On resume,
+refuse to load if stored `script` or `condition` disagrees with the
+current run; refuse `load_state_dict` if `len(tokenizer)` does not
+match the checkpoint embedding row count.
+
+**Alternatives considered:** (a) separate `--output-root` per script
+(manual discipline, easy to forget on Colab); (b) a single shared
+vocabulary across Hindi and Bengali (wrong — different grapheme
+inventories); (c) rely on PyTorch's shape error at `load_state_dict`
+(silent corruption already happened once).
+
+**Why:** Hindi and Bengali Probe 1 runs with the same condition/seed
+wrote to identical paths (`checkpoint_natural_seed0.pt`,
+`tokenizer_natural.json`). A Bengali run overwrote the Hindi tokenizer
+(Hindi vocab 369 → Bengali 198 at the same path), making surviving
+Hindi checkpoints unloadable. Path isolation prevents the overwrite;
+metadata + vocab-size guards catch stale hand-copies or pre-fix
+checkpoints instead of silently resuming the wrong run.
+
+---
+
+### 48. Optional per-step checkpoint snapshots for Probe 3 training curve
+
+**Decision:** `train.py` keeps its single resume checkpoint per run
+(overwritten every `checkpoint_every` steps). Add `--keep-snapshots`
+(default off) to also write immutable files
+`checkpoint_{script}_{condition}_seed{seed}_step{N}.pt` at each save.
+Checkpoints now store `loss` (last batch loss at save time).
+`probe3_training_curve.py` evaluates real-vs-blank confidence at
+requested steps from those snapshots.
+
+**Alternatives considered:** (a) always keep every snapshot (fills
+Colab Drive); (b) infer the curve from the final checkpoint only
+(cannot distinguish undertraining from ungrounded confidence); (c) log
+only loss curves without re-running Probe 3 at each step (misses the
+confidence gap, which is the actual headline).
+
+**Why:** Probe 3's ~0.99 confidence on real, blank, and noise with
+~0.10 accuracy has two competing explanations that look identical on
+the final weights alone. If loss falls two orders of magnitude while
+the real-minus-blank gap stays flat, the model learned the language
+prior without using the image; if the gap opens with training, more
+steps may be the fix. Snapshots must be opt-in because nine Probe 1
+runs × 25 saves × ~19M-param state dicts is prohibitive on free Drive.
+
