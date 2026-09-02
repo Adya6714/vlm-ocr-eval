@@ -1,0 +1,45 @@
+{
+  "probe3": {
+    "natural": {
+      "n": 300,
+      "real_conf": 0.9939973178545412,
+      "blank_conf": 0.9899059119595673,
+      "noise_conf": 0.9904302665812539,
+      "real_minus_blank_gap": 0.00409140589497381
+    },
+    "flattened": {
+      "n": 300,
+      "real_conf": 0.5997747484890096,
+      "blank_conf": 0.6577337738877447,
+      "noise_conf": 0.6028780742493858,
+      "real_minus_blank_gap": -0.0579590253987351
+    },
+    "inverted": {
+      "n": 300,
+      "real_conf": 0.46096962779818246,
+      "blank_conf": 0.5257107162460727,
+      "noise_conf": 0.4985814031060346,
+      "real_minus_blank_gap": -0.06474108844789023
+    }
+  },
+  "probe5": {
+    "natural": {
+      "n": 300,
+      "overall_accuracy": 0.18333333333333332,
+      "mean_confidence": 0.9939973178545412,
+      "confidence_minus_accuracy_gap": 0.8106639845212078
+    },
+    "flattened": {
+      "n": 300,
+      "overall_accuracy": 0.0033333333333333335,
+      "mean_confidence": 0.5997747484890096,
+      "confidence_minus_accuracy_gap": 0.5964414151556763
+    },
+    "inverted": {
+      "n": 300,
+      "overall_accuracy": 0.006666666666666667,
+      "mean_confidence": 0.46096962779818246,
+      "confidence_minus_accuracy_gap": 0.4543029611315158
+    }
+  }
+}

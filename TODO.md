@@ -102,7 +102,9 @@ not invented templates.
 - [x] Fake Probe 1 data + makefile wiring — repaired (645ae11);
   `make smoke-test` passes end to end (no GPU, no `data/raw`)
 - [ ] Probe 1: 9 training runs on **real** renderer manifests (3
-  conditions × 3 seeds), then glyph-level fixed-effects fit
+  conditions × 3 seeds), then glyph-level fixed-effects fit — **ran**;
+  headline β withheld (flattened/inverted ~0% line acc); see
+  `docs/probe1_fixed_effects.md`
   — Colab; last known mid-inverted seed0; probing (`probe_all.sh`)
   not yet confirmed
 - [x] Probe 2 code (`probe2_confusion_graph.py`) — built; needs real ckpts

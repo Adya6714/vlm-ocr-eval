@@ -261,10 +261,11 @@ real data and is metric-only.
       Colab runs on `data/manifests/{hindi,bengali}_*.jsonl` (manifests
       exist; FE fit still TODO). `make smoke-test` is the no-GPU
       architecture proof and passes.
-  - [ ] Fit per-glyph-cluster accuracy against log exposure with glyph
-        fixed effects; the residual after controlling for exposure is the
-        complexity estimate. Not built — needs the 9 runs on real
-        renderer manifests.
+  - [x] Fit per-glyph-cluster accuracy against log exposure with glyph
+        fixed effects; complexity = glyph fixed effect (estimated, not
+        residual). **Ran on Hindi Colab artifacts — headline β withheld:**
+        flattened/inverted line accuracy ~0% makes FE fit uninterpretable.
+        `src/analysis/probe1_fixed_effects.py` → `docs/probe1_fixed_effects.md`
 - [ ] **Probe 2 — Confusion structure.** For every misread glyph
       cluster, extract the full output-token distribution, not just the
       argmax. Build a confusion graph over glyph classes from the

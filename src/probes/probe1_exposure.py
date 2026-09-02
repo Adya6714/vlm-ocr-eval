@@ -13,13 +13,9 @@ run that was interrupted mid-way. train.py's checkpoint step count is
 the source of truth for "did this run finish" -- no separate state is
 kept here, so there's only one place that answers "is run X done."
 
-Does NOT yet include the glyph-level fixed-effects analysis
-(IMPLEMENTATION.md's "fit per-glyph-cluster accuracy against log
-exposure with glyph fixed effects") -- that requires trained model
-output that doesn't exist until these 9 runs actually complete. That
-analysis is the next piece to build once real training data and a
-real Stage 1 renderer output exist; this file is scoped to getting the
-9 runs themselves running and organized.
+Does NOT run the glyph-level fixed-effects analysis — that lives in
+`src/analysis/probe1_fixed_effects.py` once the 9 runs and Probe 5
+jsonl exist.
 
 INTERFACE DEPENDENCY (same one train.py has): expects one manifest
 file per condition (natural/flattened/inverted), each in the
@@ -139,8 +135,8 @@ def run_probe1(manifests: dict, script: str, output_root: str, total_steps: int,
         run_training(args)
 
     print("\nProbe 1: all 9 runs complete.")
-    print("Next step (not yet built): glyph-level fixed-effects analysis "
-          "over these 9 checkpoints' per-glyph-cluster accuracy.")
+    print("Next: python src/analysis/probe1_fixed_effects.py "
+          "(glyph FE fit → docs/probe1_fixed_effects.md)")
 
 
 if __name__ == "__main__":

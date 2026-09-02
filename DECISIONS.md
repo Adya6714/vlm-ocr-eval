@@ -1080,3 +1080,29 @@ prior without using the image; if the gap opens with training, more
 steps may be the fix. Snapshots must be opt-in because nine Probe 1
 runs × 25 saves × ~19M-param state dicts is prohibitive on free Drive.
 
+---
+
+### 49. Probe 1 FE fit: withhold headline β when non-natural accuracy is at floor
+
+**Decision:** `probe1_fixed_effects.py` runs a pre-check on **Probe 5
+line-level** Tier 1/2 accuracy per condition before reporting the
+log(exposure) coefficient. If flattened and inverted pooled line
+accuracy are both below 2%, the script **does not** present β as the
+project headline — it reports diagnostic fits with an explicit
+uninterpretability warning. Complexity is the **estimated glyph fixed
+effect** from the design matrix, not "residual after exposure."
+
+**Alternatives considered:** (a) report β anyway because per-glyph
+alignment shows non-zero token matches; (b) skip the analysis entirely;
+(c) use only the natural condition (no crossover).
+
+**Why not (a):** lenient grapheme alignment inflates glyph-token
+accuracy (e.g. flattened ~5% token vs 0.3% line) — reporting β would
+misattribute a natural-vs-floor contrast to exposure. **Why not (b):**
+the negative result ("dial moved confidence but collapsed accuracy") is
+itself the finding. **Why not (c):** no within-glyph exposure
+variation.
+
+**First Hindi run outcome (2026-09-02):** natural 18.3% line acc;
+flattened 0.3%; inverted 0.7% — headline β withheld. See
+`docs/probe1_fixed_effects.md`.
