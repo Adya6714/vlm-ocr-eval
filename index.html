@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>vlm-ocr-eval — a controlled OCR experiment</title>
+<title>vlm-ocr-eval</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -116,8 +116,9 @@
     line-height:1.06;
     letter-spacing:-0.015em;
     margin:0 0 22px;
-    max-width:16ch;
+    max-width:28ch;
   }
+  .hero.paper-hero h1{max-width:18ch; font-size:clamp(2.1rem, 4.6vw, 3.2rem);}
   h1 em{font-style:italic; color:var(--ink-blue);}
   .hero-sub{
     font-size:1.18rem; color:var(--ink-soft); max-width:56ch; margin:0 0 34px;
@@ -617,25 +618,31 @@
 
 <div class="topbar">
   <div class="topbar-inner">
-    <div class="brand">vlm-ocr-eval <span class="dim">/ from BOOK.md</span></div>
+    <div class="brand">vlm-ocr-eval <span class="dim walk-only">/ Sarvam Deep-Dive</span><span class="dim paper-only">/ Preprint</span></div>
     <nav class="navlinks">
-      <a href="#hero">Idea</a>
+      <a href="#hero" class="walk-only">Idea</a>
+      <a href="#hero-paper" class="paper-only">Title</a>
       <a href="#transfer" class="walk-only">Transfer</a>
-      <a href="#whyhard">Why hard</a>
-      <a href="#measure">Measure</a>
-      <a href="#control">Control</a>
-      <a href="#instrument">Instrument</a>
-      <a href="#probes">Probes</a>
-      <a href="#architecture">Models</a>
+      <a href="#motivation" class="paper-only">Related Work</a>
+      <a href="#whyhard" class="walk-only">Why hard</a>
+      <a href="#whyhard" class="paper-only">Introduction</a>
+      <a href="#measure" class="walk-only">Measure</a>
+      <a href="#instrument" class="paper-only">Method</a>
+      <a href="#control" class="walk-only">Control</a>
+      <a href="#instrument" class="walk-only">Instrument</a>
+      <a href="#probes" class="walk-only">Probes</a>
+      <a href="#architecture" class="walk-only">Models</a>
       <a href="#tour" class="walk-only">Tour</a>
-      <a href="#status">Ledger</a>
-      <a href="#findings">Findings</a>
-      <a href="#conclusion">Spine</a>
-      <a href="#improve">Improve</a>
+      <a href="#status" class="walk-only">Ledger</a>
+      <a href="#findings" class="walk-only">Findings</a>
+      <a href="#findings" class="paper-only">Results</a>
+      <a href="#conclusion" class="walk-only">Spine</a>
+      <a href="#improve" class="walk-only">Improve</a>
+      <a href="#improve" class="paper-only">Limitations</a>
       <a href="#future">Future</a>
       <span class="mode-toggle" role="group" aria-label="Reading mode">
-        <button type="button" id="modeWalk" aria-pressed="true">Walkthrough</button>
-        <button type="button" id="modePaper" aria-pressed="false">Paper</button>
+        <button type="button" id="modeWalk" aria-pressed="true" aria-label="Deep-Dive">Deep-Dive</button>
+        <button type="button" id="modePaper" aria-pressed="false" aria-label="Research Paper">Preprint</button>
       </span>
     </nav>
   </div>
@@ -643,32 +650,36 @@
 
 <div class="mode-root">
 
-<!-- PAPER ABSTRACT -->
-<section id="abstract" class="mode-item paper-only" style="--walk-order:0; --paper-order:1">
-  <div class="fig-rail">
-    <div class="fig-num paper-num">A</div>
-    <div class="fig-body">
-      <div class="section-kicker paper-label">Abstract</div>
-      <h2 class="section-title">A controlled OCR experiment</h2>
-      <div class="abstract-box">
-        <p>We’re building a controlled OCR experiment to separate data-exposure effects from intrinsic script difficulty, and then probing a model we own to understand whether its predictions, confidence, and errors are actually grounded in the visual input.</p>
-        <p>Stages 0–2a and the Hindi probe suite are measured in this checkout: Probes 2, 3, 3b, 5, 5b (720 records), 6 (held-out Tier&nbsp;C, leakage-checked), and encoder-memory ablation. Demo LoRA, structure metrics, RLVR, full production-API rank-correlation, cascade, and remaining Decision&nbsp;#46 upgrades (equal-frequency ECE bins, patch-shuffle, mixed effects, kappa, bootstrap CIs) are deferred. Probe&nbsp;1’s exposure coefficient is <strong>withheld</strong>: flattened/inverted line accuracy collapsed (~0%), so the fixed-effects fit is uninterpretable. Bengali sweep is partial (quota).</p>
-      </div>
+<!-- PAPER HERO + ABSTRACT -->
+<header class="hero paper-hero mode-item paper-only" id="hero-paper" style="--walk-order:0; --paper-order:1">
+  <div class="hero-inner">
+    <div class="hero-kicker">Working title · preprint draft</div>
+    <p class="not-product">Diagnostic OCR · from-scratch instrument · Hindi probe suite</p>
+    <h1>Confidence Without Sight</h1>
+    <p class="hero-sub">Token-level confidence in autoregressive OCR can remain near ceiling when visual evidence is removed, when encoder memory is zeroed, and when the script is unseen — even as recognition accuracy collapses.</p>
+    <div class="abstract-box">
+      <p><strong>Claim.</strong> Decoder confidence is widely treated as a proxy for visual certainty. This work tests that proxy on a blank Indic OCR instrument: if confidence tracked the image, it would fall on blank and matched-noise inputs, after encoder memory is deleted, and on scripts never seen at training time.</p>
+      <p><strong>Method.</strong> A ~19.5M-parameter encoder–decoder with a grapheme-cluster vocabulary and no Indic pretraining is trained on exposure-controlled line crops (natural / flattened / inverted). Probes then measure real versus blank versus matched-noise confidence, a training-curve disambiguation, calibration and zero-shot script substitution, encoder-memory ablation, and held-out real-scan transfer. Scoring applies grapheme-aware encoding equivalence before residual error is counted.</p>
+      <p><strong>Finding.</strong> On Hindi, mean confidence is 0.9940 on real lines versus 0.9899 on blanks (gap +0.0041). Across training, the real–blank gap is indistinguishable from zero while loss falls ~18× (3.210 → 0.182). Zeroing encoder memory changes mean confidence by −0.0030; ~12% of token-choice mass remains image-dependent. On held-out real scans, line accuracy is 0.0000 at confidence 0.9861 (plain) and 0.9768 (degraded). Probe 5b (720 records, three seeds) finds a between-condition confidence range of 0.0037, below Hindi seed SD (0.0043). Content and confidence are dissociated.</p>
     </div>
   </div>
-</section>
+</header>
 
-<!-- HERO -->
+<!-- DEEP-DIVE HERO -->
 <header class="hero mode-item walk-only" id="hero" style="--walk-order:1; --paper-order:0">
   <div class="hero-inner">
-    <div class="hero-kicker">Part One · The Idea · from BOOK.md</div>
-    <p class="not-product">Not a product OCR — an experiment on why Indic OCR fails</p>
-    <h1>Hard because it’s hard to <em>see</em> — or because it was rarely <em>seen</em>?</h1>
-    <p class="hero-sub">If an OCR model performs badly on a particular Indic character, is it because that character is inherently difficult to recognize, or simply because the model did not see it often enough during training? And when the model says it is 99% confident — is it actually looking at the image?</p>
+    <div class="hero-kicker">Sarvam Deep-Dive · Vision interview</div>
+    <p class="not-product">Not a competing OCR — a mechanism question for Sarvam Vision</p>
+    <h1>Probing Sarvam Vision: why does confidence stay flat across a 40-point accuracy gap?</h1>
+    <p class="hero-sub">Sarvam’s own published word accuracy is Hindi <strong>95.91</strong> / Kashmiri <strong>55.93</strong> (a 39.98&nbsp;pp gap). Live Extract-API confidence on the same three languages is Hindi <strong>0.9997</strong> / Kashmiri <strong>0.9970</strong> (delta <strong>0.0027</strong>; Santhali 0.9974). Blank pages score <strong>0.0000</strong> — the channel can go to zero; it does not, on the scripts the same bench calls hard.</p>
+
+    <div class="abstract-box" style="margin-bottom:22px;">
+      <p>I built this for a conversation at Sarvam, not as a generic OCR landing page. You already publish the Hindi–Kashmiri accuracy gap. I asked a narrower question: does Extract confidence move with that gap? On 35 cached pages it does not. Blank at 0.0000 rules out a stuck-at-one meter. The rest of this page is the instrument I trained so we can open <em>why</em> — blank/noise, training curve, encoder-memory ablation, zero-shot scripts — rather than only score another engine.</p>
+    </div>
 
     <div class="finding-callout" style="margin-top:8px; margin-bottom:22px;">
-      <div class="fc-label">Walkthrough lead · Stage 5a transfer (measured, 35 pages)</div>
-      <p>Sarvam’s own published gap is <strong>39.98&nbsp;pp</strong> (Hindi 95.91 vs Kashmiri 55.93). Measured Extract-API confidence on the same three languages is Hindi <strong>0.9997</strong> · Santhali <strong>0.9974</strong> · Kashmiri <strong>0.9970</strong> — delta <strong>0.0027</strong>. Blank pages score <strong>0.0000</strong>: the confidence mechanism has real dynamic range; it simply does not use it on the hard scripts. That is a question about a design assumption, not a claim the system is broken. The instrument below is the “why.”</p>
+      <div class="fc-label">Stage 5a · measured, 35 pages, cache-once</div>
+      <p>Published gap <strong>39.98&nbsp;pp</strong> (Hindi 95.91 vs Kashmiri 55.93). Extract confidence Hindi <strong>0.9997</strong> · Santhali <strong>0.9974</strong> · Kashmiri <strong>0.9970</strong> — delta <strong>0.0027</strong>. Blank <strong>0.0000</strong>. That is a design-assumption question, not a claim the system is broken.</p>
     </div>
 
     <div class="status-strip">
@@ -678,7 +689,7 @@
       <span class="pill out">Deferred: Stage 2b / 3 / 5-full / 6</span>
     </div>
 
-    <p class="one-liner">The point of owning the model is not to brag about accuracy; it is to ask whether the model knows when it does not know.</p>
+    <p class="one-liner">The point of owning a model is not to brag about accuracy; it is to ask whether the model knows when it does not know.</p>
 
     <div class="signature" style="margin-top:40px;">
       <div class="signature-label">Mechanism — Probe 3 idea (click). Illustrative, not settled proof.</div>
@@ -698,7 +709,11 @@
 
     <details class="say-this">
       <summary>SAY THIS</summary>
-      <div class="say-body"><p>“I’m not shipping OCR. Sarvam already publishes a 40-point Hindi–Kashmiri accuracy gap; their Extract confidence on those languages differs by 0.0027, while blank goes to zero. I’m asking whether confidence is designed to track hardness — and I built a blank instrument so we can open the mechanism.”</p></div>
+      <div class="say-body"><p>“I’m not shipping OCR. Sarvam already publishes a 40-point Hindi–Kashmiri accuracy gap; Extract confidence on those languages differs by 0.0027, while blank goes to zero. I’m asking whether confidence is designed to track hardness — and I built a blank instrument so we can open the mechanism.”</p></div>
+    </details>
+    <details class="say-this">
+      <summary>SAY THIS · if they ask “so what should we change?”</summary>
+      <div class="say-body"><p>“I would not start with a bigger model. Blank at zero already shows the meter can move. The question is whether confidence is supposed to track published hardness, or only ‘is there a page.’ If it is the former, the instrument probes — especially encoder-memory ablation — are a cheap way to see whether the decoder’s prior is doing the confident work.”</p></div>
     </details>
   </div>
 </header>
@@ -710,9 +725,11 @@
     <div class="fig-num paper-num">0</div>
     <div class="fig-body">
       <div class="section-kicker walk-label">Chapter 0 · Why reading is hard</div>
-      <div class="section-kicker paper-label">0. Background</div>
-      <h2 class="section-title">A machine does not see letters; it sees numbers</h2>
-      <p class="lede">A page is a grid of RGB values. Modern readers generate text one visual unit at a time from that grid. English clean-print OCR is mostly solved; Indic document OCR is not — for three tangled reasons.</p>
+      <div class="section-kicker paper-label">Introduction</div>
+      <h2 class="section-title walk-only">A machine does not see letters; it sees numbers</h2>
+      <h2 class="section-title paper-only">OCR as sequential prediction over a pixel grid</h2>
+      <p class="lede walk-only">A page is a grid of RGB values. Modern readers generate text one visual unit at a time from that grid. English clean-print OCR is mostly solved; Indic document OCR is not — for three tangled reasons.</p>
+      <p class="lede paper-only">A page is a grid of RGB values. An autoregressive reader emits one visual unit at a time from that grid. Clean-print English OCR is largely solved; Indic document OCR is not, for three entangled reasons.</p>
       <div class="kv-grid">
         <div class="kv-card">
           <h3>Data</h3>
@@ -727,7 +744,8 @@
           <p>A low language score could be exposure starvation, intrinsic difficulty, or both. A benchmark table alone cannot tell which — untangling requires controlling training exposure and owning the model.</p>
         </div>
       </div>
-      <p class="one-liner">That single sentence is the entire reason this project builds a model from scratch rather than only ever calling someone else’s API.</p>
+      <p class="one-liner walk-only">That single sentence is the entire reason this project builds a model from scratch rather than only ever calling someone else’s API.</p>
+      <p class="one-liner paper-only">Untangling those causes requires controlling training exposure and inspecting decoder internals; a closed API cannot supply either.</p>
     </div>
   </div>
 </section>
@@ -739,9 +757,11 @@
     <div class="fig-num paper-num">1</div>
     <div class="fig-body">
       <div class="section-kicker walk-label">Chapter 1 · Measuring correctness</div>
-      <div class="section-kicker paper-label">1. Evaluation</div>
-      <h2 class="section-title">When two strings differ — is that a real misread?</h2>
-      <p class="lede">Indic orthography allows many valid encodings. If you call those “errors,” every engine looks worse than it is. Stage 0 forces that answer into the open <em>before</em> anyone trains a new model.</p>
+      <div class="section-kicker paper-label">Method · Evaluation</div>
+      <h2 class="section-title walk-only">When two strings differ — is that a real misread?</h2>
+      <h2 class="section-title paper-only">Equivalence-aware evaluation</h2>
+      <p class="lede walk-only">Indic orthography allows many valid encodings. If you call those “errors,” every engine looks worse than it is. Stage 0 forces that answer into the open <em>before</em> anyone trains a new model.</p>
+      <p class="lede paper-only">Indic orthography admits multiple valid encodings of the same reading. Treating those as errors inflates every engine’s residual. Encoding and phonetic equivalence are therefore recorded before any new model is trained.</p>
       <div class="kv-grid">
         <div class="kv-card">
           <h3>Tier 1 — encoding</h3>
@@ -779,9 +799,11 @@
     <div class="fig-num paper-num">2</div>
     <div class="fig-body">
       <div class="section-kicker walk-label">Chapter 2 · Control exposure</div>
-      <div class="section-kicker paper-label">2. Renderer</div>
-      <h2 class="section-title">The renderer is experimental apparatus — not a pretty-picture generator</h2>
-      <p class="lede">Train on a natural corpus and क may appear 10,000 times while ज्ञ appears 100. If accuracy is 95% vs 60%, you cannot conclude ज्ञ is visually harder. So we hold volume matched and set frequencies on purpose.</p>
+      <div class="section-kicker paper-label">Method · Data</div>
+      <h2 class="section-title walk-only">The renderer is experimental apparatus — not a pretty-picture generator</h2>
+      <h2 class="section-title paper-only">Exposure as an experimental factor</h2>
+      <p class="lede walk-only">Train on a natural corpus and क may appear 10,000 times while ज्ञ appears 100. If accuracy is 95% vs 60%, you cannot conclude ज्ञ is visually harder. So we hold volume matched and set frequencies on purpose.</p>
+      <p class="lede paper-only">On a natural corpus, क may appear 10,000 times while ज्ञ appears 100. Accuracy of 95% versus 60% then cannot be read as visual difficulty. Token volume is therefore held matched and frequencies are set on purpose (natural / flattened / inverted).</p>
 
       <div class="freq-grid">
         <div class="freq-card">
@@ -812,7 +834,8 @@
 
       <p class="prose" style="margin-top:22px;">Controlled text → HarfBuzz shaping → layout from real documents → optional measured degradation → page image with exact ground truth → line-crop manifests. Tier&nbsp;A holds everything fixed except exposure; B adds realism; C is real scans (Probe&nbsp;6).</p>
             <div class="flow-box">
-        <div class="flow-caption">BOOK.md Ch.2 — scientific chain</div>
+        <div class="flow-caption walk-only">BOOK.md Ch.2 — scientific chain</div>
+        <div class="flow-caption paper-only">Exposure-controlled render pipeline</div>
         <pre>           Real documents
                  │
                  ▼
@@ -843,7 +866,8 @@
    visually hard — or because the model
    rarely saw it?</pre>
       </div>
-      <p class="one-liner">When I changed only how often each grapheme appeared, how did recognition change?</p>
+      <p class="one-liner walk-only">When I changed only how often each grapheme appeared, how did recognition change?</p>
+      <p class="one-liner paper-only">The identifying question is whether recognition changes when only grapheme frequency is varied.</p>
     </div>
   </div>
 </section>
@@ -855,11 +879,14 @@
     <div class="fig-num paper-num">3</div>
     <div class="fig-body">
       <div class="section-kicker walk-label">Chapter 3 · The instrument</div>
-      <div class="section-kicker paper-label">3. Instrument</div>
-      <h2 class="section-title">Learn to read from nothing — so “what did it see?” is answerable</h2>
-      <p class="lede">Fine-tune a pretrained OCR/VLM and you still don’t know what caused its knowledge — it may already have seen millions of Indic pages. The instrument is ~19.5M parameters, grapheme-cluster vocabulary (not BPE), zero Indic pretraining, trained on line crops.</p>
+      <div class="section-kicker paper-label">Method · Instrument</div>
+      <h2 class="section-title walk-only">Learn to read from nothing — so “what did it see?” is answerable</h2>
+      <h2 class="section-title paper-only">A blank OCR instrument</h2>
+      <p class="lede walk-only">Fine-tune a pretrained OCR/VLM and you still don’t know what caused its knowledge — it may already have seen millions of Indic pages. The instrument is ~19.5M parameters, grapheme-cluster vocabulary (not BPE), zero Indic pretraining, trained on line crops.</p>
+      <p class="lede paper-only">Fine-tuning a pretrained OCR or document VLM leaves exposure history unidentified: the base may already have seen millions of Indic pages. The instrument is therefore trained from scratch: ~19.5M parameters, a grapheme-cluster vocabulary rather than BPE, zero Indic pretraining, line-crop supervision.</p>
             <div class="flow-box">
-        <div class="flow-caption">BOOK.md Ch.3 — encoder / decoder</div>
+        <div class="flow-caption walk-only">BOOK.md Ch.3 — encoder / decoder</div>
+        <div class="flow-caption paper-only">Encoder–decoder</div>
         <pre>                IMAGE
                   │
                   ▼
@@ -879,7 +906,7 @@
                   ▼
              next grapheme</pre>
       </div>
-            <div class="flow-box">
+            <div class="flow-box walk-only">
         <div class="flow-caption">BOOK.md Ch.3 — how the chapters connect</div>
         <pre>CHAPTER 1
 Define what &quot;correct&quot; means
@@ -907,7 +934,7 @@ Later probe chapters
         ├── Is it actually looking at the image?
         └── Does confidence mean correctness?</pre>
       </div>
-      <div class="flow-box">
+      <div class="flow-box walk-only">
         <div class="flow-caption">Why an API is not enough (Ch.8)</div>
         <pre>API:          Image → [BLACK BOX] → Text
 
@@ -924,9 +951,11 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
     <div class="fig-num paper-num">4</div>
     <div class="fig-body">
       <div class="section-kicker walk-label">Chapter 7 · The probes</div>
-      <div class="section-kicker paper-label">4. Probes</div>
-      <h2 class="section-title">We built the model so we can open it up</h2>
-      <p class="lede">Accuracy tells almost nothing about <em>how</em> the model arrived there. Think of the instrument as a patient in a lab, and the probes as medical tests. They are the project’s real deliverable.</p>
+      <div class="section-kicker paper-label">Method · Probes</div>
+      <h2 class="section-title walk-only">We built the model so we can open it up</h2>
+      <h2 class="section-title paper-only">Diagnostic probes</h2>
+      <p class="lede walk-only">Accuracy tells almost nothing about <em>how</em> the model arrived there. Think of the instrument as a patient in a lab, and the probes as medical tests. They are the project’s real deliverable.</p>
+      <p class="lede paper-only">Accuracy does not identify the computation that produced it. The probes are the primary measurements: exposure, confusion, visual grounding, calibration, encoder-memory ablation, and held-out real-scan transfer.</p>
 
       <div class="probe-q">
         <h3>1 · Exposure — does seeing more help?</h3>
@@ -939,12 +968,13 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
         <p>Zero encoder memory before projection. Confidence barely moves (Δ −0.0030) while ~12% of token-choice mass still depends on the image. Content and confidence are dissociated. <strong>BUILT — VERIFIED</strong>, 3 seeds.</p>
         <h3>4 · Fair scoring</h3>
         <p>Same Tier 1/2 rules on instrument outputs as on Tesseract.</p>
-        <h3>5 · Calibration — can I trust confidence?</h3>
+        <h3 class="walk-only">5 · Calibration — can I trust confidence?</h3>
+        <h3 class="paper-only">5 · Calibration — does confidence track correctness?</h3>
         <p>Especially on starved glyphs (Probe 1 × 5). Probe 5b is the zero-shot floor on unseen scripts. <strong>BUILT — VERIFIED</strong> (5b: 720 records, 3 seeds).</p>
         <h3>6 · Reality check</h3>
         <p>Do synthetic findings hold on Tier C real documents? Paper-scope Probe 6: held-out Hindi, leakage-checked, 3 seeds. <strong>BUILT — VERIFIED</strong>.</p>
       </div>
-            <div class="flow-box">
+            <div class="flow-box walk-only">
         <div class="flow-caption">BOOK.md Ch.7 — how the probes fit</div>
         <pre>                 INSTRUMENT
                      │
@@ -978,9 +1008,11 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
     <div class="fig-num paper-num">5</div>
     <div class="fig-body">
       <div class="section-kicker walk-label">Two models on purpose</div>
-      <div class="section-kicker paper-label">5. Architecture</div>
-      <h2 class="section-title">Instrument asks why · demo asks can we ship</h2>
-      <p class="lede"><strong>Instrument:</strong> blank → controlled exposure → scientific measurement. <strong>Demo:</strong> pretrained → LoRA → practical OCR. Merging them into one set of weights would destroy the science (Decision #1).</p>
+      <div class="section-kicker paper-label">Method · Architecture</div>
+      <h2 class="section-title walk-only">Instrument asks why · demo asks can we ship</h2>
+      <h2 class="section-title paper-only">Instrument versus demo</h2>
+      <p class="lede walk-only"><strong>Instrument:</strong> blank → controlled exposure → scientific measurement. <strong>Demo:</strong> pretrained → LoRA → practical OCR. Merging them into one set of weights would destroy the science (Decision #1).</p>
+      <p class="lede paper-only">Two weight families are kept separate. The instrument is trained from scratch under controlled exposure. A production-shaped demo (pretrained document VLM + LoRA) is described only in this phase. Merging them would confound exposure history with the measurements (Decision #1).</p>
       <div class="figure">
         <div class="diagram-frame"><svg viewBox="0 0 980 300" xmlns="http://www.w3.org/2000/svg">
             <defs>
@@ -1315,7 +1347,8 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
 <div class="part-divider mode-item" id="divider" style="--walk-order:9; --paper-order:9">
   <div class="part-divider-inner">
     <hr class="part-divider-rule" />
-    <p class="part-divider-voice">Everything above is the design. Everything below is what actually happened against a free Colab T4 under a hard deadline.</p>
+    <p class="part-divider-voice walk-only">Everything above is the design. Everything below is what actually happened against a free Colab T4 under a hard deadline.</p>
+    <p class="part-divider-voice paper-only">The preceding sections specify the design. The following sections report what was executed on a free Colab T4, and what remains unrun.</p>
   </div>
 </div>
 
@@ -1325,10 +1358,12 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
     <div class="fig-num walk-num">06</div>
     <div class="fig-num paper-num">6</div>
     <div class="fig-body">
-      <div class="part-two-banner">Part Two · What actually happened</div>
+      <div class="part-two-banner walk-only">Part Two · What actually happened</div>
+      <div class="part-two-banner paper-only">Results and status</div>
       <div class="section-kicker walk-label">Status ledger</div>
-      <div class="section-kicker paper-label">6. Status</div>
-      <h2 class="section-title">Built vs described-only (BOOK Appendix B)</h2>
+      <div class="section-kicker paper-label">Appendix · Status</div>
+      <h2 class="section-title walk-only">Built vs described-only (BOOK Appendix B)</h2>
+      <h2 class="section-title paper-only">What was executed</h2>
       <table class="data">
         <thead><tr><th>Stage</th><th>What ran</th><th>Status</th></tr></thead>
         <tbody>
@@ -1359,8 +1394,9 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
     <div class="fig-num paper-num">7</div>
     <div class="fig-body">
       <div class="section-kicker walk-label">Findings</div>
-      <div class="section-kicker paper-label">7. Results</div>
-      <h2 class="section-title">Measured in this checkout</h2>
+      <div class="section-kicker paper-label">Results</div>
+      <h2 class="section-title walk-only">Measured in this checkout</h2>
+      <h2 class="section-title paper-only">Measured results</h2>
       <div class="finding-callout">
         <div class="fc-label">Attention ablation — MEASURED (Claim B mechanism)</div>
         <p>3 seeds, 180 Hindi Tier&nbsp;C images. Mean confidence full <strong>0.9861</strong> vs zero-memory <strong>0.9891</strong> (Δ <strong>−0.0030</strong>). Top-1 agreement <strong>0.8794</strong>; prior sufficiency <strong>0.8827</strong> (~12% of token-choice mass still depends on the image). Confidence is prior-dominated; content is not 100% prior.</p>
@@ -1425,21 +1461,21 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
   <div class="fig-rail">
     <div class="fig-num paper-num">M</div>
     <div class="fig-body">
-      <div class="section-kicker paper-label">Motivation</div>
+      <div class="section-kicker paper-label">Related Work / Motivation</div>
       <h2 class="section-title">Non-silent failure, and a synthetic–real split</h2>
-      <p class="lede">Two literature facts already cited in this repo’s decisions — not a vendor scoreboard.</p>
+      <p class="lede">Two published facts motivate a blank instrument rather than another engine table.</p>
       <div class="kv-grid">
         <div class="kv-card">
           <h3>GlotOCR Bench</h3>
-          <p>Production OCR systems fail <em>non-silently</em> at true zero script exposure: confidence stays high when the script in the image is one the model has never seen (IMPLEMENTATION.md Probe 5b motivation).</p>
+          <p>Production OCR systems fail <em>non-silently</em> at true zero script exposure: confidence stays high when the script in the image is one the model has never seen (Probe 5b motivation).</p>
         </div>
         <div class="kv-card">
           <h3>2026 Devanagari stress-test</h3>
-          <p>Ten systems cluster tightly on clean synthetic text but spread across a 76-point range on real scans (DECISIONS.md #9). A synthetic-only finding is not a document finding.</p>
+          <p>Ten systems cluster tightly on clean synthetic text but spread across a 76-point range on real scans. A synthetic-only finding is not a document finding.</p>
         </div>
         <div class="kv-card">
-          <h3>What we then built</h3>
-          <p>A blank instrument plus blank/noise, training-curve, encoder-memory ablation, and held-out Tier&nbsp;C probes — so “is confidence looking at the page?” is answerable without a closed API.</p>
+          <h3>What was then built</h3>
+          <p>A blank instrument plus blank/noise, training-curve, encoder-memory ablation, and held-out Tier&nbsp;C probes, so that whether confidence depends on the page can be answered without a closed API.</p>
         </div>
       </div>
     </div>
@@ -1453,8 +1489,9 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
     <div class="fig-num paper-num">8</div>
     <div class="fig-body">
       <div class="section-kicker walk-label">Compute ledger</div>
-      <div class="section-kicker paper-label">8. Compute</div>
-      <h2 class="section-title">What ran on a free T4 — and what still did not</h2>
+      <div class="section-kicker paper-label">Appendix · Compute</div>
+      <h2 class="section-title walk-only">What ran on a free T4 — and what still did not</h2>
+      <h2 class="section-title paper-only">Compute</h2>
       <p class="ledger-note">Amber · free Colab T4 · Hindi probes now in-tree</p>
       <div class="ledger-grid">
         <div class="ledger-row">
@@ -1493,8 +1530,10 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
     <div class="fig-body">
       <div class="section-kicker walk-label">BOOK · Conclusion</div>
       <div class="section-kicker paper-label">Conclusion</div>
-      <h2 class="section-title">The scientific spine</h2>
-      <p class="lede">Step back from the modules. Three implied fixes — and what is deferred, not abandoned.</p>
+      <h2 class="section-title walk-only">The scientific spine</h2>
+      <h2 class="section-title paper-only">Implications</h2>
+      <p class="lede walk-only">Step back from the modules. Three implied fixes — and what is deferred, not abandoned.</p>
+      <p class="lede paper-only">Three implications follow from the measured probes. Components listed as deferred are out of scope for this phase, not abandoned.</p>
       <div class="kv-grid">
         <div class="kv-card">
           <h3>1 · Score fairly</h3>
@@ -1522,9 +1561,11 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
     <div class="fig-num paper-num">I</div>
     <div class="fig-body">
       <div class="section-kicker walk-label">BOOK · What I would improve</div>
-      <div class="section-kicker paper-label">Methodology</div>
-      <h2 class="section-title">Weak spots already visible in the code — not generic advice</h2>
-      <p class="lede">Decision&nbsp;#46. Two of the seven upgrades are now built (3-seed headlines; encoder-memory ablation as a mechanistic Probe&nbsp;3). The rest remain checkable next work — not generic advice.</p>
+      <div class="section-kicker paper-label">Limitations</div>
+      <h2 class="section-title walk-only">Weak spots already visible in the code — not generic advice</h2>
+      <h2 class="section-title paper-only">Limitations and planned upgrades</h2>
+      <p class="lede walk-only">Decision&nbsp;#46. Two of the seven upgrades are now built (3-seed headlines; encoder-memory ablation as a mechanistic Probe&nbsp;3). The rest remain checkable next work — not generic advice.</p>
+      <p class="lede paper-only">Decision&nbsp;#46. Three-seed aggregation and encoder-memory ablation are built. Equal-frequency ECE bins, patch-shuffle, mixed-effects models, a second-labeler kappa, and fuller bootstrap CIs are not. Probe&nbsp;1’s exposure coefficient is withheld: flattened and inverted line accuracy collapsed (~0%). The Bengali sweep is partial (GPU quota).</p>
       <div class="scope-grid">
         <div class="scope-row">
           <div class="scope-tag"><span class="stage">Built</span>Seeds</div>
@@ -1573,8 +1614,9 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
     <div class="fig-num paper-num">9</div>
     <div class="fig-body">
       <div class="section-kicker walk-label">Described only</div>
-      <div class="section-kicker paper-label">9. Future work</div>
-      <h2 class="section-title">Taught in BOOK — not claimed as finished</h2>
+      <div class="section-kicker paper-label">Future Work</div>
+      <h2 class="section-title walk-only">Taught in BOOK — not claimed as finished</h2>
+      <h2 class="section-title paper-only">Deferred components</h2>
       <div class="scope-grid">
         <div class="scope-row"><div class="scope-tag"><span class="stage">Demo</span>Ch.4</div><div class="scope-why"><h4>LoRA on a pretrained doc-VLM</h4><p>Shipping shape. Must stay separate from the instrument — frozen weights already contain exposure history.</p></div></div>
         <div class="scope-row"><div class="scope-tag"><span class="stage">Structure</span>Ch.5</div><div class="scope-why"><h4>Reading order + table binding</h4><p>Kendall tau vs complexity; cell↔header. Blocked on layout-bank gaps.</p></div></div>
@@ -1593,11 +1635,16 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
     <div class="fig-num walk-num">11</div>
     <div class="fig-num paper-num">R</div>
     <div class="fig-body">
-      <div class="section-kicker">On this page · and in the book</div>
-      <h2 class="section-title">Suggested path</h2>
+      <div class="section-kicker walk-label">On this page · and in the book</div>
+      <div class="section-kicker paper-label">Document map</div>
+      <h2 class="section-title walk-only">Suggested path</h2>
+      <h2 class="section-title paper-only">Section order</h2>
       <div class="docs-list">
-        <div class="doc-row primary"><span class="doc-name"><a href="#hero">Idea</a></span><span class="doc-desc">the scientific question</span></div>
-        <div class="doc-row"><span class="doc-name"><a href="#whyhard">Why hard</a></span><span class="doc-desc">BOOK Ch.0</span></div>
+        <div class="doc-row primary walk-only"><span class="doc-name"><a href="#hero">Idea</a></span><span class="doc-desc">the Sarvam question</span></div>
+        <div class="doc-row primary paper-only"><span class="doc-name"><a href="#hero-paper">Title</a></span><span class="doc-desc">abstract</span></div>
+        <div class="doc-row paper-only"><span class="doc-name"><a href="#motivation">Related Work</a></span><span class="doc-desc">non-silent failure · synthetic–real split</span></div>
+        <div class="doc-row walk-only"><span class="doc-name"><a href="#whyhard">Why hard</a></span><span class="doc-desc">BOOK Ch.0</span></div>
+        <div class="doc-row paper-only"><span class="doc-name"><a href="#whyhard">Introduction</a></span><span class="doc-desc">Ch. 0</span></div>
         <div class="doc-row"><span class="doc-name"><a href="#measure">Measure</a></span><span class="doc-desc">BOOK Ch.1</span></div>
         <div class="doc-row"><span class="doc-name"><a href="#control">Control</a></span><span class="doc-desc">BOOK Ch.2 + flowchart</span></div>
         <div class="doc-row"><span class="doc-name"><a href="#instrument">Instrument</a></span><span class="doc-desc">BOOK Ch.3</span></div>
@@ -1619,7 +1666,8 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
   <div class="wrap-wide">
     <div>
       <div class="fmark">vlm-ocr-eval</div>
-      <p class="fnote">Visual retelling of BOOK.md — a controlled OCR experiment to separate exposure from intrinsic difficulty, then ask whether confidence is grounded. Measured vs reported labeled as in the book.</p>
+      <p class="fnote walk-only">Sarvam Deep-Dive — published Hindi–Kashmiri accuracy versus Extract confidence, then a blank instrument to open the mechanism. Measured vs reported labeled as in BOOK.md.</p>
+      <p class="fnote paper-only">Preprint draft of <em>Confidence Without Sight</em>. A blank Indic OCR instrument; probes of whether decoder confidence is grounded in the image. Measured versus withheld results are labeled as such.</p>
     </div>
     <div class="mono" style="font-size:0.8rem; color:var(--ink-soft);">GitHub Pages · repo-root index.html</div>
   </div>
@@ -1652,6 +1700,9 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
       body.setAttribute('data-mode', mode);
       walkBtn.setAttribute('aria-pressed', mode === 'walkthrough' ? 'true' : 'false');
       paperBtn.setAttribute('aria-pressed', mode === 'paper' ? 'true' : 'false');
+      document.title = mode === 'paper'
+        ? 'Confidence Without Sight — preprint'
+        : 'vlm-ocr-eval — Sarvam Deep-Dive';
       try { localStorage.setItem('vlm-ocr-eval-mode', mode); } catch(e){}
     }
     walkBtn.addEventListener('click', ()=> setMode('walkthrough'));
