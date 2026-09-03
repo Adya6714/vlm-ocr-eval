@@ -369,30 +369,63 @@ fix" is the bar, not just "here's a number").
 
 ## Stage 5 — Sarvam transfer
 
-**Budget: ~200 pages total, ₹0.5/page, max 10 pages/job. Allocate up
-front, do not spend ad hoc.**
+**Budget: ~200 pages total, ₹0.5/page, max 10 pages/job (confirmed
+docs.sarvam.ai, Sept 2026).  Allocate up front, do not spend ad hoc.**
 
-- [ ] `src/eval/sarvam_client.py` — thin wrapper over the Sarvam API.
-      **Every page is fetched exactly once and cached** (`data/cache/`);
-      all downstream analysis (thresholds, comparisons) runs offline
-      against the cache. This is the only way the escalation sweep in
-      Stage 6 stays inside budget.
-- [ ] Budget allocation (adjust in `DECISIONS.md` if it changes):
-      60 pages core probe set · 40 pages degradation conditions ·
-      60 pages cascade · 40 pages reserve.
-- [ ] `src/eval/transfer_analysis.py` — pre-specified rank-correlation
-      test (with a permutation null — decide the statistic _before_
-      looking at results) between the instrument's per-glyph-class error
-      rates and Sarvam's, to check whether the causal finding "rhymes" at
-      production scale. Report the correlation whether it's high or low —
-      a null result here is still a finding.
-  - [ ] Run on Tier A (clean) _and_ Tier B (degraded) — clean-only
-        comparison is close to meaningless (see `DECISIONS.md` #15, and
-        the June 2026 Devanagari benchmark result cited there).
+### Stage 5a — minimal confidence-gap probe (BUILT — ready to run)
 
-**Acceptance:** a single cached JSON per fetched page, a report on
-whether Probes 1–3's findings correlate with Sarvam's error pattern, and
-an explicit statement of the correlation strength either way.
+- [x] `src/eval/sarvam_client.py` — thin wrapper over Sarvam Doc-AI
+      **Extract** endpoint (not Digitise — only Extract exposes
+      `annotations.{field}.confidence`, confirmed Sept 2026).  Uses a
+      trivial single-field schema (`{"full_text": "..."}`) to yield one
+      confidence number per page comparable to `mean_confidence`.
+      **Every page cached once** to `data/cache/sarvam/` by SHA-256 of
+      image bytes; re-running never re-calls the API (DECISIONS.md #19).
+      Handles full async lifecycle: POST extract → poll
+      `/doc-ai/v1/job/{job_id}/status` → GET
+      `/doc-ai/v1/job/{job_id}/results` → extract
+      `annotations.full_text.confidence`.  SARVAM_API_KEY read from env,
+      never logged. API schema confirmed from live docs Sept 2026.
+
+- [x] `src/probes/sarvam_transfer_probe.py` — runs the client on a
+      **35-image sample** (10 Hindi / 10 Santhali / 10 Kashmiri / 5 blank)
+      drawn with `Random(0)` from `data/raw/{hindi,santhali,kashmiri}/`.
+      Budget: 35 pages × ₹0.5 = **₹17.50**, well under the project limit.
+      Handles resume; prints per-image progress so slow ≠ stuck.  Inline
+      summary after run; full analysis in `analyze_sarvam_transfer.py`.
+      **Imports compile cleanly; NOT YET RUN** — requires
+      `export SARVAM_API_KEY=<key>` and a deliberate user invocation.
+
+      Key comparison: do Sarvam's confidence scores drop in proportion to
+      its own published accuracy gap (Hindi 95.91 → Kashmiri 55.93,
+      a ~40pp drop), or do they stay near ceiling the way the instrument's
+      own confidence did (delta < 0.004)?
+
+      Published accuracy used (verified from sarvam.ai/blogs/sarvam-vision,
+      Sept 2026; DECISIONS.md #60):
+        Hindi     95.91 %
+        Santhali  80.32 %
+        Kashmiri  55.93 %
+
+- [ ] `src/analysis/analyze_sarvam_transfer.py` — offline analysis
+      against the cached JSONL. Bootstrap CIs, comparison table,
+      plain-language finding. **Not yet built** (needs results first).
+
+### Stage 5b — full transfer analysis (DEFERRED)
+
+The original Stage 5 spec also called for:
+- Rank-correlation test (with permutation null) between the instrument's
+  per-glyph-class error rates and Sarvam's, on Tier A (clean) and Tier B
+  (degraded) — see DECISIONS.md #15.
+- `src/eval/transfer_analysis.py` with pre-specified statistic.
+- 60 + 40 pages for core probe + degradation conditions, 60 for cascade.
+
+This fuller version is deferred — run Stage 5a first and commit results
+before spending more budget.
+
+**Acceptance (5a):** 35 cached JSON records in `data/cache/sarvam/`,
+one output JSONL, and an honest report of whether Sarvam confidence tracks
+its own per-language accuracy gap.
 
 ---
 

@@ -1413,3 +1413,56 @@ synthetic holdout. Accuracy tables still caveat that Probe 5
 synthetic accuracy is on training crops.
 
 
+
+---
+
+### 59. Stage 5 minimal scope: single confidence field via Extract, not Digitise
+
+**Decision:** Stage 5a uses Sarvam Doc-AI **Extract** (not Digitise)
+with a trivial one-field schema `{"full_text": "..."}`.  This is the
+only endpoint that exposes `annotations.{field}.confidence` — Digitise
+produces text + layout but no confidence scores (confirmed
+docs.sarvam.ai, Sept 2026).  Using one field per page gives a single
+confidence number directly comparable to this project's own
+`mean_confidence` metric.
+
+The minimal probe is intentionally small: 10 Hindi + 10 Santhali +
+10 Kashmiri + 5 blank = 35 images, ₹17.50 at ₹0.5/page.  The full
+original scope (rank-correlation across Tier A/B, permutation null,
+multi-field schema) is deferred to Stage 5b once 5a results exist.
+
+**Alternatives considered:** (a) use Digitise and scrape the text into
+a WER metric; (b) use Extract with a richer schema (multiple semantic
+fields); (c) use a pre-saved config_id instead of an inline schema.
+
+**Why not (a):** Digitise doesn't expose confidence; computing WER
+from Sarvam's text output is a *different* comparison than confidence-
+as-measurand and conflates accuracy with confidence.
+**Why not (b):** multi-field schema complicates aggregating "one
+confidence per page" and increases chance of schema validation errors.
+**Why not (c):** inline schema avoids a manual platform setup step and
+keeps the code self-contained.
+
+---
+
+### 60. Sarvam published accuracy figures: source and verification date
+
+**Decision:** The per-language accuracy figures used in Stage 5a are:
+  Hindi     95.91 % (word accuracy, 100 × (1 − WER))
+  Santhali  80.32 %
+  Kashmiri  55.93 %
+
+**Source:** sarvam.ai/blogs/sarvam-vision (Sarvam Vision launch post),
+verified by fetching the page Sept 2026.  These are the Sarvam Vision
+model's word-accuracy results on the Sarvam Indic OCR Bench (20,267
+samples across 22 Indian languages, ranging from 1800–present,
+semantic-block-level curation, WER-based metric).  The same source
+shows Sarvam Vision outperforms Gemini 3 Pro, GPT 5.2, and Claude
+Opus 4.5 on this benchmark.
+
+These figures are cited descriptively (not as a competing baseline
+claim) to frame the expected gap in Stage 5a's comparison question:
+does Sarvam's *confidence* drop in proportion to this accuracy gap?
+Do not treat them as this project's own measurement.  If Sarvam ships
+an updated model or benchmark, re-fetch before citing any updated
+numbers.
