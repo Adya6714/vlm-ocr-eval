@@ -1,19 +1,21 @@
-# Colab Run Log
+# What ran where
 
-## export_manifest_scaled.py — full run (hindi + bengali, 100 pages/mode)
+Heavy training and OCR batches run on Colab (free T4). This laptop
+holds the extracted numbers, not the checkpoints.
 
-- Status: in progress
-- Params: --pages-per-mode 100, both scripts
-- Output: data/manifests/{hindi,bengali}\_{natural,flattened,inverted}.jsonl
+**Canonical numbers:** [`docs/RESULTS.md`](./docs/RESULTS.md)  
+**Committed jsonl:** `data/probe_results/`  
+**Local zip / checkpoint blobs:** `_local_archives/` (gitignored)
 
-## run_baselines.py — full run (all 4 languages)
+| Job | Machine | Lands in-repo as |
+|---|---|---|
+| Hindi instrument 3×3 + Probes 3/5 | Colab | `data/probe_results/probe3_*.jsonl`, `probe5_*.jsonl` |
+| Probe 3b curve, Probe 5b | Colab | `probe3_curve_*.json`, `probe5b_*.jsonl` |
+| Attention ablation, Probe 2, Probe 6 | Colab | `attention_ablation_*.jsonl`, `probe2_*.jsonl`, `probe6_*.jsonl` |
+| Stage 5a Extract (35 pages) | this laptop | `sarvam_transfer_probe.jsonl` + `data/cache/sarvam/` |
+| Stage 0 baselines | Colab / local | `data/predictions/` (gitignored) |
+| Bengali 3×3 checkpoints | Colab | `_local_archives/Bengali Experiment Final.zip` only — **no Bengali probe jsonl** |
+| Manifest export (100 pages/mode) | Colab | `data/manifests/{hindi,bengali}_*.jsonl` |
 
-- Status: completed
-- Output: zip folder, exact repo path TBD — see audit below
-- Note: `--help` was also run separately just to check usage, produced no results of its own
-
-## export_manifest_scaled.py — dry run (hindi, 3 pages/mode)
-
-- Status: completed, ran in local/Cursor sandbox, not Colab
-- Purpose: verify resumability before committing to the full Colab job
-- Output: data/manifests/hindi\_{natural,flattened,inverted}.jsonl (small test versions, since overwritten... check with Cursor)
+Do not drop a new zip on the repo root. Extract into the IMPLEMENTATION.md
+path for that stage, then move the zip to `_local_archives/`.

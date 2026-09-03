@@ -21,10 +21,12 @@ venv/
 
 # Generated / heavy data (rebuild or fetch locally / from Colab)
 data/*
+!data/README.md
 !data/manifests/
 !data/manifests/**
 # Small probe result jsonl files must be committed (see AGENTS.md).
 !data/probe_results/
+!data/probe_results/**
 
 data/cache/
 data/raw/
@@ -32,8 +34,11 @@ data/predictions/
 data/predictions_backup/
 data/manifests/*.progress.json
 
-# Colab export archives (jsonl already lives under data/predictions/ when extracted)
+# Colab / Drive export archives. Extracted jsonl lives under
+# data/probe_results/ or data/predictions/. Heavy zips (Bengali
+# checkpoints, raw dumps) belong in _local_archives/, never git.
 *.zip
+_local_archives/
 
 # Checkpoints and probe smoke artifacts
 checkpoints/

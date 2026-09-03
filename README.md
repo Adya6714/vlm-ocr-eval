@@ -42,7 +42,7 @@ Spec / why / tasks: `IMPLEMENTATION.md`, `DECISIONS.md`, `TODO.md`, `AGENTS.md`.
 | → Probe 5 / 5b (calibration + zero-shot floor) | **BUILT — VERIFIED** (5b: 720 records, 3 seeds) |
 | → Attention ablation (Claim B mechanism) | **BUILT — VERIFIED** (encoder-memory zeroing; jsonl in `data/probe_results/`) |
 | → Probe 6 (Tier C vs synthetic, paper scope) | **BUILT — VERIFIED** (Tier C held-out real + blank control; leakage-checked; jsonl in `data/probe_results/`) |
-| 5 Sarvam transfer | Not built — [Ch. 8](./BOOK.md#chapter-8--why-you-cant-learn-everything-from-an-api) |
+| 5 Sarvam transfer | **5a VERIFIED** (35 pages); full rank-corr deferred — [Ch. 8](./BOOK.md#chapter-8--why-you-cant-learn-everything-from-an-api) |
 | 6 Triage cascade | Not built — [Ch. 9](./BOOK.md#chapter-9--when-to-trust-a-machine-and-when-to-escalate) |
 
 Numbers and acceptance criteria: [`IMPLEMENTATION.md`](./IMPLEMENTATION.md). Blocked items are not verified findings.
@@ -88,11 +88,17 @@ pytest -q
 
 ---
 
+## Where the numbers live
+
+Trace every headline (file → analyzer → probe script): **[`docs/RESULTS.md`](./docs/RESULTS.md)**.  
+Committed jsonl: `data/probe_results/`. Local Colab zips/checkpoints: `_local_archives/` (not git).
+
 ## Docs map
 
 | File | Role |
 |---|---|
 | [Live site](https://adya6714.github.io/vlm-ocr-eval/) | Interview walkthrough (GitHub Pages ← repo-root `index.html`) |
+| [`docs/RESULTS.md`](./docs/RESULTS.md) | Headline → jsonl → code |
 | [`BOOK.md`](./BOOK.md) | Teaching narrative — rebuild from first principles |
 | [`IMPLEMENTATION.md`](./IMPLEMENTATION.md) | Module spec + status |
 | [`DECISIONS.md`](./DECISIONS.md) | Numbered design choices |
@@ -104,13 +110,14 @@ pytest -q
 | [`docs/attention_ablation_analysis.md`](./docs/attention_ablation_analysis.md) | Claim B attention mechanism probe |
 | [`docs/probe2_confusion_analysis.md`](./docs/probe2_confusion_analysis.md) | GT-aligned confusion + p(true)/rank |
 | [`docs/probe6_synthetic_real_analysis.md`](./docs/probe6_synthetic_real_analysis.md) | Tier C held-out check (paper scope) |
+| [`docs/sarvam_transfer_analysis.md`](./docs/sarvam_transfer_analysis.md) | Stage 5a transfer |
 | [`docs/statistical_repair.md`](./docs/statistical_repair.md) | Bootstrap / TOST / Kashmiri retraction |
 
 ---
 
 ## Future work (deferred on purpose)
 
-**2b Demo, RLVR, Sarvam transfer (~200 cached pages), cascade (router quality not cost savings)** — reasoning in [BOOK Ch. 4–6, 8–9](./BOOK.md); not claimed as built.
+**2b Demo, RLVR, Stage 5b full transfer (~200 cached pages + rank-corr), cascade (router quality not cost savings)** — reasoning in [BOOK Ch. 4–6, 8–9](./BOOK.md). Stage 5a (35 pages) is built; the rest is not claimed as built.
 
 **Probe 5b is built** (above). In addition, attention ablation, Probe 2 GT-aligned confusion, and the reduced Probe 6 paper scope are now **BUILT — VERIFIED**; full original Probe 6 scope (Tier B sweep, handwriting anecdote, multi-system gaps) remains deferred (DECISIONS.md #58).
 

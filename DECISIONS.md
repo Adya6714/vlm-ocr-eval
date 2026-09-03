@@ -1466,3 +1466,23 @@ does Sarvam's *confidence* drop in proportion to this accuracy gap?
 Do not treat them as this project's own measurement.  If Sarvam ships
 an updated model or benchmark, re-fetch before citing any updated
 numbers.
+
+---
+
+### 61. Canonical results live in data/probe_results + docs/; Colab zips stay local
+
+**Decision:** committed evidence is (1) `data/probe_results/*.jsonl`
+and (2) the matching `docs/*_analysis.md`. The map is `docs/RESULTS.md`.
+Colab export zips and checkpoint blobs live in `_local_archives/`
+(gitignored), never at the repo root. Empty leftover trees
+(`data/real`, `data/synthetic`, `configs/`) are not a second data
+layout. Scratch notes (`delete.md`) are not source of truth.
+
+**Alternatives considered:** (a) commit zip binaries; (b) invent a
+`results/` tree that duplicates IMPLEMENTATION.md paths; (c) keep
+Drive dumps on the repo root “for convenience.”
+
+**Why not (a):** AGENTS.md already forbids zip binaries in git;
+Bengali checkpoints alone are ~2 GB. **Why not (b):** every probe
+already writes the IMPLEMENTATION.md path. **Why not (c):** root zips
+made the checkout look like an inbox and hid the actual jsonl.
