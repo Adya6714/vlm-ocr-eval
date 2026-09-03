@@ -20,7 +20,7 @@ once checkpoints are present under --output-root.
 
 Compared side-by-side in one run: hindi (in-distribution), santhali,
 kashmiri (zero-shot), blank (Probe 3 floor). Accuracy is deliberately
-omitted for unseen scripts — see DECISIONS.md #49.
+omitted for unseen scripts — see DECISIONS.md #50.
 """
 from __future__ import annotations
 

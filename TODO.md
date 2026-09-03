@@ -35,13 +35,21 @@ project — protect time for those first if something has to give.
   `equivalence_tables.py`; verified on self-tests + real taxonomy pass
 - [x] Build Tier 2 transliteration equivalence (ISO 15919 target) —
   `transliteration_equivalence.py` wired into the scorer
-- [ ] Expand Tier 2 validation to ~40 hand-picked pairs (still a seed
-  set of mostly negative examples)
+- [x] Expand Tier 2 validation — 38/38 hand-checked pairs
+  (`docs/tier2_validation.md`, DECISIONS.md #54); corpus TIER2
+  remains 0% after Tier 1 (finding: phonetic residuals rare)
 - [ ] LLM-as-judge spot-check over Tier 2 disagreements
+  (blocked until Tier 2 fires on real corpus diffs)
 - [x] First taxonomy report from real predictions
   (`data/predictions/error_taxonomy.csv`)
-- [ ] Close UNREVIEWED rows via more `hand_review.py` notes, then
-  treat the per-engine Tier 1 / Tier 2 / genuine fractions as final
+- [x] Adjudication sample for UNREVIEWED (n=200, seed=42) +
+  bootstrap/ranking code — `adjudication_sample.py`,
+  `docs/adjudication_analysis.md` (DECISIONS.md #55). Ranking
+  stable; bootstrap CI waits on human `--queue` labels.
+- [ ] Label the adjudication sample via
+  `hand_review.py --queue data/predictions/adjudication_sample.jsonl`,
+  then re-run bootstrap; after that close remaining UNREVIEWED and
+  treat per-engine Tier 1 / Tier 2 / genuine fractions as final
 
 ## Stage 1 — Renderer (days 4–8)
 
@@ -61,9 +69,13 @@ project — protect time for those first if something has to give.
 
 - [x] Instrument code: tokenizer, encoder, decoder, training loop,
   resumable checkpointing, `generate.py` — architecture smoke via
-  `make smoke-test` (verified passing after 645ae11)
-- [ ] Instrument: train once on Devanagari at natural frequency, confirm
-  it converges at all before anything else (Colab; status TBD)
+  `make smoke-test`; **VERIFIED** on real Hindi manifests (9 Probe 1
+  checkpoints; Probe 3/5/5b inference). Fake path
+  (`make_fake_probe1_data.py`) remains smoke-only.
+- [x] Instrument: train once on Devanagari at natural frequency —
+  done as part of the 9 Hindi Probe 1 runs (natural/flattened/
+  inverted × 3 seeds); Colab checkpoints, results in
+  `data/probe_results/`
 - [x] Line-crop manifests for Probe 1 / `train.py`: adapter
   `export_line_manifest.py` + `export_manifest_scaled.py`
   (DECISIONS.md #41 / #43 / #44). Full-scale Hindi + Bengali
@@ -107,16 +119,38 @@ not invented templates.
   `docs/probe1_fixed_effects.md`
   — Colab; last known mid-inverted seed0; probing (`probe_all.sh`)
   not yet confirmed
-- [x] Probe 2 code (`probe2_confusion_graph.py`) — built; needs real ckpts
-- [x] Probe 3 code (`probe3_blank_control.py`) — built; needs real ckpts
+- [!] Probe 2 — rewritten GT-aligned + p(true)/rank (DECISIONS.md #57);
+  checkpoint paths script-scoped (#47); 10/10 unit tests. **Blocked
+  on Colab** — no local `checkpoint_hindi_natural_seed{N}.pt`.
+  `probe2_confusion_graph.py` → `probe2_hindi_natural_seed{N}.jsonl`;
+  `analyze_probe2.py` → `docs/probe2_confusion_analysis.md`
+- [x] Probe 3 — BUILT — VERIFIED (9 files, n=100;
+  `data/probe_results/probe3_hindi_*.jsonl`)
+- [x] Probe 3b training curve — BUILT — VERIFIED (5 snapshots × seeds
+  0–2 on hindi/natural; gap sign-flips 4/5 steps → ≈0 across seeds;
+  step-3000 all-negative mean −0.0075 noted separately;
+  `docs/probe3_curve_analysis.md`, `docs/statistical_repair.md`)
 - [ ] Probe 4: re-run Stage 0's equivalence tables against instrument
   output (Stage 0 scorers already cover the method)
-- [x] Probe 5 code (`probe5_calibration.py`) + aggregator — built;
-  aggregated calibration table still blocked on Colab probe runs
-- [ ] Probe 5b: render Santhali + Kashmiri, zero-shot inference,
-  calibration check at true zero exposure (optional / lowest priority)
-- [x] Probe 6 code (`probe6_synthetic_real_gap.py`) — built; still needs
-  held-out pages 100–109 rendered + instrument/baseline predictions
+- [x] Probe 5 — BUILT — VERIFIED (9 files, n=100;
+  `data/probe_results/probe5_hindi_*.jsonl`); aggregator present
+- [x] Probe 5b — BUILT — VERIFIED (hindi/natural seeds 0–2, 720
+  records; Kashmiri Bonferroni retracted; between-cond range 0.0037
+  < seed SDs; script substitution 360/360;
+  `docs/probe5b_analysis.md`, DECISIONS.md #52–#53)
+- [!] Attention ablation (Claim B mechanism) — code + 11 unit tests
+  done; Colab run blocked (no local hindi/natural checkpoints).
+  `probe_attention_ablation.py` →
+  `attention_ablation_hindi_natural_seed{N}.jsonl`; analysis →
+  `docs/attention_ablation_analysis.md` (DECISIONS.md #56)
+- [!] Probe 6 (paper scope) — Tier C plain+degraded+blank vs synthetic
+  Claim B; leakage **confirmed 0 overlaps** (manifests vs
+  `data/raw/hindi/images/`). Code + 5/5 tests + analysis stub.
+  Inference **blocked** (no local hindi/natural checkpoints).
+  Full original Probe 6 deferred (DECISIONS.md #58).
+  `probe6_synthetic_real_gap.py` →
+  `probe6_synthetic_real_hindi_seed{N}.jsonl`;
+  `docs/probe6_synthetic_real_analysis.md`
 
 ## Stage 6 — Sarvam transfer + triage cascade (days 34–36)
 
@@ -136,9 +170,12 @@ not invented templates.
 - [x] `BOOK.md` teaching book written (rebuild narrative + App. E
   reproduce commands); keep current as new verified results land
 - [ ] Methodology upgrades (DECISIONS.md #46 / BOOK after Conclusion):
-  equal-frequency Probe 5 bins + ECE/Brier; Probe 3 attention +
-  patch-shuffle; 3-seed mean±std; mixed-effects Probe 1; kappa on a
-  hand-review subsample; bootstrap CIs — not this phase
+  equal-frequency Probe 5 bins + ECE/Brier; Probe 3 attention-weight
+  introspection still open; **encoder-memory ablation built**
+  (`probe_attention_ablation.py`, #56 — Colab run pending);
+  patch-shuffle still open; 3-seed mean±std largely done for 5b/3b;
+  mixed-effects Probe 1; kappa on a hand-review subsample; bootstrap
+  CIs — not this phase
 - [ ] Keep `DECISIONS.md` current — append, don't rewrite
 - [x] Heavy scripts (OCR batches, training) written for Colab: one
   `--data-root`, no local-only paths, export into the IMPLEMENTATION.md

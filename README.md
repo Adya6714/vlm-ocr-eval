@@ -43,7 +43,7 @@ Spec / why / tasks: `IMPLEMENTATION.md`, `DECISIONS.md`, `TODO.md`, `AGENTS.md`.
 
 ## Headline results (reproduce in BOOK Appendix E)
 
-- **Stage 0 (measured):** of Tesseract predictions that were not exact match, **~20.4%** were Tier 1 encoding variants (not genuine misreads). Large `UNREVIEWED` remains — report is real, not final.
+- **Stage 0 (measured):** of Tesseract predictions that were not exact match, **~20.4%** were Tier 1 encoding variants (not genuine misreads). Large `UNREVIEWED` remains — report is real, not final. Stratified adjudication sample (n=200) + bootstrap/ranking: `src/analysis/adjudication_sample.py`, `docs/adjudication_analysis.md` (DECISIONS.md #55). Tier 1 does **not** reorder engines/languages on this corpus; bootstrap CI waits on human `--queue` labels.
 - **Stage 1 (measured):** glyph-frequency modes hit \(\mathrm{TV}\le 0.08\) on the Hindi GT slice (natural 0 / flat ≈0.047 / inv ≈0.005); Tier A pages render well under 1 s.
 - **Probes 3 & 5 (reported in prior Colab write-up; jsonl not in this checkout):** mean confidence ≈0.99 on real, blank, and noise; high-confidence bucket accuracy ≈0.10 — confidence not grounded in the image at that checkpoint. Re-run commands: BOOK [Appendix E](./BOOK.md#appendix-e--reproduce-every-headline-number).
 

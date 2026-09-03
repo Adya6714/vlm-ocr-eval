@@ -67,23 +67,28 @@ against, and produces the encoding-equivalence tables used in Probe 4.
       see `DECISIONS.md` #4). Output:       a lookup used by the scorer to mark
       a diff as "not an error." `__main__` self-test run (9/9). Applied
       to real predictions inside `error_taxonomy.py`.
-- [x] BUILT — QUEUED `src/eval/transliteration_equivalence.py` — **Tier 2, phonetic
+- [x] BUILT — VERIFIED `src/eval/transliteration_equivalence.py` — **Tier 2, phonetic
       equivalence.** Wraps a transliteration library (aksharamukha or
       indic_transliteration, target scheme: ISO 15919 — not a lossy
       romanization, see `DECISIONS.md` #8) to canonicalize both reference
       and hypothesis, then compares. Reported separately from Tier 1 —
       this is a judgment call about what counts as "the same word," not
-      an uncontroversial encoding fact. Wired into `error_taxonomy.py`;
-      the in-file validation set is still a stub (negative pairs +
-      TODOs), not the ~40-pair set below.
-  - [ ] Validation set: ~40 hand-picked known-equivalent pairs spanning
-        every equivalence class above, checked before this tier is trusted
-        on the full corpus.
+      an uncontroversial encoding fact. Wired into `error_taxonomy.py`.
+  - [x] Validation set: 38 hand-checked pairs (23 positive / 15
+        negative+boundary); `python3 src/eval/transliteration_equivalence.py`
+        → 38/38. Classes: nukta NFC/NFD, virama+ZWJ/ZWNJ, ॐ↔ओं,
+        Bengali ৎ↔ত্; negatives per #18. Docs:
+        `docs/tier2_validation.md`, DECISIONS.md #54. Honest <40 —
+        unverified candidates left as TODO, not invented.
   - [ ] LLM-as-judge spot-check: run Claude over the cases Tier 2 flags
         as _disagreeing_ with a human label, to catch false negatives in
         the transliteration library itself. Validation only — the
         reported metric stays the deterministic transliteration match, not
         the LLM judgment (reproducibility).
+        **Note:** corpus TIER2 rate is currently 0% after Tier 1
+        (re-ran `error_taxonomy.py` 2026-09-03) — phonetic residuals
+        are rare here; LLM spot-check waits until Tier 2 fires on
+        real diffs or on the validation-set disagreements.
 - [x] `src/eval/hand_review.py` + `src/eval/hand_review_assist.py` —
       interactive hand-reading viewer. Tier 1/2 explained diffs are
       skipped; every UNEXPLAINED engine output gets a *suggested*
@@ -97,12 +102,24 @@ against, and produces the encoding-equivalence tables used in Probe 4.
       includes whitespace-only no-fit pair); note-outcome checks:
       `PYTHONPATH=src/eval python3 src/eval/hand_review.py --self-test`
       (7/7). Applies Tier 0 `normalize_whitespace()` before heuristic
-      diffing (DECISIONS.md #22).
+      diffing (DECISIONS.md #22). `--queue PATH` adjudicates a
+      pre-drawn sample jsonl (notes schema) and appends to
+      `hand_review_notes.jsonl` (DECISIONS.md #55).
+- [x] BUILT — VERIFIED `src/analysis/adjudication_sample.py` —
+      stratified UNREVIEWED sample (n=200, seed=42) →
+      `data/predictions/adjudication_sample.jsonl`; bootstrap Tier 1
+      rate over full non-exact population (CI withheld until humans
+      label); ranking test raw vs Tier-1 error rates. Report:
+      `docs/adjudication_analysis.md`. Ranking stable on current
+      corpus (engines/languages not reordered).
 
 **Acceptance:** a report stating, per engine, what fraction of all
 reported errors are Tier 1, what fraction are Tier 2, and what fraction
 are genuine. This report is the input to the interview's strongest single
 claim, so it needs to be reproducible from a script, not from memory.
+The 20.4% Tier-1-among-non-exact headline stays provisional until the
+adjudication sample is labeled and the bootstrap CI is reported
+(DECISIONS.md #55).
 
 ---
 
@@ -167,34 +184,38 @@ GlotOCR slice after #28.
 
 ### 2a. The instrument (from scratch)
 
-- [x] BUILT — QUEUED `src/models/instrument/tokenizer.py` — grapheme-cluster
+- [x] BUILT — VERIFIED `src/models/instrument/tokenizer.py` — grapheme-cluster
       vocabulary, not BPE (see `DECISIONS.md` #2). Built from the
-      training corpus, not a frozen universal vocab. `__main__` round-trip
-      smoke passed (fake Devanagari strings, not renderer GT).
-- [x] BUILT — QUEUED `src/models/instrument/encoder.py` — small ViT, trained from
+      training corpus, not a frozen universal vocab. Trained on real
+      Hindi line manifests (Probe 1 × 9 runs); `__main__` round-trip
+      smoke also passes on fake strings.
+- [x] BUILT — VERIFIED `src/models/instrument/encoder.py` — small ViT, trained from
       scratch, no pretrained weights (zero pretraining exposure is the
-      whole point). `__main__` shape/NaN smoke passed on random tensors.
-- [x] BUILT — QUEUED `src/models/instrument/decoder.py` — 4–6 layer autoregressive
+      whole point). Real Hindi training produced the 9 checkpoints used
+      by Probe 3/5 jsonl under `data/probe_results/`.
+- [x] BUILT — VERIFIED `src/models/instrument/decoder.py` — 4–6 layer autoregressive
       decoder over the grapheme-cluster vocabulary, cross-attending to
-      encoder features. Code is in tree; `__main__` smoke is the intended
-      check (`make stage2-instrument-smoke`).
-- [x] BUILT — QUEUED `src/models/instrument/train.py` — line-level training first
+      encoder features. Same real-Hindi verification as encoder; smoke
+      via `make stage2-instrument-smoke`.
+- [x] BUILT — VERIFIED `src/models/instrument/train.py` — line-level training first
       (fast iteration), then page-level. fp16, gradient checkpointing
       (Turing T4 has no bf16 — see `DECISIONS.md` #3 / hard constraints).
       Checkpointing must be resumable mid-run; assume the Colab session
       dies. Consumes a line-crop JSONL manifest `{"image_path","text"}`
-      — Stage 1 still emits page images + boxes, so real training is
-      blocked on that adapter (DECISIONS.md #37).
-- [x] BUILT — QUEUED `src/models/instrument/generate.py` — greedy decode
+      (DECISIONS.md #37). Verified: 9 Hindi Probe 1 checkpoints
+      (3 conditions × 3 seeds) trained on real manifests; evidence is
+      the Probe 3/5 result files (checkpoints live on Colab Drive).
+- [x] BUILT — VERIFIED `src/models/instrument/generate.py` — greedy decode
       (no beam, no KV cache) returning text, token ids, per-step
-      confidence, and top-k — what Probes 2/3/5 need. Smoke path loads a
-      Probe 1 checkpoint from `/tmp/probe1_smoke` or `/tmp/probe1_test`.
+      confidence, and top-k — what Probes 2/3/5 need. Verified via
+      Probe 3/5/5b inference on real Hindi checkpoints.
 - [x] BUILT — QUEUED `scripts/make_fake_probe1_data.py` — noise line-crops
       + manifest so the instrument/Probe 1 machinery can run without
-      Stage 1 renderer output. Not a finding.
-- [ ] Target size: ~30–60M params. Target: trains to convergence on
-      one script in well under an hour on a free T4. Not yet run on
-      real Devanagari renderer output.
+      Stage 1 renderer output. Not a finding. Remains QUEUED: this
+      *is* the fake path.
+- [x] Target size: ~30–60M params (~19.5M realized). Trains on one
+      script in well under an hour on a free T4 — verified on real
+      Hindi manifests (9 Probe 1 runs).
 
 ### 2b. The demo (LoRA on a real small VLM)
 
@@ -247,8 +268,8 @@ binding-accuracy number comparable against Sarvam's Extract endpoint
 ## Stage 4 — The probe suite (the actual deliverable)
 
 All six probes run on **the instrument**, except Probe 4 (Tier 1/2
-equivalence, already built in Stage 0) and Probe 6, which compares against
-real data and is metric-only.
+equivalence, already built in Stage 0). Probe 6 compares synthetic
+Claim B numbers to real Tier C (paper scope; DECISIONS.md #58).
 
 - [x] BUILT — QUEUED **Probe 1 — Exposure vs. complexity (orchestrator only).**
       `src/probes/probe1_exposure.py` trains the instrument three times
@@ -266,41 +287,85 @@ real data and is metric-only.
         residual). **Ran on Hindi Colab artifacts — headline β withheld:**
         flattened/inverted line accuracy ~0% makes FE fit uninterpretable.
         `src/analysis/probe1_fixed_effects.py` → `docs/probe1_fixed_effects.md`
-- [ ] **Probe 2 — Confusion structure.** For every misread glyph
-      cluster, extract the full output-token distribution, not just the
-      argmax. Build a confusion graph over glyph classes from the
-      runner-up mass. Impossible against a closed API — this is the
-      strongest argument for owning the model. `src/probes/probe2_confusion_graph.py`
-- [ ] **Probe 3 — Reading vs. guessing.** Feed blank/noise images.
-      Whatever accuracy survives is language-model guessing, not vision.
-      Decompose per glyph class; cross-reference against Probe 1's
+- [!] BUILT — BLOCKED **Probe 2 — Confusion structure.** GT-aligned
+      grapheme substitutions on Probe 5b's Hindi sample (Random(0));
+      per misread records true/predicted cluster, top-5, and
+      full-softmax p(true)+rank. Checkpoint paths script-scoped
+      (`checkpoint_hindi_natural_seed{N}.pt`, DECISIONS.md #47/#57).
+      `src/probes/probe2_confusion_graph.py` +
+      `src/analysis/analyze_probe2.py`. Unit tests 10/10.
+      **Blocked:** no hindi/natural checkpoints on this machine —
+      Colab inference required for
+      `data/probe_results/probe2_hindi_natural_seed{0,1,2}.jsonl` and
+      `docs/probe2_confusion_analysis.md` numbers.
+- [x] BUILT — VERIFIED **Probe 3 — Reading vs. guessing.** Feed blank/noise
+      images. Whatever accuracy survives is language-model guessing, not
+      vision. Decompose per glyph class; cross-reference against Probe 1's
       exposure levels — this is the mechanistic account of why low-exposure
       languages hallucinate fluently instead of failing loudly.
-      `src/probes/probe3_blank_control.py`
-- [ ] **Probe 3b — Training-curve disambiguation.** Re-run Probe 3's
-      real-vs-blank confidence comparison at multiple training steps to
-      separate "confidence ungrounded in the image" from "simply
+      `src/probes/probe3_blank_control.py` — 9 files, n=100
+      (`data/probe_results/probe3_hindi_{natural,flattened,inverted}_seed{0,1,2}.jsonl`).
+- [x] BUILT — VERIFIED **Probe 3b — Training-curve disambiguation.** Re-run
+      Probe 3's real-vs-blank confidence comparison at multiple training
+      steps to separate "confidence ungrounded in the image" from "simply
       undertrained." Requires `train.py --keep-snapshots` on a fresh run
       (default resume checkpoint overwrites intermediates).
-      `src/probes/probe3_training_curve.py`
+      `src/probes/probe3_training_curve.py` — 5 snapshots (steps
+      500/1000/2000/3000/5000) on hindi/natural seeds 0–2
+      (`data/probe_results/probe3_curve_hindi_natural_seed{0,1,2}.json`).
+      Analysis: `src/analysis/analyze_probe3_curve.py` →
+      `docs/probe3_curve_analysis.md`. Gap sign-flips 4/5 steps /
+      |SD|>|mean| 4/5 → indistinguishable from zero across seeds;
+      step-3000 all-negative (mean −0.0075) noted separately —
+      `docs/statistical_repair.md`, DECISIONS.md #53.
 - [ ] **Probe 4 — Encoding/phonetic equivalence.** Already built,
       Stage 0. Re-run here against the instrument's own outputs.
-- [ ] **Probe 5 — Calibration under exposure.** Does confidence predict
-      correctness, and does calibration break down specifically for the
-      glyph classes starved in Probe 1's `inverted` condition? This is
-      Probe 1 × Probe 5 crossed and is the project's centerpiece finding
-      — flag it as such in any write-up. `src/probes/probe5_calibration.py`
-- [ ] **Probe 5b — Zero-shot floor.** Render Santhali (Ol Chiki) and
-      Kashmiri (Perso-Arabic) — scripts the instrument has _never_ seen,
-      not just under-sampled. Check whether confidence collapses correctly
-      at true zero exposure, or stays falsely high the way GlotOCR Bench
-      found production models doing. No training needed — inference only.
-      `src/probes/probe5b_zeroshot_floor.py`
-- [ ] **Probe 6 — Synthetic-to-real gap.** Tier C real documents
-      (including the small handwriting anecdote — 15–20 lines, 2–3
-      writers, explicitly labeled qualitative, not a dataset claim)
-      against Tier A/B synthetic. Report the gap per system.
-      `src/probes/probe6_synthetic_real_gap.py`
+- [x] BUILT — VERIFIED **Probe 5 — Calibration under exposure.** Does
+      confidence predict correctness, and does calibration break down
+      specifically for the glyph classes starved in Probe 1's `inverted`
+      condition? This is Probe 1 × Probe 5 crossed and is the project's
+      centerpiece finding — flag it as such in any write-up.
+      `src/probes/probe5_calibration.py` — 9 files, n=100
+      (`data/probe_results/probe5_hindi_{natural,flattened,inverted}_seed{0,1,2}.jsonl`).
+- [x] BUILT — VERIFIED **Probe 5b — Zero-shot floor.** Santhali (Ol Chiki)
+      and Kashmiri (Perso-Arabic) — scripts the instrument has _never_
+      seen, not just under-sampled. Check whether confidence collapses
+      correctly at true zero exposure, or stays falsely high the way
+      GlotOCR Bench found production models doing. No training needed —
+      inference only. `src/probes/probe5b_zeroshot_floor.py` — run on
+      hindi/natural seeds 0–2, 720 records across
+      hindi/santhali/kashmiri/blank
+      (`data/probe_results/probe5b_hindi_natural_seed{0,1,2}.jsonl`).
+      Analysis: `src/analysis/analyze_probe5b.py` →
+      `docs/probe5b_analysis.md` (across-seed mean±SD; between-cond
+      range 0.0037 < seed SDs; Kashmiri Bonferroni retracted;
+      script substitution 360/360; TOST δ=0.05;
+      `docs/statistical_repair.md`, DECISIONS.md #52–#53).
+- [!] BUILT — BLOCKED **Attention ablation (Claim B mechanism).** Does
+      decoder confidence depend on encoder memory at all, or is it
+      prior-dominated? Zeros encoder output before `memory_projection`,
+      compares full vs zero-memory `mean_confidence`, plus per-step
+      KL(full∥zero), top-1 agreement, prior sufficiency
+      (`sum min(p_full, p_zero)`) under teacher-forced shared prefixes.
+      Sample = Probe 5b Hindi condition (same Random(0) draw; pool=60).
+      `src/probes/probe_attention_ablation.py` +
+      `src/analysis/analyze_attention_ablation.py`. Unit tests 11/11.
+      **Blocked:** no `checkpoint_hindi_natural_seed{0,1,2}.pt` on this
+      machine — Colab inference required for
+      `data/probe_results/attention_ablation_hindi_natural_seed{N}.jsonl`
+      and `docs/attention_ablation_analysis.md` numbers (DECISIONS.md #56).
+- [!] BUILT — BLOCKED **Probe 6 — Synthetic-to-real gap (paper scope).**
+      Tier C Hindi plain+degraded+blank vs synthetic Claim B
+      (Probe 3/5). Leakage check: 0 overlaps between
+      `data/manifests/hindi_*.jsonl` and `data/raw/hindi/images/`
+      (held-out valid). `src/probes/probe6_synthetic_real_gap.py` +
+      `src/analysis/analyze_probe6.py`; unit tests 5/5; analysis stub
+      with leakage confirmation written. Full original scope (Tier B
+      sweep, handwriting, held-out pages 100–109, multi-system) deferred
+      (DECISIONS.md #58). **Blocked:** no
+      `checkpoint_hindi_natural_seed{N}.pt` for inference —
+      `data/probe_results/probe6_synthetic_real_hindi_seed{N}.jsonl`
+      pending Colab.
 
 **Acceptance:** each probe produces one clear plot/table and one sentence
 that states a finding and its implied fix (see `BOOK.md` for why "implied

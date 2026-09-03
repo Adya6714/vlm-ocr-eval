@@ -1,0 +1,66 @@
+{
+  "script": "hindi",
+  "condition": "natural",
+  "seed": 1,
+  "steps": [
+    500,
+    1000,
+    2000,
+    3000,
+    5000
+  ],
+  "n_samples": 30,
+  "points": [
+    {
+      "step": 500,
+      "checkpoint": "/content/drive/MyDrive/vlm-ocr-eval/checkpoints/checkpoint_hindi_natural_seed1_step500.pt",
+      "training_loss": 3.1189944744110107,
+      "mean_confidence_real": 0.8871258869842685,
+      "mean_confidence_blank": 0.8623188480210086,
+      "real_minus_blank_gap": 0.024807038963259975,
+      "accuracy": 0.0,
+      "n_samples": 30
+    },
+    {
+      "step": 1000,
+      "checkpoint": "/content/drive/MyDrive/vlm-ocr-eval/checkpoints/checkpoint_hindi_natural_seed1_step1000.pt",
+      "training_loss": 1.0385768413543701,
+      "mean_confidence_real": 0.9774322680571529,
+      "mean_confidence_blank": 0.9702457046154035,
+      "real_minus_blank_gap": 0.007186563441749394,
+      "accuracy": 0.0,
+      "n_samples": 30
+    },
+    {
+      "step": 2000,
+      "checkpoint": "/content/drive/MyDrive/vlm-ocr-eval/checkpoints/checkpoint_hindi_natural_seed1_step2000.pt",
+      "training_loss": 0.5833641290664673,
+      "mean_confidence_real": 0.979391809281275,
+      "mean_confidence_blank": 0.9821086956597492,
+      "real_minus_blank_gap": -0.002716886378474226,
+      "accuracy": 0.0,
+      "n_samples": 30
+    },
+    {
+      "step": 3000,
+      "checkpoint": "/content/drive/MyDrive/vlm-ocr-eval/checkpoints/checkpoint_hindi_natural_seed1_step3000.pt",
+      "training_loss": 0.35398054122924805,
+      "mean_confidence_real": 0.9883285672179082,
+      "mean_confidence_blank": 0.9984980414852328,
+      "real_minus_blank_gap": -0.010169474267324619,
+      "accuracy": 0.0,
+      "n_samples": 30
+    },
+    {
+      "step": 5000,
+      "checkpoint": "/content/drive/MyDrive/vlm-ocr-eval/checkpoints/checkpoint_hindi_natural_seed1_step5000.pt",
+      "training_loss": 0.16589988768100739,
+      "mean_confidence_real": 0.9936510788997076,
+      "mean_confidence_blank": 0.9974014503564331,
+      "real_minus_blank_gap": -0.003750371456725521,
+      "accuracy": 0.2,
+      "n_samples": 30
+    }
+  ],
+  "interpretation": "Loss moved (3.1189944744110107 → 0.16589988768100739) and gap moved (+0.025 → -0.004); neither (a) nor (b) is decisive without more steps or a larger sample."
+}

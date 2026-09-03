@@ -1954,14 +1954,20 @@ model might have probabilities like `क` 52%, `ख` 35%, `ग` 8% — which
 is a very different state of mind from `क` 99% and everything else
 noise. In the first case it was **confused between `क` and `ख`**.
 
-From those runner-up masses we can build a **confusion graph** over
-glyph classes: edges that tell us which graphemes the model frequently
-confuses. That can reveal “the model frequently confuses visually
-similar conjuncts” rather than a single accuracy number.
+Probe 2 makes that concrete **against ground truth**. Align the
+greedy prediction to the GT grapheme sequence; at every substitution,
+record the true cluster, the predicted cluster, the top-5, and —
+because we own the softmax — the probability and rank of the
+**correct** cluster even when it was not selected. If that mass is
+consistently real (say, rank 2–3 with non-trivial probability), the
+encoder is carrying signal that argmax/confidence readout fails to
+surface. If it is near floor, the hopeful story is false — report
+that honestly.
 
 A closed API often returns only `"क"`. Our instrument exposes the
-logits / probabilities (`generate.py`’s top-k). That is one of the
-biggest reasons we built it. Code: `probe2_confusion_graph.py`.
+full distribution (`generate.py`). That is one of the biggest reasons
+we built it. Code: `probe2_confusion_graph.py` (DECISIONS.md #57);
+analysis: `docs/probe2_confusion_analysis.md` (numbers after Colab).
 
 ### Probe 3 — Is it actually looking at the image?
 
@@ -1984,14 +1990,42 @@ fluent. That is **guessing rather than reading**, and it is more
 dangerous than an obvious failure (`??????` at 20% confidence),
 because a user may trust a fluent, high-confidence wrong sentence.
 
-Code: `probe3_blank_control.py`. **Reported** (not re-verified in this
-checkout) for one Hindi natural/seed0 run: mean confidence about
-0.9929 on real lines, 0.9898 on blank, 0.9877 on matched noise —
-essentially no gap. If that holds under full aggregation, it is
-exactly the failure mode Probe 3 is designed to detect. It is also
-consistent with an undertrained small model; more steps would be
-needed to separate “hasn’t learned to use the image yet” from “this
-architecture never will.”
+Code: `probe3_blank_control.py`. **Verified** on disk: 9 Hindi files
+(`natural`/`flattened`/`inverted` × seeds 0–2), n=100 each under
+`data/probe_results/`. Natural seeds sit at ~0.99 confidence on real,
+blank, and noise with a real−blank gap of only a few thousandths —
+essentially no image grounding. Flattened/inverted drop mean
+confidence but keep a **negative** real−blank gap (blank higher than
+real). See `docs/results_analysis.md`.
+
+### Probe 3b — Does more training teach it to look?
+
+Probe 3 alone cannot separate “structurally ungrounded confidence”
+from “simply undertrained.” Probe 3b re-runs the real-vs-blank
+comparison at intermediate checkpoints (requires
+`train.py --keep-snapshots`).
+
+**Verified** on hindi/natural seeds **0, 1, 2**
+(`data/probe_results/probe3_curve_hindi_natural_seed{0,1,2}.json`,
+5 snapshots at steps 500/1000/2000/3000/5000; analysis in
+`docs/probe3_curve_analysis.md`):
+
+Across seeds, loss falls ~17× while mean real confidence **rises**
+toward ~0.99 and accuracy stays near floor until late (mean acc
+~0.13 only at step 5000). The real−blank gap **sign flips at 4 of 5
+steps** and |gap SD| exceeds |gap mean| at 4 of 5 steps — it is
+defensible to call the gap **indistinguishable from zero** across
+training seeds (not an emerging vision signal). Step 3000 is
+negative in all three seeds (mean −0.0075) as a separate
+observation, without over-claiming a blank>real reversal.
+
+The important framing: undertraining and ungrounded confidence are
+**not** competing explanations. The model **is** undertrained. The
+finding is that confidence gives **no indication** of that — a
+calibrated undertrained model would report **low** confidence; this
+one reports ~0.99 and rises as training proceeds. Code:
+`probe3_training_curve.py`. See also
+`docs/statistical_repair.md`.
 
 ### Probe 4 — Are we being fair when we call something wrong?
 
@@ -2022,10 +2056,11 @@ accuracy 30%. That is a much more useful finding than “our model has
 crossing is the centerpiece question of the project.
 
 Code: `probe5_calibration.py`, with aggregation in
-`src/analysis/aggregate_probe_results.py`. **Reported** early result
-from the same checkpoint as Probe 3: nearly all mass in the 0.9–1.0
-confidence bucket while accuracy there was about 0.10 — confident and
-wrong. Treat as reported until jsonl lands in-tree.
+`src/analysis/aggregate_probe_results.py`. **Verified** on disk: 9
+Hindi files, n=100 records each. Natural condition: nearly all mass
+in the 0.9–1.0 confidence bucket while accuracy there is ~0.14–0.24
+(ECE ≈ 0.75–0.85). Flattened/inverted lower mean confidence but
+accuracy collapses to ~0–1%. See `docs/results_analysis.md`.
 
 ### Probe 5b — What if exposure is literally zero?
 
@@ -2035,9 +2070,36 @@ Santhali (Ol Chiki) or Kashmiri (Perso-Arabic) — scripts it has
 still says “I am 97% confident,” that is the sharpest version of
 confidence ≠ knowledge.
 
-This probe is **not built yet** (`probe5b_zeroshot_floor.py`). It is
-optional in the current priority list; conceptually it is central to
-Decision #6’s script-scope motivation.
+**Verified** on hindi/natural seeds **0, 1, 2**
+(`data/probe_results/probe5b_hindi_natural_seed{0,1,2}.jsonl`, 720
+records total; analysis in `docs/probe5b_analysis.md`):
+
+| Condition | seed0 | seed1 | seed2 | Mean | SD |
+|-----------|-------|-------|-------|------|----|
+| hindi | 0.9824 | 0.9897 | 0.9899 | 0.9873 | 0.0043 |
+| santhali | 0.9848 | 0.9847 | 0.9876 | 0.9857 | 0.0016 |
+| kashmiri | 0.9901 | 0.9894 | 0.9887 | 0.9894 | 0.0007 |
+| blank | 0.9814 | 0.9933 | 0.9824 | 0.9857 | 0.0066 |
+
+Mean confidence stays high everywhere. The **lead** equivalence
+claim is threshold-free: between-condition range of across-seed
+means is **0.0037**, smaller than hindi's across-seed SD (0.0043)
+and blank's (0.0066). TOST at δ = 0.05 agrees, but does not need to
+carry the claim alone.
+
+A seed-0 Bonferroni pass for Kashmiri vs Hindi (z ≈ 2.54) is
+**retracted** — it does not replicate (seed 1: hindi exceeds
+kashmiri). Decision #14 earned its keep (DECISIONS.md #53).
+
+Charset composition is the sharp signal: **360/360**
+Santhali+Kashmiri images across all seeds emitted **zero**
+characters of the correct script — the model writes fluent
+Devanagari instead. Accuracy is deliberately not scored on unseen
+scripts (DECISIONS.md #50). See `docs/statistical_repair.md`.
+
+What this does **not** establish: that production OCR APIs behave
+identically, or that more Hindi training would fix zero-shot
+calibration. Code: `probe5b_zeroshot_floor.py`.
 
 ### Probe 6 — Did our synthetic world lie to us?
 
@@ -2523,6 +2585,15 @@ forward pass. Related techniques in vision: occlusion sensitivity
 (Zeiler & Fergus) and attention rollout for transformers. Probe 3
 today implements only `make_blank` and `make_matched_noise`.
 
+**Partial progress (DECISIONS.md #56):**
+`src/probes/probe_attention_ablation.py` ablates encoder *content*
+(zeros before `memory_projection`) rather than reading attention
+weights. That answers a narrower but Claim-B-central question — does
+confidence change when the decoder gets no image features at all? —
+and is complementary to weight-map introspection, which remains open.
+Numbers wait on Colab checkpoints; see
+`docs/attention_ablation_analysis.md`.
+
 ### 3. Add a stricter control than blank / matched noise
 
 Blank and matched-noise are good baselines. A sharper one is
@@ -2600,26 +2671,31 @@ Short map from `DECISIONS.md` into chapters. Full write-ups stay in
 | 15–16, 19 | Transfer on Tier A+B; cascade as router; cache pages | 8, 9 |
 | 18, 20–23, 26, 35 | Taxonomy / hand-review hardening | 1 |
 | 31–34, 42 | Baselines resume, timeouts, Paddle API | 1 |
-| 36–41, 43–45 | Instrument + line crops + Probe 6 details | 2, 3, 7 |
+| 36–41, 43–45, 47–48 | Instrument + line crops + Probe 6 + snapshots | 2, 3, 7 |
 | 46 | Future methodology upgrades (not built) | after Conclusion |
+| 49 | Probe 1 FE: withhold β at accuracy floor | 7 |
+| 50–51 | Probe 5b: no unseen-script accuracy; Bonferroni | 7 |
 
 ---
 
 ## Appendix B — Built vs described-only
 
 **Built and used for measured claims in this book:** Stage 0 taxonomy
-stack; Stage 1 renderer + manifests; Stage 2a instrument code;
-`make smoke-test`; probe *code* for 1, 2, 3, 5, 6.
+stack; Stage 1 renderer + manifests; Stage 2a instrument (trained on
+real Hindi manifests); `make smoke-test`; Probe 1 FE analysis
+(headline β withheld); Probe 3 + Probe 5 Hindi jsonl (9× each);
+Probe 3b training curve (hindi/natural/seed0); Probe 5b zero-shot
+floor (hindi/natural/seed0).
 
 **Partial:** layout bank categories; degradation source mix; PaddleOCR
 full corpus; Tier 2 validation set size; hand-review UNREVIEWED rows;
-real probe JSONL in-tree.
+Probe 2 / Probe 6 still need fuller Colab artifact landings; Bengali
+probe sweep.
 
 **Described only (this phase):** demo LoRA stack; reading-order / table
-metrics; RLVR; Sarvam client + transfer; cascade; Probe 5b;
-methodology upgrades in Decision #46 (equal-frequency bins / ECE,
-mechanistic Probe 3, patch-shuffle, mixed-effects Probe 1, kappa,
-bootstrap CIs).
+metrics; RLVR; Sarvam client + transfer; cascade; methodology upgrades
+in Decision #46 (equal-frequency bins / ECE, mechanistic Probe 3,
+patch-shuffle, mixed-effects Probe 1, kappa, bootstrap CIs).
 
 ---
 

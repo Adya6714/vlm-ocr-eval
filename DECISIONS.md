@@ -1106,3 +1106,303 @@ variation.
 **First Hindi run outcome (2026-09-02):** natural 18.3% line acc;
 flattened 0.3%; inverted 0.7% — headline β withheld. See
 `docs/probe1_fixed_effects.md`.
+
+---
+
+### 50. Probe 5b: no accuracy metric on unseen scripts
+
+**Decision:** Probe 5b reports mean confidence and charset composition
+(trained-script vs image-script grapheme fractions) on Santhali and
+Kashmiri, but **does not** report CER / Tier 1/2 accuracy against
+those ground truths. Hindi in-distribution accuracy remains available
+from Probe 5.
+
+**Alternatives considered:** (a) score CER anyway and report near-zero
+accuracy as the finding; (b) transliterate GT into Devanagari and score
+against that; (c) only report confidence, skip charset composition.
+
+**Why:** the instrument's vocabulary is Devanagari grapheme clusters
+(DECISIONS.md #2). It cannot emit Ol Chiki or Perso-Arabic code points,
+so CER against those GTs is a tokenizer impossibility, not a vision
+measurement — reporting it would look like a dramatic "0% accuracy"
+finding that is baked into the architecture. Charset composition
+already answers the sharper question: does the model emit *any*
+characters of the script in the image, or only fluent Devanagari?
+(Answer on the seed0 run: zero correct-script chars on 100/100
+Santhali and 20/20 Kashmiri images.)
+
+---
+
+### 51. Probe 5b confidence contrasts use Bonferroni, not raw p-values
+
+**Decision:** `analyze_probe5b.py` compares santhali / kashmiri / blank
+mean confidence against the Hindi baseline with two-sample z-scores,
+and judges significance against a Bonferroni-corrected α = 0.05/3 ≈
+0.0167 (critical |z| ≈ 2.39). Raw p-values are not reported.
+
+**Alternatives considered:** (a) uncorrected α = 0.05 on each
+contrast; (b) report only CIs with no hypothesis test; (c) FDR / Holm
+instead of Bonferroni.
+
+**Why:** three comparisons were planned before looking at results;
+Bonferroni is the simplest family-wise control and matches the
+project's preference for conservative claims. Kashmiri n=20 is small —
+even a |z| that clears the corrected threshold is treated as marginal
+in the write-up, not as a standalone finding. Charset composition
+(zero correct-script emissions) carries more weight than a few
+thousandths of confidence difference.
+
+---
+
+### 52. Probe 5b TOST equivalence uses δ = 0.05 on the confidence scale
+
+**Decision:** claims that zero-shot / blank confidence is
+"equivalent to" the Hindi in-distribution baseline must pass a two
+one-sided test (TOST) at a smallest effect of interest
+**δ = 0.05**, not a non-significant difference test. The primary
+TOST interval is the cluster-bootstrap 90% CI of
+(condition − hindi) mean confidence (images resampled with
+replacement, n_boot ≥ 10_000). The naive Bonferroni z
+(DECISIONS.md #51) is retained only as a side-by-side column so SE
+inflation is visible. See `docs/statistical_repair.md`.
+
+**Alternatives considered:** (a) keep "indistinguishable" language
+from non-significant z alone; (b) δ = 0.01 (stricter); (c) δ = 0.10
+(looser); (d) only report bootstrap CIs with no equivalence test.
+
+**Why δ = 0.05:** abstention / routing on this instrument would not
+change for a confidence shift smaller than five percentage points.
+Seed0 condition means already sit at 0.98–0.99 with large ceiling
+mass above 0.95; deltas of a few thousandths are below any
+practically actionable threshold. δ was fixed in the analysis plan
+*before* reading the bootstrap intervals. **Why not (a):** failure
+to reject Δ = 0 is not evidence that Δ is small (Kashmiri is the
+counterexample — Bonferroni-passing z with TOST still equivalent).
+**Why not (b)/(c):** 0.01 is inside ordinary image-level sampling
+noise here; 0.10 would rubber-stamp almost any contrast on this
+ceiling. **Why not (d):** the project's claim language is
+equivalence, which needs an explicit SEI.
+
+**Also recorded here:** Probe 3b must not label the seed0 step-3000
+negative real−blank gap as "noise" until
+`probe3_curve_*_seed{0,1,2}.json` all exist; until then it is a
+single-seed observation of unknown stability.
+
+---
+
+### 53. Probe 5b Kashmiri Bonferroni pass retracted after 3-seed check
+
+**Decision:** the seed-0 Kashmiri vs Hindi confidence contrast
+(naive z ≈ 2.54, cleared Bonferroni α = 0.05/3) is **retracted** as a
+significance claim. Across seeds 0/1/2 the sign does not replicate
+(seed 1: hindi 0.9897 > kashmiri 0.9894; seed 2: Δ ≈ −0.001). Only
+1/3 seeds clear the corrected threshold. Report per-seed values;
+do not cite Kashmiri confidence as significantly above Hindi.
+Equivalence is carried by the threshold-free comparison
+(between-condition range of across-seed means 0.0037 < hindi
+across-seed SD 0.0043 and blank SD 0.0066) plus TOST at δ = 0.05.
+Script substitution (360/360 zero correct-script chars on
+Santhali+Kashmiri) remains the sharp finding. See
+`docs/statistical_repair.md` and `docs/probe5b_analysis.md`.
+
+**Alternatives considered:** (a) keep the seed-0 claim with a
+"marginal / small-n" caveat; (b) pool images across seeds and
+re-test; (c) drop confidence contrasts entirely and report only
+charset composition.
+
+**Why:** Decision #14 made three seeds non-negotiable precisely to
+catch single-seed artifacts of this kind — keeping (a) would waste
+that cost. **Why not (b):** pooling hides seed variance and would
+re-create the false precision the repair was written to avoid.
+**Why not (c):** the confidence floor is still a real result; the
+mistake was the Kashmiri *elevation*, not the high absolute level.
+
+**What it cost to catch:** two additional Probe 5b inference passes
+(hindi/natural seeds 1 and 2) plus the curve replications for
+Probe 3b — cheap relative to shipping a non-replicating Bonferroni
+"finding." The same three-seed pass also upgraded Probe 3b: gap
+sign flips at 4/5 steps and |SD|>|mean| at 4/5 steps, so the gap
+is now called indistinguishable from zero (step 3000 all-negative
+at mean magnitude 0.0075 noted separately, without over-claim).
+
+---
+
+### 54. Tier 2 validation set: honest phonetic identity + 0% corpus is a finding
+
+**Decision:** replace the stub `VALIDATION_SET` in
+`transliteration_equivalence.py` with a hand-checked set of **38**
+pairs (23 expected-True, 15 expected-False) covering classes ISO
+15919 actually collapses: nukta precomposed↔decomposed, virama+ZWJ/
+ZWNJ conjuncts, ॐ↔ओं, Bengali ৎ↔ত্, mid-word ZWNJ. Negatives are
+genuinely different words or short/long vowels (per #18). Anusvara↔
+nasal pairs remain expected-False here — Tier 1 sandhi owns them.
+Unverified dialect/loanword candidates stay as TODO comments, not
+invented positives. See `docs/tier2_validation.md`.
+
+**Corpus outcome (re-ran `error_taxonomy.py` 2026-09-03):** TIER2 =
+**0%** for tesseract / surya / paddleocr even with the working set.
+That is reported as a finding, not a broken tier: Tier 1 already
+absorbs the encoding classes that dominate this corpus; Tier-2-only
+residuals are rare in current prediction/GT diffs.
+
+**Alternatives considered:** (a) pad to exactly 40 with unverified
+pairs; (b) force anusvara↔nasal into Tier 2 expected-True despite
+ISO emitting ṁ; (c) treat corpus 0% as failure and weaken Tier 1 so
+more rows reach Tier 2.
+
+**Why not (a):** #18 already burned us inventing “equivalents.”
+**Why not (b):** duplicates Tier 1 and would fail validation against
+aksharamukha. **Why not (c):** would lie about where the signal lives.
+
+---
+
+### 55. UNREVIEWED adjudication sample + bootstrap Tier 1 CI + ranking test
+
+**Decision:** draw a stratified random sample (seed=42, n=200) of
+`UNREVIEWED` rows from `error_taxonomy.csv` into
+`data/predictions/adjudication_sample.jsonl` using the same schema as
+`hand_review_notes.jsonl`. Humans label via
+`hand_review.py --queue` (existing tooling). Bootstrap the Tier 1
+rate over the full non-exact population only after labels exist,
+imputing unsampled UNREVIEWED from the adjudicated sample’s
+encoding-variant rate; print denominators at every step. Separately,
+test whether Tier 1 normalisation reorders engines or languages by
+error rate. Code: `src/analysis/adjudication_sample.py`; report:
+`docs/adjudication_analysis.md`.
+
+**Allowed adjudication overrides that count as Tier 1 in the
+bootstrap:** `encoding-variant`, `tier1`, `exact-match`, `exact`,
+`not-an-error` — for table gaps the automated Tier 1 miss. Residual
+labels remain the Stage 0 four.
+
+**First-run outcome (2026-09-03, no new human labels):** sample
+200/215 UNREVIEWED written; bootstrap CI withheld (0 adjudicated).
+Naive auto-only Tier1/non-exact: tesseract 0.204, surya 0.169,
+paddleocr 0.100. Ranking test: engine order and language order
+**unchanged** after Tier 1 (surya < tesseract < paddleocr; hindi <
+bengali < santhali). Tier 1 shrinks rates but is not a leaderboard
+claim on this corpus.
+
+**Alternatives considered:** (a) invent labels for the sample; (b) a
+new review UI; (c) bootstrap without a held-out sample (resample
+known Tier1 only).
+
+**Why not (a):** fabrication. **Why not (b):** hand_review already
+has the notes contract. **Why not (c):** the uncertainty is the
+UNREVIEWED mass; ignoring it re-creates the provisional 20.4%
+headline.
+
+---
+
+### 56. Attention ablation: zero encoder memory before projection; shared-prefix KL
+
+**Decision:** Claim B's mechanistic follow-up ablates encoder *content*
+by replacing the encoder output with `zeros_like(memory)` **before**
+`memory_projection`, then decoding. Headline contrast is independent
+greedy `mean_confidence_full` vs `mean_confidence_zero` on the same
+Probe 5b Hindi image sample (Random(0), `--n-samples 100` capped by
+the Tier C Hindi pool — currently 60). Per-step KL / top-1 /
+prior-sufficiency use a second zero-memory pass **teacher-forced**
+along the full-memory token sequence so diverging greedy paths do not
+confound the distribution comparison. Primary KL is
+**KL(p_full || p_zero)**; reverse KL is also stored. Prior sufficiency
+is the exact overlap `sum_i min(p_full[i], p_zero[i])` (= `1 − TV`),
+not a top-K restriction. Full softmax vectors are computed in memory
+and discarded — only derived scalars land in
+`data/probe_results/attention_ablation_*.jsonl` (git-sized). Cluster
+bootstrap of images reuses Probe 5b's repair pattern
+(`paired_cluster_bootstrap`, n_boot=10_000). Code:
+`generate.py` ablation knobs, `probe_attention_ablation.py`,
+`analyze_attention_ablation.py`.
+
+**Alternatives considered:** (a) zero *after* projection; (b) compare
+distributions from two independent greedy runs aligned by step index;
+(c) dump full softmax into jsonl; (d) top-K restricted overlap as the
+primary prior-sufficiency measure; (e) extract cross-attention weight
+maps instead of ablating memory (BOOK methodology upgrade #2).
+
+**Why:** (a) would leave a projected nonzero path that still carries a
+learned constant, muddying "no image information." Zeroing before
+projection is the cleaner "prior-only keys/values" condition.
+**Why not (b):** independent greedy prefixes diverge immediately;
+KL then mixes "memory mattering" with "different contexts."
+Teacher forcing isolates memory. **Why not (c):** vocab × steps ×
+images × seeds is not commit-friendly under AGENTS.md's probe_results
+rule. **Why not (d):** exact overlap needs no arbitrary K and equals
+1−TV. **Why not (e):** weight introspection remains a separate upgrade;
+this probe answers whether *confidence* depends on encoder features
+at all — the Claim B mechanism question — without new training.
+
+---
+
+### 57. Probe 2 is GT-aligned substitutions + p(true), not runner-up graph only
+
+**Decision:** rewrite `probe2_confusion_graph.py` so the primary
+artifact is **ground-truth-aligned grapheme substitutions** on the
+same Probe 5b Hindi Tier C sample (`Random(0)`, n capped by pool),
+not the original chosen→runner-up weight graph that ignored GT.
+At each substitution: true cluster, predicted cluster, top-5
+distribution, and full-softmax **p(true)** + 1-based **rank(true)**
+(requires `return_full_probs=True` — top-5 alone cannot recover mass
+when the correct token sits outside top-5). Aggregate top-15 pairs
+with mean p(true)/rank; print qualitative tags
+(`same-base-matra-diff`, `adjacent-codepoint`, …) as a reading aid,
+not a claim. Checkpoint/tokenizer paths remain script-scoped via
+`load_model_and_tokenizer` / `checkpoint_{script}_{condition}_seed{N}.pt`
+(#47); the probe prints the resolved path and refuses legacy
+`checkpoint_{condition}_seed{N}.pt` names. Analysis:
+`analyze_probe2.py` → `docs/probe2_confusion_analysis.md`.
+
+**Alternatives considered:** (a) keep the GT-free runner-up graph as
+the headline; (b) score p(true) from top-5 only (missing → 0); (c)
+teacher-force the GT sequence and read the distribution at each GT
+position (no alignment needed); (d) accept pre-#47 checkpoint names
+as a fallback.
+
+**Why not (a):** the paper question is whether the model was
+close-but-wrong on the *correct* glyph — runner-up mass among wrong
+answers does not answer that. **Why not (b):** silently floors
+rank>5 cases and biases toward "no signal." **Why not (c):**
+teacher forcing measures a different quantity (next-token under GT
+prefix); greedy-path substitutions match how the model actually
+fails at inference. **Why not (d):** #47 already burned us once;
+loud failure on the script-scoped path is cheaper than silent load
+of the wrong run.
+
+---
+
+### 58. Probe 6 paper scope: Tier C + blank only; full gap deferred
+
+**Decision:** for the paper deadline, Probe 6 is **inference on Hindi
+Tier C** (plain + degraded from `ground_truth.jsonl`) plus a blank
+control on the same sample, compared to existing Probe 3/5 synthetic
+Claim B numbers — not the full original brief (Tier B degradation
+sweep, handwriting anecdote, multi-system gaps, held-out synthetic
+pages 100–109 from #45). Before any inference, assert **zero path
+overlap** between `data/manifests/hindi_*.jsonl` and
+`data/raw/hindi/images/` (verified: 0 overlaps; manifests are
+`data/cache/line_crops/...`, raw is GlotOCR via `fetch_glotocr.py`).
+That confirmation is written into
+`docs/probe6_synthetic_real_analysis.md` §0 — it is what makes this a
+valid held-out test. Correctness = Probe 5's Tier 1/2 `is_correct`.
+Resize Tier C to 70 px (#45) still applies. Outputs:
+`probe6_synthetic_real_hindi_seed{N}.jsonl`; analysis reuses
+cluster-bootstrap / TOST δ=0.05 from the statistical repair path.
+The previous metric-only aggregator in `probe6_synthetic_real_gap.py`
+is superseded for this scope.
+
+**Alternatives considered:** (a) implement full Probe 6 now; (b) skip
+real-domain check and cite Probe 5b Tier C confidence only; (c) use
+training-manifest crops as the "real" side; (d) require held-out
+synthetic pages 100–109 before any Probe 6 write-up.
+
+**Why:** (a) misses the deadline. **Why not (b):** Probe 5b shows
+high confidence on Tier C but does not pair blank on the *same*
+real-image sample for a domain-matched Claim B test. **Why not (c):**
+would not be held-out. **Why not (d):** #45 remains correct for a
+clean *accuracy* gap; Claim B's question here is confidence
+blindness (real ≈ blank), which needs Tier C + blank, not a new
+synthetic holdout. Accuracy tables still caveat that Probe 5
+synthetic accuracy is on training crops.
+
+

@@ -27,6 +27,8 @@ agent never writes a label without that keypress.
 Run: python3 src/eval/hand_review.py hindi
      python3 src/eval/hand_review.py bengali --engine surya
      PYTHONPATH=src/eval python3 src/eval/hand_review.py --self-test
+     PYTHONPATH=src/eval python3 src/eval/hand_review.py \\
+         --queue data/predictions/adjudication_sample.jsonl
 """
 
 import argparse
@@ -141,6 +143,129 @@ def _note_from_response(
         "suggestion_fits": suggestion.fits,
         "suggestion_outcome": outcome,
     }
+
+
+def _note_key(note: dict) -> tuple[str, str, str, str]:
+    return (
+        note.get("engine", "tesseract"),
+        note["language"],
+        note["image_id"],
+        note["variant"],
+    )
+
+
+def load_labeled_keys(notes_path: str = NOTES_PATH) -> set[tuple[str, str, str, str]]:
+    """Keys that already have a non-null label in the notes file."""
+    keys: set[tuple[str, str, str, str]] = set()
+    if not os.path.isfile(notes_path):
+        return keys
+    with open(notes_path, "r", encoding="utf-8") as f:
+        for line in f:
+            if not line.strip():
+                continue
+            note = json.loads(line)
+            if note.get("label") and note.get("suggestion_outcome") not in {
+                "pending-adjudication",
+                "skipped",
+            }:
+                keys.add(_note_key(note))
+    return keys
+
+
+def review_queue(queue_path: str, notes_path: str = NOTES_PATH) -> None:
+    """
+    Interactive adjudication over a pre-drawn sample queue.
+
+    Why this exists: adjudication_sample.py writes UNREVIEWED rows in
+    the same notes schema this module already uses. Rather than a
+    second review UI, --queue walks that file, skips keys already
+    labeled in NOTES_PATH, and appends completed notes there so
+    error_taxonomy.py / adjudication bootstrap pick them up.
+
+    Allowed residual labels are the Stage 0 four. Reviewers who find a
+    Tier 1 table gap may type encoding-variant (or tier1 / exact-match)
+    — those strings are counted toward the Tier 1 numerator in
+    src/analysis/adjudication_sample.py bootstrap.
+    """
+    with open(queue_path, "r", encoding="utf-8") as f:
+        queue = [json.loads(line) for line in f if line.strip()]
+
+    already = load_labeled_keys(notes_path)
+    pending = [row for row in queue if _note_key(row) not in already]
+    print(
+        f"Queue {queue_path}: {len(queue)} rows, "
+        f"{len(pending)} unlabeled "
+        f"({len(queue) - len(pending)} already in {notes_path})"
+    )
+    if not pending:
+        print("Nothing left to adjudicate.")
+        return
+
+    os.makedirs(os.path.dirname(notes_path) or ".", exist_ok=True)
+    notes_file = open(notes_path, "a", encoding="utf-8")
+
+    encoding_hint = (
+        "encoding-variant / tier1 / exact-match = not a real error "
+        "(Tier 1 table gap)"
+    )
+    for i, row in enumerate(pending):
+        engine = row.get("engine", "tesseract")
+        language = row["language"]
+        image_id = row["image_id"]
+        variant = row["variant"]
+        ground_truth = row["ground_truth"]
+        predicted = row["predicted"]
+
+        print("\n" + "=" * 70)
+        print(
+            f"[{i + 1}/{len(pending)}] engine={engine} language={language} "
+            f"id={image_id} variant={variant}"
+        )
+        print(f"GROUND TRUTH: {ground_truth}")
+        print(f"PREDICTED:    {predicted!r}")
+        classification = classify_against_tiers(ground_truth, predicted, language)
+        print(f"auto tiers:   {classification}")
+
+        suggestion = suggest_unexplained_label(ground_truth, predicted)
+        print(f"  --- review [{engine}] ---")
+        if suggestion.fits:
+            print(f"  SUGGESTED:    {suggestion.label}")
+        else:
+            print("  SUGGESTED:    (none of the four labels fit well)")
+        print(f"  REASON:       {suggestion.reason}")
+        print(f"  Allowed residual labels: {', '.join(SUGGESTED_LABELS)}")
+        print(f"  Or type: {encoding_hint}")
+        raw = input(
+            "  Enter=confirm suggestion, type a label to override, "
+            "'s' to skip, 'q' to quit: "
+        )
+        typed = raw.strip()
+        if typed.lower() == "q":
+            break
+        note = _note_from_response(
+            language=language,
+            image_id=image_id,
+            variant=variant,
+            engine=engine,
+            ground_truth=ground_truth,
+            predicted=predicted,
+            suggestion=suggestion,
+            typed=typed,
+        )
+        # Preserve sample provenance when present.
+        if row.get("adjudication_sample"):
+            note["adjudication_sample"] = True
+            note["sample_seed"] = row.get("sample_seed")
+            note["sample_index"] = row.get("sample_index")
+        notes_file.write(json.dumps(note, ensure_ascii=False) + "\n")
+        notes_file.flush()
+        print(
+            f"  recorded [{note['suggestion_outcome']}] "
+            f"label={note['label']!r}"
+        )
+
+    notes_file.close()
+    print(f"\nSession notes appended to {notes_path}")
 
 
 def review_session(language: str, engines: list[str]) -> None:
@@ -301,7 +426,7 @@ if __name__ == "__main__":
         "language",
         nargs="?",
         choices=["hindi", "bengali", "santhali", "kashmiri"],
-        help="Required unless --self-test.",
+        help="Required unless --self-test or --queue.",
     )
     parser.add_argument("--engine", action="append", dest="engines",
                          help="Engine to include (repeatable). Default: all three.")
@@ -310,12 +435,29 @@ if __name__ == "__main__":
         action="store_true",
         help="Run note-outcome checks (no interactive session).",
     )
+    parser.add_argument(
+        "--queue",
+        metavar="PATH",
+        help=(
+            "Adjudicate a pre-drawn sample jsonl (notes schema) instead of "
+            "walking a language. Writes completed labels to "
+            f"{NOTES_PATH}."
+        ),
+    )
+    parser.add_argument(
+        "--notes",
+        default=NOTES_PATH,
+        help=f"Notes jsonl to append (default {NOTES_PATH}).",
+    )
     args = parser.parse_args()
 
     if args.self_test:
         raise SystemExit(run_note_outcome_checks())
+    if args.queue:
+        review_queue(args.queue, notes_path=args.notes)
+        raise SystemExit(0)
     if not args.language:
-        parser.error("language is required unless --self-test is set")
+        parser.error("language is required unless --self-test or --queue is set")
 
     engines = args.engines or ["tesseract", "surya", "paddleocr"]
     review_session(args.language, engines)

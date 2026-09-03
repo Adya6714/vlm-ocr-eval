@@ -128,6 +128,19 @@ def prepare_image_tensor(image: Image.Image, patch_size: int = PATCH_SIZE) -> to
     return arr.unsqueeze(0)
 
 
-def run_generate(model, tokenizer, image: Image.Image, device: torch.device) -> dict:
+def run_generate(
+    model,
+    tokenizer,
+    image: Image.Image,
+    device: torch.device,
+    **generate_kwargs,
+) -> dict:
+    """
+    Prepare a PIL line crop and run instrument generate().
+
+    Extra kwargs (return_full_probs, zero_encoder_memory, …) pass through
+    to generate.py so Probe 2 can score the true token's probability
+    without a second API surface.
+    """
     tensor = prepare_image_tensor(image).to(device)
-    return generate(model, tensor, tokenizer)
+    return generate(model, tensor, tokenizer, **generate_kwargs)
