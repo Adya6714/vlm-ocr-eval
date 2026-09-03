@@ -279,18 +279,21 @@ def run_probe(data_root: Path, out_path: Path) -> None:
                 )
                 record = {**task, "error": str(exc), "confidence": None}
             else:
+                sarvam_text = (
+                    (api_result.get("result") or {}).get("full_text") or ""
+                )
                 record = {
                     **task,
                     "cached": api_result["cached"],
                     "job_id": api_result["job_id"],
                     "sarvam_status": api_result["status"],
-                    "sarvam_text": api_result.get("result", {}).get("full_text", ""),
+                    "sarvam_text": sarvam_text,
                     "confidence": api_result["confidence"],
                     "usage": api_result.get("usage", {}),
                 }
                 print(
                     f"          confidence={record['confidence']:.4f}  "
-                    f"text_preview={record['sarvam_text'][:60]!r}",
+                    f"text_preview={sarvam_text[:60]!r}",
                     flush=True,
                 )
 

@@ -387,29 +387,26 @@ docs.sarvam.ai, Sept 2026).  Allocate up front, do not spend ad hoc.**
       `annotations.full_text.confidence`.  SARVAM_API_KEY read from env,
       never logged. API schema confirmed from live docs Sept 2026.
 
-- [x] `src/probes/sarvam_transfer_probe.py` — runs the client on a
-      **35-image sample** (10 Hindi / 10 Santhali / 10 Kashmiri / 5 blank)
-      drawn with `Random(0)` from `data/raw/{hindi,santhali,kashmiri}/`.
-      Budget: 35 pages × ₹0.5 = **₹17.50**, well under the project limit.
-      Handles resume; prints per-image progress so slow ≠ stuck.  Inline
-      summary after run; full analysis in `analyze_sarvam_transfer.py`.
-      **Imports compile cleanly; NOT YET RUN** — requires
-      `export SARVAM_API_KEY=<key>` and a deliberate user invocation.
+- [x] `src/probes/sarvam_transfer_probe.py` — **BUILT — VERIFIED (RUN).**
+      35-image sample (10 Hindi / 10 Santhali / 10 Kashmiri / 5 blank)
+      drawn with `Random(0)`. Budget used: **₹17.50** (35 pages × ₹0.5).
+      Results cached in `data/cache/sarvam/` (35 JSON files).
+      Output: `data/probe_results/sarvam_transfer_probe.jsonl`.
+      Analysis: `docs/sarvam_transfer_analysis.md`.
 
-      Key comparison: do Sarvam's confidence scores drop in proportion to
-      its own published accuracy gap (Hindi 95.91 → Kashmiri 55.93,
-      a ~40pp drop), or do they stay near ceiling the way the instrument's
-      own confidence did (delta < 0.004)?
+      **Headline finding:** Sarvam's confidence does NOT track its own
+      published accuracy gap. Hindi → Kashmiri accuracy gap: **39.98 pp**
+      (95.91 → 55.93); Hindi → Kashmiri confidence delta: **0.0027**
+      (0.9997 → 0.9970). Blank images score 0.0000.
+      This replicates the instrument's own Claim B finding on a
+      production-quality 3B-parameter system.
 
-      Published accuracy used (verified from sarvam.ai/blogs/sarvam-vision,
+      Published accuracy used (verified sarvam.ai/blogs/sarvam-vision,
       Sept 2026; DECISIONS.md #60):
-        Hindi     95.91 %
-        Santhali  80.32 %
-        Kashmiri  55.93 %
+        Hindi 95.91 %, Santhali 80.32 %, Kashmiri 55.93 %
 
-- [ ] `src/analysis/analyze_sarvam_transfer.py` — offline analysis
-      against the cached JSONL. Bootstrap CIs, comparison table,
-      plain-language finding. **Not yet built** (needs results first).
+- [ ] `src/analysis/analyze_sarvam_transfer.py` — bootstrap CIs +
+      full comparison table. **Not yet built** (Stage 5b, deferred).
 
 ### Stage 5b — full transfer analysis (DEFERRED)
 
