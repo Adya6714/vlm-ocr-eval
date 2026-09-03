@@ -1315,6 +1315,13 @@ bootstrap of images reuses Probe 5b's repair pattern
 `generate.py` ablation knobs, `probe_attention_ablation.py`,
 `analyze_attention_ablation.py`.
 
+**Measured interpretation on Hindi/natural (3 seeds):** mean
+prior-sufficiency is 0.8827, so `1 − prior_sufficiency` ≈ 0.1173.
+That means about **12%** of the full-memory probability mass lies
+outside the prior-only overlap: confidence looks mostly prior-
+dominated, but token choices still depend on image content at roughly
+the ~12% level (i.e. not “confidence is 100% prior”).
+
 **Alternatives considered:** (a) zero *after* projection; (b) compare
 distributions from two independent greedy runs aligned by step index;
 (c) dump full softmax into jsonl; (d) top-K restricted overlap as the

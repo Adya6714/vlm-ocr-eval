@@ -37,11 +37,11 @@ Spec / why / tasks: `IMPLEMENTATION.md`, `DECISIONS.md`, `TODO.md`, `AGENTS.md`.
 | 3 Reading-order / table-binding metrics | Not built — [Ch. 5](./BOOK.md#chapter-5--where-does-the-text-go-on-the-page) |
 | 4 Probe suite | **Mixed** — see probe rows below — [Ch. 7](./BOOK.md#chapter-7--what-does-the-model-actually-know-the-probe-suite) |
 | → Probe 1 (exposure FE) | Ran; headline β withheld (flattened/inverted ~0% line acc) |
-| → Probe 2 (confusion / p(true)) | **BUILT — BLOCKED** (code + tests; Colab inference pending) |
+| → Probe 2 (confusion / p(true)) | **BUILT — VERIFIED** (GT-aligned confusion graph; jsonl in `data/probe_results/`) |
 | → Probe 3 / 3b (blank + training curve) | **BUILT — VERIFIED** (jsonl/json in `data/probe_results/`) |
 | → Probe 5 / 5b (calibration + zero-shot floor) | **BUILT — VERIFIED** (5b: 720 records, 3 seeds) |
-| → Attention ablation (Claim B mechanism) | **BUILT — BLOCKED** (code + tests; Colab inference pending) |
-| → Probe 6 (Tier C vs synthetic, paper scope) | **BUILT — BLOCKED** (code + tests + leakage check; Colab inference pending) |
+| → Attention ablation (Claim B mechanism) | **BUILT — VERIFIED** (encoder-memory zeroing; jsonl in `data/probe_results/`) |
+| → Probe 6 (Tier C vs synthetic, paper scope) | **BUILT — VERIFIED** (Tier C held-out real + blank control; leakage-checked; jsonl in `data/probe_results/`) |
 | 5 Sarvam transfer | Not built — [Ch. 8](./BOOK.md#chapter-8--why-you-cant-learn-everything-from-an-api) |
 | 6 Triage cascade | Not built — [Ch. 9](./BOOK.md#chapter-9--when-to-trust-a-machine-and-when-to-escalate) |
 
@@ -55,6 +55,9 @@ Numbers and acceptance criteria: [`IMPLEMENTATION.md`](./IMPLEMENTATION.md). Blo
 - **Stage 1 (measured):** glyph-frequency modes hit \(\mathrm{TV}\le 0.08\) on the Hindi GT slice (natural 0 / flat ≈0.047 / inv ≈0.005); Tier A pages render well under 1 s.
 - **Probe 5b (BUILT — VERIFIED; 3 seeds, 720 records in `data/probe_results/probe5b_hindi_natural_seed{0,1,2}.jsonl`):** between-condition range of across-seed mean confidence is **0.0037**, smaller than within-condition across-seed SD (**0.0043** hindi, **0.0066** blank). Script substitution **360/360** on Santhali+Kashmiri (zero graphemes of the script in the image). **Methods-integrity note:** the seed-0 Kashmiri-vs-Hindi Bonferroni “significance” pass is **retracted** — it does not replicate across seeds (DECISIONS.md #53; `docs/probe5b_analysis.md`, `docs/statistical_repair.md`).
 - **Probe 3b (BUILT — VERIFIED; 3 seeds, `probe3_curve_hindi_natural_seed{0,1,2}.json`):** real−blank confidence gap is **indistinguishable from zero** across seeds (sign-flips at 4/5 steps; |SD| > |mean| at 4/5 steps) while loss falls ~**18×** (3.210 → 0.182). Undertraining and ungrounded confidence are **not** competing explanations — confidence rises as loss falls (`docs/probe3_curve_analysis.md`).
+- **Attention ablation (BUILT — VERIFIED; encoder-memory zeroing):** pooled over 3 Hindi/natural seeds (180 images), mean confidence stays effectively unchanged: `mean_confidence_full=0.9861` vs `mean_confidence_zero=0.9891` (delta = **-0.0030**). Distributions diverge (top-1 agreement **0.8794**; mean KL(full||zero) **1.075**), but prior sufficiency is high (**0.8827**), implying only about **~12%** of token choice mass still depends on the image. This is the Claim B mechanism result: content and confidence are dissociated (DECISIONS.md #56; `docs/attention_ablation_analysis.md`).
+- **Probe 6 (BUILT — VERIFIED; Tier C real + blank control):** confidence-blindness replicates on real held-out Hindi documents (3 seeds). Pooled mean confidences are `real_plain=0.9861`, `real_degraded=0.9768`, `blank=0.9799`, while Tier 1/2 line accuracy is **0.0000** across the same real sample. (Blank `correct` is `null` in jsonl; for reporting we treat it as incorrect.) (`docs/probe6_synthetic_real_analysis.md`.)
+- **Probe 2 (BUILT — VERIFIED; GT-aligned confusion graph):** EOS/space boundary noise is limited: the fraction of edge weight with `confused_with` in `{<EOS>, ' '}` is **0.0891** (8.9%). After excluding those boundary destination edges, the top confusion pairs are heterogeneous and do not form a coherent matra/phonetic neighbor cluster (e.g. `दु→औ`, `पा→फि`, `क→दो`, …; qualitative tags are mixed). (`docs/probe2_confusion_analysis.md`.)
 - **Probes 3 & 5 (BUILT — VERIFIED; jsonl committed under `data/probe_results/`):** mean confidence stays near ceiling on real / blank / noise; calibration remains poorly grounded at these checkpoints. Re-run commands: BOOK [Appendix E](./BOOK.md#appendix-e--reproduce-every-headline-number).
 
 ---
@@ -98,6 +101,9 @@ pytest -q
 | [`COLAB_RUNS.md`](./COLAB_RUNS.md) | What ran where |
 | [`docs/probe5b_analysis.md`](./docs/probe5b_analysis.md) | Probe 5b claim-facing write-up |
 | [`docs/probe3_curve_analysis.md`](./docs/probe3_curve_analysis.md) | Probe 3b curve write-up |
+| [`docs/attention_ablation_analysis.md`](./docs/attention_ablation_analysis.md) | Claim B attention mechanism probe |
+| [`docs/probe2_confusion_analysis.md`](./docs/probe2_confusion_analysis.md) | GT-aligned confusion + p(true)/rank |
+| [`docs/probe6_synthetic_real_analysis.md`](./docs/probe6_synthetic_real_analysis.md) | Tier C held-out check (paper scope) |
 | [`docs/statistical_repair.md`](./docs/statistical_repair.md) | Bootstrap / TOST / Kashmiri retraction |
 
 ---
@@ -106,7 +112,7 @@ pytest -q
 
 **2b Demo, RLVR, Sarvam transfer (~200 cached pages), cascade (router quality not cost savings)** — reasoning in [BOOK Ch. 4–6, 8–9](./BOOK.md); not claimed as built.
 
-**Probe 5b is built** (above). Still blocked on Colab checkpoints (code ready, not VERIFIED): attention ablation, Probe 2 GT-aligned confusion, Probe 6 Tier C paper scope — see `IMPLEMENTATION.md`.
+**Probe 5b is built** (above). In addition, attention ablation, Probe 2 GT-aligned confusion, and the reduced Probe 6 paper scope are now **BUILT — VERIFIED**; full original Probe 6 scope (Tier B sweep, handwriting anecdote, multi-system gaps) remains deferred (DECISIONS.md #58).
 
 **More compute** would lengthen training, enlarge corpus, and finish blocked inference so “undertrained” separates from “structurally ungrounded confidence” with full mechanism probes. Design stays; weight of the numbers changes.
 

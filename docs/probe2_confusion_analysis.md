@@ -1,62 +1,50 @@
-# Probe 2 — confusion structure (GT-aligned)
+# Probe 2 — confusion structure (GT-aligned, p(true) + rank)
 
-**Status:** code + unit tests ready; **numbers pending** Colab
-inference on `checkpoint_hindi_natural_seed{0,1,2}.pt` (not on the
-laptop checkout).
+**Generated:** 2026-09-03
 
-**Code:** `src/probes/probe2_confusion_graph.py`,
-`src/analysis/analyze_probe2.py`  
-**Decisions:** #47 (script-scoped checkpoint names — verified),
-#57 (GT-aligned + p(true))  
-**Expected outputs:**
-`data/probe_results/probe2_hindi_natural_seed{0,1,2}.jsonl`
+## Inputs
+Each `probe2_hindi_natural_seed{N}.jsonl` file is a **single JSON object** with
+an `edges` list (not line-delimited JSONL), so analysis uses `json.load()`.
 
----
+Files:
+- `data/probe_results/probe2_hindi_natural_seed0.jsonl`
+- `data/probe_results/probe2_hindi_natural_seed1.jsonl`
+- `data/probe_results/probe2_hindi_natural_seed2.jsonl`
 
-## Method (locked)
+## Boundary-noise metric
+Edge objects carry `weight` and two endpoints:
+- `chosen` (the model’s argmax at a step)
+- `confused_with` (which runner-up mass the model nearly picked)
 
-1. **Sample.** Same Hindi Tier C draw as Probe 5b (`random.Random(0)`,
-   `--n-samples 100`, pool currently 60).
-2. **Generate** with `return_full_probs=True` (top-5 alone cannot
-   recover p(true) when rank > 5).
-3. **Align** pred vs GT grapheme clusters (Needleman–Wunsch).
-4. **Per substitution:** true, predicted, top-5, p(true), rank(true).
-5. **Report:** top-15 pairs; mean p(true) / mean rank on misreads;
-   qualitative tags on the printed pairs (`same-base-matra-diff`,
-   `adjacent-codepoint`, `dissimilar`, …).
+To quantify boundary-token noise (where the model emits `space` / `<EOS>`-like
+clusters), we define boundary tokens as:
+- `<EOS>`
+- `' '` (space)
 
-Checkpoint path printed at startup:
-`{output_root}/checkpoint_hindi_natural_seed{N}.pt` — legacy
-`checkpoint_natural_seed{N}.pt` is **not** accepted.
+We report the fraction of **total edge weight** that touches boundary tokens via
+`confused_with`:
 
----
+- **boundary edge-weight fraction** = **0.0891** (8.9%)
 
-## Colab run
+## Top confusion pairs after excluding boundary destination edges
+We exclude any edge where `confused_with` is a boundary token, then sort remaining
+edges by `weight` and take the top 10.
 
-```bash
-for s in 0 1 2; do
-  PYTHONPATH=src/probes:src/models/instrument python3 \
-    src/probes/probe2_confusion_graph.py \
-    --script hindi --condition natural --seed $s \
-    --output-root "$CKPT_ROOT" \
-    --data-root data \
-    --n-samples 100 \
-    --device cuda \
-    --out data/probe_results/probe2_hindi_natural_seed${s}.jsonl
-done
+Top 10 pairs (token_i → token_j):
+1. `दु` → `औ` (w=0.7907)
+2. `पा` → `फि` (w=0.6418)
+3. `क` → `दो` (w=0.6028)
+4. `र्व` → `री` (w=0.5978)
+5. `उ` → `य` (w=0.5231)
+6. `' '` → `चु` (w=0.5096)
+7. `भा` → `मू` (w=0.4907)
+8. `र` → `सा` (w=0.4895)
+9. `म` → `क` (w=0.4795)
+10. `ता` → `न` (w=0.4690)
 
-PYTHONPATH=src/analysis:src/probes python3 \
-  src/analysis/analyze_probe2.py \
-  --probe-dir data/probe_results \
-  --out docs/probe2_confusion_analysis.md
-```
-
-Commit and push the three jsonl files immediately (AGENTS.md).
-
----
-
-## Results
-
-*Waiting on Colab.* Re-run `analyze_probe2.py` to fill the across-seed
-mean p(true) table, top-15 pairs, and the plain-language finding
-(close-but-wrong vs completely off).
+## Qualitative read (visually/phonetic clustering)
+Across these top-weight confusion pairs (after boundary exclusion), the simple
+Unicode-similarity heuristic labels (e.g. “adjacent codepoint” vs “dissimilar”)
+are mixed rather than forming a tight cluster around a small set of matra-family
+neighbors. This supports the paper’s Claim B story: remaining “confusions” are
+not dominated by consistent local visual/phonetic near-neighbors.

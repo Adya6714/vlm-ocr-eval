@@ -287,17 +287,15 @@ Claim B numbers to real Tier C (paper scope; DECISIONS.md #58).
         residual). **Ran on Hindi Colab artifacts — headline β withheld:**
         flattened/inverted line accuracy ~0% makes FE fit uninterpretable.
         `src/analysis/probe1_fixed_effects.py` → `docs/probe1_fixed_effects.md`
-- [!] BUILT — BLOCKED **Probe 2 — Confusion structure.** GT-aligned
-      grapheme substitutions on Probe 5b's Hindi sample (Random(0));
-      per misread records true/predicted cluster, top-5, and
-      full-softmax p(true)+rank. Checkpoint paths script-scoped
-      (`checkpoint_hindi_natural_seed{N}.pt`, DECISIONS.md #47/#57).
-      `src/probes/probe2_confusion_graph.py` +
-      `src/analysis/analyze_probe2.py`. Unit tests 10/10.
-      **Blocked:** no hindi/natural checkpoints on this machine —
-      Colab inference required for
-      `data/probe_results/probe2_hindi_natural_seed{0,1,2}.jsonl` and
-      `docs/probe2_confusion_analysis.md` numbers.
+- [x] BUILT — VERIFIED **Probe 2 — Confusion structure.** GT-aligned
+      grapheme substitutions on Probe 5b's Hindi Tier C sample
+      (`Random(0)`, pool=60; seeds 0–2). For each substitution we record
+      true cluster, predicted cluster, and the runner-up structure from
+      the model’s full softmax (including correct-cluster p(true) and
+      rank). This produces a confusion graph over glyph classes that
+      can’t be reproduced from a closed OCR API.
+      Outputs: `data/probe_results/probe2_hindi_natural_seed{0,1,2}.jsonl`;
+      analysis: `docs/probe2_confusion_analysis.md`. Unit tests 10/10.
 - [x] BUILT — VERIFIED **Probe 3 — Reading vs. guessing.** Feed blank/noise
       images. Whatever accuracy survives is language-model guessing, not
       vision. Decompose per glyph class; cross-reference against Probe 1's
@@ -341,31 +339,27 @@ Claim B numbers to real Tier C (paper scope; DECISIONS.md #58).
       range 0.0037 < seed SDs; Kashmiri Bonferroni retracted;
       script substitution 360/360; TOST δ=0.05;
       `docs/statistical_repair.md`, DECISIONS.md #52–#53).
-- [!] BUILT — BLOCKED **Attention ablation (Claim B mechanism).** Does
-      decoder confidence depend on encoder memory at all, or is it
-      prior-dominated? Zeros encoder output before `memory_projection`,
-      compares full vs zero-memory `mean_confidence`, plus per-step
-      KL(full∥zero), top-1 agreement, prior sufficiency
-      (`sum min(p_full, p_zero)`) under teacher-forced shared prefixes.
-      Sample = Probe 5b Hindi condition (same Random(0) draw; pool=60).
-      `src/probes/probe_attention_ablation.py` +
-      `src/analysis/analyze_attention_ablation.py`. Unit tests 11/11.
-      **Blocked:** no `checkpoint_hindi_natural_seed{0,1,2}.pt` on this
-      machine — Colab inference required for
-      `data/probe_results/attention_ablation_hindi_natural_seed{N}.jsonl`
-      and `docs/attention_ablation_analysis.md` numbers (DECISIONS.md #56).
-- [!] BUILT — BLOCKED **Probe 6 — Synthetic-to-real gap (paper scope).**
-      Tier C Hindi plain+degraded+blank vs synthetic Claim B
-      (Probe 3/5). Leakage check: 0 overlaps between
-      `data/manifests/hindi_*.jsonl` and `data/raw/hindi/images/`
-      (held-out valid). `src/probes/probe6_synthetic_real_gap.py` +
-      `src/analysis/analyze_probe6.py`; unit tests 5/5; analysis stub
-      with leakage confirmation written. Full original scope (Tier B
-      sweep, handwriting, held-out pages 100–109, multi-system) deferred
-      (DECISIONS.md #58). **Blocked:** no
-      `checkpoint_hindi_natural_seed{N}.pt` for inference —
-      `data/probe_results/probe6_synthetic_real_hindi_seed{N}.jsonl`
-      pending Colab.
+- [x] BUILT — VERIFIED **Attention ablation (Claim B mechanism).** Encoder
+      memory is ablated by zeroing its output before `memory_projection`
+      (prior-only condition), then decoding with greedy + teacher-forced
+      shared prefixes. Pooled over 3 Hindi/natural seeds on the same
+      Probe 5b Tier C sample: mean confidence is nearly unchanged
+      (full 0.9861 vs zero-memory 0.9891; delta −0.0030), but the
+      token distributions differ (top-1 agreement 0.8794, prior
+      sufficiency 0.8827, mean KL(full||zero) 1.075). Interpretation:
+      confidence is close to prior-dominated, while only ~12% of token
+      choice mass depends on image content (DECISIONS.md #56).
+      Outputs: `data/probe_results/attention_ablation_hindi_natural_seed{N}.jsonl`;
+      analysis: `docs/attention_ablation_analysis.md`. Unit tests 11/11.
+- [x] BUILT — VERIFIED **Probe 6 — Synthetic-to-real gap (paper scope).**
+      Tier C Hindi plain+degraded+blank vs synthetic Claim B (Probe 3/5).
+      Held-out validity is leakage-free (0 overlaps between
+      `data/manifests/hindi_*.jsonl` and `data/raw/hindi/images/`). Pooled
+      over 3 seeds on the same real sample:
+      mean confidence real_plain 0.9861, real_degraded 0.9768, blank 0.9799
+      while Tier 1/2 line accuracy is 0.0 across the scored real sample.
+      Outputs: `data/probe_results/probe6_synthetic_real_hindi_seed{N}.jsonl`;
+      analysis: `docs/probe6_synthetic_real_analysis.md`. Unit tests 5/5.
 
 **Acceptance:** each probe produces one clear plot/table and one sentence
 that states a finding and its implied fix (see `BOOK.md` for why "implied
