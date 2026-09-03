@@ -620,6 +620,7 @@
     <div class="brand">vlm-ocr-eval <span class="dim">/ from BOOK.md</span></div>
     <nav class="navlinks">
       <a href="#hero">Idea</a>
+      <a href="#transfer" class="walk-only">Transfer</a>
       <a href="#whyhard">Why hard</a>
       <a href="#measure">Measure</a>
       <a href="#control">Control</a>
@@ -651,7 +652,7 @@
       <h2 class="section-title">A controlled OCR experiment</h2>
       <div class="abstract-box">
         <p>We’re building a controlled OCR experiment to separate data-exposure effects from intrinsic script difficulty, and then probing a model we own to understand whether its predictions, confidence, and errors are actually grounded in the visual input.</p>
-        <p>Stages 0–2a and the probe suite are the required path. Demo LoRA, structure metrics, RLVR, transfer, cascade, and Decision&nbsp;#46 methodology upgrades are taught in BOOK.md but deferred this phase. Numbers recomputed in this checkout are <strong>measured</strong>; Colab write-ups without in-tree jsonl are <strong>reported</strong>.</p>
+        <p>Stages 0–2a and the Hindi probe suite are measured in this checkout: Probes 2, 3, 3b, 5, 5b (720 records), 6 (held-out Tier&nbsp;C, leakage-checked), and encoder-memory ablation. Demo LoRA, structure metrics, RLVR, full production-API rank-correlation, cascade, and remaining Decision&nbsp;#46 upgrades (equal-frequency ECE bins, patch-shuffle, mixed effects, kappa, bootstrap CIs) are deferred. Probe&nbsp;1’s exposure coefficient is <strong>withheld</strong>: flattened/inverted line accuracy collapsed (~0%), so the fixed-effects fit is uninterpretable. Bengali sweep is partial (quota).</p>
       </div>
     </div>
   </div>
@@ -665,11 +666,16 @@
     <h1>Hard because it’s hard to <em>see</em> — or because it was rarely <em>seen</em>?</h1>
     <p class="hero-sub">If an OCR model performs badly on a particular Indic character, is it because that character is inherently difficult to recognize, or simply because the model did not see it often enough during training? And when the model says it is 99% confident — is it actually looking at the image?</p>
 
+    <div class="finding-callout" style="margin-top:8px; margin-bottom:22px;">
+      <div class="fc-label">Walkthrough lead · Stage 5a transfer (measured, 35 pages)</div>
+      <p>Sarvam’s own published gap is <strong>39.98&nbsp;pp</strong> (Hindi 95.91 vs Kashmiri 55.93). Measured Extract-API confidence on the same three languages is Hindi <strong>0.9997</strong> · Santhali <strong>0.9974</strong> · Kashmiri <strong>0.9970</strong> — delta <strong>0.0027</strong>. Blank pages score <strong>0.0000</strong>: the confidence mechanism has real dynamic range; it simply does not use it on the hard scripts. That is a question about a design assumption, not a claim the system is broken. The instrument below is the “why.”</p>
+    </div>
+
     <div class="status-strip">
-      <span class="pill done">Done: Stage 0 · Stage 1 · Hindi 2a (9/9 reported)</span>
+      <span class="pill done">Done: Stage 0 · 1 · Hindi 2a · probes 2/3/3b/5/5b/6 · ablation · 5a</span>
       <span class="pill amber">Partial: Bengali sweep (quota)</span>
-      <span class="pill pending">Not run: Probe 6 · 2b prereq · Probe 5b</span>
-      <span class="pill out">Out of scope: Stage 2b / 3 / 5 / 6 full</span>
+      <span class="pill pending">Not run: 2b prereq · Stage 5b rank-corr · cascade</span>
+      <span class="pill out">Deferred: Stage 2b / 3 / 5-full / 6</span>
     </div>
 
     <p class="one-liner">The point of owning the model is not to brag about accuracy; it is to ask whether the model knows when it does not know.</p>
@@ -692,7 +698,7 @@
 
     <details class="say-this">
       <summary>SAY THIS</summary>
-      <div class="say-body"><p>“I’m not shipping OCR. I’m asking exposure vs intrinsic difficulty — and whether confidence is grounded. The click demo is how we’d catch guessing.”</p></div>
+      <div class="say-body"><p>“I’m not shipping OCR. Sarvam already publishes a 40-point Hindi–Kashmiri accuracy gap; their Extract confidence on those languages differs by 0.0027, while blank goes to zero. I’m asking whether confidence is designed to track hardness — and I built a blank instrument so we can open the mechanism.”</p></div>
     </details>
   </div>
 </header>
@@ -926,15 +932,17 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
         <h3>1 · Exposure — does seeing more help?</h3>
         <p>Nine runs: natural / flattened / inverted × three seeds. Plot accuracy vs log exposure; residual after exposure is a candidate for intrinsic visual complexity.</p>
         <h3>2 · Confusion — what did it almost say?</h3>
-        <p>Runner-up mass into a confusion graph. Closed APIs often return only the top string.</p>
+        <p>GT-aligned substitutions plus p(true) and rank. Closed APIs often return only the top string. <strong>BUILT — VERIFIED</strong>, 3 seeds.</p>
         <h3>3 · Grounding — is it looking?</h3>
-        <p>Real / blank / matched noise. Fluent high confidence on blank is language-prior guessing — more dangerous than an obvious failure.</p>
+        <p>Real / blank / matched noise, plus a training-curve disambiguation (3b). Fluent high confidence on blank is language-prior guessing. <strong>BUILT — VERIFIED</strong>, 3 seeds.</p>
+        <h3>Ablation · Does confidence need the image?</h3>
+        <p>Zero encoder memory before projection. Confidence barely moves (Δ −0.0030) while ~12% of token-choice mass still depends on the image. Content and confidence are dissociated. <strong>BUILT — VERIFIED</strong>, 3 seeds.</p>
         <h3>4 · Fair scoring</h3>
         <p>Same Tier 1/2 rules on instrument outputs as on Tesseract.</p>
         <h3>5 · Calibration — can I trust confidence?</h3>
-        <p>Especially on starved glyphs (Probe 1 × 5). Centerpiece practical question.</p>
+        <p>Especially on starved glyphs (Probe 1 × 5). Probe 5b is the zero-shot floor on unseen scripts. <strong>BUILT — VERIFIED</strong> (5b: 720 records, 3 seeds).</p>
         <h3>6 · Reality check</h3>
-        <p>Do synthetic findings hold on Tier C real documents?</p>
+        <p>Do synthetic findings hold on Tier C real documents? Paper-scope Probe 6: held-out Hindi, leakage-checked, 3 seeds. <strong>BUILT — VERIFIED</strong>.</p>
       </div>
             <div class="flow-box">
         <div class="flow-caption">BOOK.md Ch.7 — how the probes fit</div>
@@ -1324,15 +1332,20 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
       <table class="data">
         <thead><tr><th>Stage</th><th>What ran</th><th>Status</th></tr></thead>
         <tbody>
-          <tr><td>Stage 0 — taxonomy</td><td>Real GlotOCR pages; Tier 1/2; hand-review assist</td><td><span class="status-tag done">Done</span></td></tr>
-          <tr><td>Stage 1 — renderer</td><td>HarfBuzz dial + manifests; Tier A/B verified</td><td><span class="status-tag done">Done</span></td></tr>
-          <tr><td>Stage 2a — Hindi instrument</td><td>9/9 checkpoints on Colab; jsonl sync unconfirmed — findings REPORTED</td><td><span class="status-tag done">Done</span></td></tr>
+          <tr><td>Stage 0 — taxonomy</td><td>Real GlotOCR pages; Tier 1/2; 20.4% of Tesseract non-exact are encoding variants (provisional until adjudication labels)</td><td><span class="status-tag done">Done</span></td></tr>
+          <tr><td>Stage 1 — renderer</td><td>HarfBuzz dial + manifests; Hindi GT TV ≤ 0.08</td><td><span class="status-tag done">Done</span></td></tr>
+          <tr><td>Stage 2a — Hindi instrument</td><td>9/9 checkpoints; Probe 3/5/5b jsonl in-tree</td><td><span class="status-tag done">Done</span></td></tr>
           <tr><td>Bengali sweep</td><td>Started; Colab GPU quota mid-run across two accounts</td><td><span class="status-tag partial">Partial</span></td></tr>
-          <tr><td>Probe 6</td><td>Code complete; held-out pages + baselines not generated</td><td><span class="status-tag notrun">Not run</span></td></tr>
+          <tr><td>Probe 1 — exposure FE</td><td>Ran; headline β withheld (flattened/inverted line acc ~0%)</td><td><span class="status-tag partial">Withheld</span></td></tr>
+          <tr><td>Probe 2 — confusion</td><td>GT-aligned substitutions; 3 seeds; jsonl in-tree</td><td><span class="status-tag done">Verified</span></td></tr>
+          <tr><td>Probe 3 / 3b</td><td>3-seed blank/noise + training curve; gap indistinguishable from 0</td><td><span class="status-tag done">Verified</span></td></tr>
+          <tr><td>Probe 5 / 5b</td><td>3-seed calibration; 5b = 720 records, script substitution 360/360</td><td><span class="status-tag done">Verified</span></td></tr>
+          <tr><td>Attention ablation</td><td>Encoder memory zeroed; conf Δ −0.0030; ~12% token mass still image-dependent</td><td><span class="status-tag done">Verified</span></td></tr>
+          <tr><td>Probe 6 — Tier C</td><td>3 seeds; real plain/degraded/blank; 0 training-path overlaps</td><td><span class="status-tag done">Verified</span></td></tr>
+          <tr class="walk-only"><td>Stage 5a — transfer</td><td>35 Extract pages; published acc gap 39.98&nbsp;pp vs confidence Δ 0.0027</td><td><span class="status-tag done">Verified</span></td></tr>
           <tr><td>Stage 2b prereq</td><td><span class="mono">benchmark_base_models.py</span> written, not executed</td><td><span class="status-tag notrun">Not run</span></td></tr>
-          <tr><td>Probe 5b</td><td>Not started</td><td><span class="status-tag notrun">Not run</span></td></tr>
-          <tr><td>Stage 2b / 3 / 5 / 6 full</td><td>Described in BOOK Ch.4–6, 8–9 — deferred this phase</td><td><span class="status-tag oos">Out of scope</span></td></tr>
-          <tr><td>Methodology upgrades</td><td>Equal-frequency bins, mechanistic Probe&nbsp;3, patch-shuffle, seed aggregation, etc. (Decision&nbsp;#46)</td><td><span class="status-tag oos">Not built</span></td></tr>
+          <tr><td>Stage 2b / 3 / 5-full / 6</td><td>Demo LoRA, structure metrics, full rank-correlation, cascade — deferred</td><td><span class="status-tag oos">Out of scope</span></td></tr>
+          <tr><td>Remaining #46 upgrades</td><td>Equal-frequency ECE bins, patch-shuffle, mixed effects, kappa, bootstrap CIs. 3-seed aggregation and encoder-memory ablation are now built.</td><td><span class="status-tag oos">Partial</span></td></tr>
         </tbody>
       </table>
     </div>
@@ -1347,56 +1360,88 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
     <div class="fig-body">
       <div class="section-kicker walk-label">Findings</div>
       <div class="section-kicker paper-label">7. Results</div>
-      <h2 class="section-title">Measured vs reported — BOOK’s own labels</h2>
-      <span class="reported-banner">REPORTED — see ledger above</span>
+      <h2 class="section-title">Measured in this checkout</h2>
       <div class="finding-callout">
-        <div class="fc-label">Probe 3 — REPORTED (BOOK Ch.7)</div>
-        <p>hindi / natural / seed&nbsp;0: mean confidence <strong>0.9929</strong> real · <strong>0.9898</strong> blank · <strong>0.9877</strong> noise — essentially no gap.</p>
+        <div class="fc-label">Attention ablation — MEASURED (Claim B mechanism)</div>
+        <p>3 seeds, 180 Hindi Tier&nbsp;C images. Mean confidence full <strong>0.9861</strong> vs zero-memory <strong>0.9891</strong> (Δ <strong>−0.0030</strong>). Top-1 agreement <strong>0.8794</strong>; prior sufficiency <strong>0.8827</strong> (~12% of token-choice mass still depends on the image). Confidence is prior-dominated; content is not 100% prior.</p>
       </div>
       <div class="finding-callout">
-        <div class="fc-label">Probe 5 — REPORTED (BOOK Ch.7)</div>
-        <p>Same checkpoint: mass in 0.9–1.0 confidence bucket; accuracy there about <strong>0.10</strong> — confident and wrong.</p>
+        <div class="fc-label">Probe 3 / 3b — MEASURED (3 seeds)</div>
+        <p>Natural pooled: real <strong>0.9940</strong> · blank <strong>0.9899</strong> · noise <strong>0.9904</strong> (gap +0.0041). Training curve: real−blank gap sign-flips 4/5 steps, |SD|&gt;|mean| 4/5, while loss falls ~18× (3.210 → 0.182). Undertraining and ungrounded confidence are not competing explanations.</p>
+      </div>
+      <div class="finding-callout">
+        <div class="fc-label">Probe 5 / 5b — MEASURED (3 seeds)</div>
+        <p>Natural: ~99% confidence, line accuracy 14–24%, ECE ≈ 0.81. Probe 5b: 720 records; between-condition range of seed means <strong>0.0037</strong> &lt; hindi seed SD <strong>0.0043</strong>. Script substitution <strong>360/360</strong>. Seed-0 Kashmiri-vs-Hindi “significance” is <strong>retracted</strong> (does not replicate).</p>
+      </div>
+      <div class="finding-callout">
+        <div class="fc-label">Probe 6 — MEASURED (3 seeds, leakage-free)</div>
+        <p>Held-out Tier&nbsp;C Hindi: 0 overlaps with training manifests. Confidence real_plain <strong>0.9861</strong> · real_degraded <strong>0.9768</strong> · blank <strong>0.9799</strong>; Tier 1/2 line accuracy <strong>0.0000</strong>. Claim B is not a synthetic-only artifact.</p>
       </div>
       <div class="evidence-grid" style="margin-top:24px;">
         <div class="evidence-card">
           <div class="ev-tag">Measured · Stage 0</div>
           <h3>Encoding noise</h3>
-          <p>~<span class="ev-num">20.4%</span> of Tesseract non-exact preds are Tier&nbsp;1.</p>
+          <p>~<span class="ev-num">20.4%</span> of Tesseract non-exact preds are Tier&nbsp;1. Tier 2 validation is a complete 38-pair set; corpus TIER2 after Tier 1 is 0%.</p>
         </div>
         <div class="evidence-card">
           <div class="ev-tag">Measured · Stage 1</div>
-          <h3>Dial works</h3>
-          <p>Hindi GT TV: natural 0.000 / flattened ≈0.047 / inverted ≈0.005 (≤&nbsp;0.08).</p>
+          <h3>Dial works — but unlearnable text</h3>
+          <p>Hindi GT TV: natural 0.000 / flattened ≈0.047 / inverted ≈0.005 (≤&nbsp;0.08). Flattened/inverted line acc ~0% — Probe&nbsp;1 β withheld.</p>
         </div>
         <div class="evidence-card">
-          <div class="ev-tag reported">Convention</div>
-          <h3>Until jsonl is in-tree</h3>
-          <p>Probe 3/5 Colab numbers stay <strong>reported</strong>, not independently verified here.</p>
+          <div class="ev-tag">Limitation</div>
+          <h3>What this does not claim</h3>
+          <p>Bengali sweep partial. Stage 2b/3/5-full/6 deferred. TrOCR in-domain confidence was 0.42 — wrong operating regime; excluded as a comparison.</p>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- MOTIVATION -->
-<section id="motivation" class="mode-item part-two-section" style="--walk-order:12; --paper-order:2">
+<!-- MOTIVATION (walkthrough: published bench + transfer; paper: literature only) -->
+<section id="transfer" class="mode-item part-two-section walk-only" style="--walk-order:12; --paper-order:0">
   <div class="fig-rail">
     <div class="fig-num walk-num">08</div>
-    <div class="fig-num paper-num">M</div>
     <div class="fig-body">
-      <div class="section-kicker walk-label">Motivation numbers</div>
-      <div class="section-kicker paper-label">Motivation</div>
-      <h2 class="section-title">The gap that made the question urgent</h2>
-      <p class="lede">Verified 2026-08-25 against Sarvam’s Vision launch post — not a Colab “reported” claim.</p>
+      <div class="section-kicker walk-label">Motivation numbers · Stage 5a</div>
+      <h2 class="section-title">Published accuracy drops 40&nbsp;pp. Measured confidence does not.</h2>
+      <p class="lede">Collaborative question for Sarvam: does Extract confidence track the hardness Sarvam Vision already publishes? Verified Sept&nbsp;2026 against the Vision launch post and a 35-page Extract run (₹17.50; cached). Digitise does not expose confidence; this probe uses Extract on purpose.</p>
       <table class="data">
-        <caption>Sarvam Indic OCR Bench — word accuracy</caption>
-        <thead><tr><th>Language</th><th>Sarvam Vision</th><th>Gemini 3 Pro</th><th>Google Cloud Vision</th><th>Surya</th></tr></thead>
+        <caption>Sarvam Indic OCR Bench — published word accuracy vs Extract-API confidence (this checkout)</caption>
+        <thead><tr><th>Language</th><th>Published accuracy</th><th>Extract confidence (n=10)</th></tr></thead>
         <tbody>
-          <tr><td>Hindi — best</td><td>95.91</td><td>95.12</td><td>90.94</td><td>81.85</td></tr>
-          <tr><td>Santhali</td><td>80.32</td><td>64.02</td><td>54.79</td><td>31.24</td></tr>
-          <tr class="highlight"><td>Kashmiri — worst</td><td>55.93</td><td>44.46</td><td>33.41</td><td>9.76</td></tr>
+          <tr><td>Hindi</td><td>95.91</td><td>0.9997</td></tr>
+          <tr><td>Santhali</td><td>80.32</td><td>0.9974</td></tr>
+          <tr class="highlight"><td>Kashmiri</td><td>55.93</td><td>0.9970</td></tr>
+          <tr><td>Blank control</td><td>—</td><td>0.0000</td></tr>
         </tbody>
       </table>
+      <p class="prose" style="margin-top:16px; color:var(--ink-soft); font-size:0.94rem;">Accuracy gap Hindi→Kashmiri: <strong>39.98&nbsp;pp</strong>. Confidence delta: <strong>0.0027</strong>. Blank at 0.0000 shows the channel can go to zero — it just does not, on scripts the same benchmark calls hard. The instrument probes (ablation, 5b, 6) are the mechanistic “why,” not an indictment.</p>
+    </div>
+  </div>
+</section>
+
+<section id="motivation" class="mode-item part-two-section paper-only" style="--walk-order:0; --paper-order:2">
+  <div class="fig-rail">
+    <div class="fig-num paper-num">M</div>
+    <div class="fig-body">
+      <div class="section-kicker paper-label">Motivation</div>
+      <h2 class="section-title">Non-silent failure, and a synthetic–real split</h2>
+      <p class="lede">Two literature facts already cited in this repo’s decisions — not a vendor scoreboard.</p>
+      <div class="kv-grid">
+        <div class="kv-card">
+          <h3>GlotOCR Bench</h3>
+          <p>Production OCR systems fail <em>non-silently</em> at true zero script exposure: confidence stays high when the script in the image is one the model has never seen (IMPLEMENTATION.md Probe 5b motivation).</p>
+        </div>
+        <div class="kv-card">
+          <h3>2026 Devanagari stress-test</h3>
+          <p>Ten systems cluster tightly on clean synthetic text but spread across a 76-point range on real scans (DECISIONS.md #9). A synthetic-only finding is not a document finding.</p>
+        </div>
+        <div class="kv-card">
+          <h3>What we then built</h3>
+          <p>A blank instrument plus blank/noise, training-curve, encoder-memory ablation, and held-out Tier&nbsp;C probes — so “is confidence looking at the page?” is answerable without a closed API.</p>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -1409,24 +1454,28 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
     <div class="fig-body">
       <div class="section-kicker walk-label">Compute ledger</div>
       <div class="section-kicker paper-label">8. Compute</div>
-      <h2 class="section-title">Quota-cut and not-yet-run</h2>
-      <p class="ledger-note">Amber · free Colab T4</p>
+      <h2 class="section-title">What ran on a free T4 — and what still did not</h2>
+      <p class="ledger-note">Amber · free Colab T4 · Hindi probes now in-tree</p>
       <div class="ledger-grid">
         <div class="ledger-row">
-          <div class="ledger-col"><h3>Bengali full sweep</h3><div class="col-label">What ran</div><p>9-run structure started; GPU quota across two accounts.</p></div>
-          <div class="ledger-col"><div class="col-label" style="margin-top:2.1rem;">What full scale would show</div><p>Complete Bengali 3×3. One Hindi seed (inverted/seed2) showed 0% accuracy across sampled confidence buckets — <em>one seed, not a finding</em>; why nine runs exist.</p></div>
+          <div class="ledger-col"><h3>Hindi probe suite</h3><div class="col-label">What ran</div><p>Probes 2, 3, 3b, 5, 5b (720 records), 6 (Tier&nbsp;C, leakage-free), attention ablation. All 3-seed jsonl committed.</p></div>
+          <div class="ledger-col"><div class="col-label" style="margin-top:2.1rem;">Still not claimed</div><p>Probe 1 β (unlearnable flattened/inverted text). Full Probe 6 (Tier&nbsp;B sweep, handwriting, multi-system gaps).</p></div>
         </div>
         <div class="ledger-row">
-          <div class="ledger-col"><h3>Probe 6</h3><div class="col-label">What ran</div><p>Code built; held-out pages not generated.</p></div>
-          <div class="ledger-col"><div class="col-label" style="margin-top:2.1rem;">What full scale would show</div><p>Whether synthetic findings transfer to Tier C.</p></div>
+          <div class="ledger-col"><h3>Bengali full sweep</h3><div class="col-label">What ran</div><p>9-run structure started; GPU quota across two accounts.</p></div>
+          <div class="ledger-col"><div class="col-label" style="margin-top:2.1rem;">What full scale would show</div><p>Complete Bengali 3×3. One Hindi inverted/seed2 0% bucket is <em>one seed, not a finding</em>.</p></div>
+        </div>
+        <div class="ledger-row walk-only">
+          <div class="ledger-col"><h3>Stage 5a transfer</h3><div class="col-label">What ran</div><p>35 Extract pages, cache-once. Published acc gap 39.98&nbsp;pp vs confidence Δ 0.0027.</p></div>
+          <div class="ledger-col"><div class="col-label" style="margin-top:2.1rem;">Still deferred</div><p>Stage 5b rank-correlation + permutation null on Tier A/B (original ~200-page allocation).</p></div>
         </div>
         <div class="ledger-row">
           <div class="ledger-col"><h3>Stage 2b VRAM prereq</h3><div class="col-label">What ran</div><p>Script written; not executed.</p></div>
           <div class="ledger-col"><div class="col-label" style="margin-top:2.1rem;">What full scale would show</div><p>Peak T4 VRAM under LoRA for candidate demo bases.</p></div>
         </div>
         <div class="ledger-row">
-          <div class="ledger-col"><h3>Probe 5b</h3><div class="col-label">What ran</div><p>Not started.</p></div>
-          <div class="ledger-col"><div class="col-label" style="margin-top:2.1rem;">What full scale would show</div><p>Zero-shot floor on Santhali/Kashmiri already under data/raw/.</p></div>
+          <div class="ledger-col"><h3>TrOCR comparison</h3><div class="col-label">What ran</div><p>Attempted; excluded. In-domain mean confidence 0.42 — below the ceiling regime this project studies.</p></div>
+          <div class="ledger-col"><div class="col-label" style="margin-top:2.1rem;">Why it is not a finding</div><p>Wrong operating regime. Not a valid comparison against ~0.99 instrument / production confidence.</p></div>
         </div>
       </div>
       <p class="ledger-close">None of this changes the design — it changes how much weight the numbers can carry.</p>
@@ -1460,7 +1509,8 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
           <p>Treat fluent, high-confidence failure as a calibration and routing problem — not only as “need more accuracy.”</p>
         </div>
       </div>
-      <p class="one-liner">The demo, RLVR, Sarvam transfer, and cascade are how those questions eventually meet production systems; they are deferred in this phase, not abandoned.</p>
+      <p class="one-liner walk-only">The demo, RLVR, full transfer rank-correlation, and cascade are how those questions eventually meet production systems; Stage 5a is the first cached contact. The rest are deferred, not abandoned.</p>
+      <p class="one-liner paper-only">The demo, RLVR, production-API rank-correlation, and cascade are how those questions eventually meet deployed systems; they are deferred in this phase, not abandoned.</p>
     </div>
   </div>
 </section>
@@ -1474,8 +1524,22 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
       <div class="section-kicker walk-label">BOOK · What I would improve</div>
       <div class="section-kicker paper-label">Methodology</div>
       <h2 class="section-title">Weak spots already visible in the code — not generic advice</h2>
-      <p class="lede">Decision&nbsp;#46. None of these is built. They are the next checkable upgrades if the probes are treated as science rather than architecture proofs.</p>
+      <p class="lede">Decision&nbsp;#46. Two of the seven upgrades are now built (3-seed headlines; encoder-memory ablation as a mechanistic Probe&nbsp;3). The rest remain checkable next work — not generic advice.</p>
       <div class="scope-grid">
+        <div class="scope-row">
+          <div class="scope-tag"><span class="stage">Built</span>Seeds</div>
+          <div class="scope-why">
+            <h4>Mean ± std across three seeds</h4>
+            <p>Probes 2, 3, 3b, 5, 5b, 6 and attention ablation now report 3-seed aggregates from in-tree jsonl. Seed-0 Kashmiri “significance” was retracted on that basis.</p>
+          </div>
+        </div>
+        <div class="scope-row">
+          <div class="scope-tag"><span class="stage">Built</span>Probe 3</div>
+          <div class="scope-why">
+            <h4>Mechanistic ablation (encoder memory)</h4>
+            <p>Zero encoder output before projection. Confidence Δ −0.0030; ~12% of token-choice mass still image-dependent. Cross-attention <em>maps</em> (does attention move to the glyph?) are still not built.</p>
+          </div>
+        </div>
         <div class="scope-row">
           <div class="scope-tag"><span class="stage">1</span>Calibration</div>
           <div class="scope-why">
@@ -1484,35 +1548,21 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
           </div>
         </div>
         <div class="scope-row">
-          <div class="scope-tag"><span class="stage">2</span>Probe 3</div>
-          <div class="scope-why">
-            <h4>Mechanistic, not only behavioral</h4>
-            <p>Extract cross-attention during generation — does attention move to the glyph, or stay diffuse? Zero retraining; independent of blank/noise confidence.</p>
-          </div>
-        </div>
-        <div class="scope-row">
           <div class="scope-tag"><span class="stage">3</span>Controls</div>
           <div class="scope-why">
             <h4>Patch-shuffle</h4>
-            <p>Permute 14×14 patches on a real line: destroy global structure, keep local texture. Stricter than blank/noise.</p>
-          </div>
-        </div>
-        <div class="scope-row">
-          <div class="scope-tag"><span class="stage">4</span>Seeds</div>
-          <div class="scope-why">
-            <h4>Mean ± std across three seeds</h4>
-            <p>Site/README Probe&nbsp;3/5 numbers are seed0 alone. Decision&nbsp;#14 already required three — headlines should aggregate once artifacts exist.</p>
+            <p>Permute 14×14 patches on a real line: destroy global structure, keep local texture. Stricter than blank/noise. Not built.</p>
           </div>
         </div>
         <div class="scope-row">
           <div class="scope-tag"><span class="stage">5–7</span>Stats</div>
           <div class="scope-why">
             <h4>Mixed effects · kappa · bootstrap CIs</h4>
-            <p>Probe&nbsp;1 nesting; second labeler on a residual subsample; effect sizes with intervals instead of significance stars at this N.</p>
+            <p>Probe&nbsp;1 nesting; second labeler on a residual subsample; effect-size intervals instead of significance stars at this N. Not built (5b/3b have a first bootstrap pass; the #46 upgrade is the fuller program).</p>
           </div>
         </div>
       </div>
-      <p class="one-liner">The upgrades are specific and checkable — singleton calibration bins, behavioral-only Probe&nbsp;3, single-seed headlines — not “run more experiments.”</p>
+      <p class="one-liner">What remains is specific and checkable — singleton calibration bins, patch-shuffle, mixed effects, kappa — not “run more experiments.”</p>
     </div>
   </div>
 </section>
@@ -1529,7 +1579,8 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
         <div class="scope-row"><div class="scope-tag"><span class="stage">Demo</span>Ch.4</div><div class="scope-why"><h4>LoRA on a pretrained doc-VLM</h4><p>Shipping shape. Must stay separate from the instrument — frozen weights already contain exposure history.</p></div></div>
         <div class="scope-row"><div class="scope-tag"><span class="stage">Structure</span>Ch.5</div><div class="scope-why"><h4>Reading order + table binding</h4><p>Kendall tau vs complexity; cell↔header. Blocked on layout-bank gaps.</p></div></div>
         <div class="scope-row"><div class="scope-tag"><span class="stage">RLVR</span>Ch.6</div><div class="scope-why"><h4>Reward − coverage</h4><p>A model optimizes the reward you gave it. Character accuracy alone can be gamed by omitting uncertain spans. Planned reward includes coverage; the only ablation is removing that term (Decision&nbsp;#11). Sits behind the demo — blueprint, not built.</p></div></div>
-        <div class="scope-row"><div class="scope-tag"><span class="stage">Transfer</span>Ch.8</div><div class="scope-why"><h4>Do findings rhyme at production scale?</h4><p>~200 Sarvam pages, cached; rank correlation. Null is still a finding.</p></div></div>
+        <div class="scope-row walk-only"><div class="scope-tag"><span class="stage">Transfer</span>Ch.8</div><div class="scope-why"><h4>Do findings rhyme at production scale?</h4><p>Stage 5a (35 cached Extract pages) is done. Full ~200-page rank-correlation + permutation null on Tier A/B is still deferred. A null there would still be a finding.</p></div></div>
+        <div class="scope-row paper-only"><div class="scope-tag"><span class="stage">Transfer</span>Ch.8</div><div class="scope-why"><h4>Do findings rhyme at production scale?</h4><p>Cached-page rank correlation against a production OCR API, with a pre-specified permutation null. Deferred this phase. A null result is still a finding.</p></div></div>
         <div class="scope-row"><div class="scope-tag"><span class="stage">Cascade</span>Ch.9</div><div class="scope-why"><h4>When to escalate</h4><p>Router quality offline against the cache — only after confidence predicts errors.</p></div></div>
       </div>
     </div>
@@ -1551,6 +1602,7 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
         <div class="doc-row"><span class="doc-name"><a href="#control">Control</a></span><span class="doc-desc">BOOK Ch.2 + flowchart</span></div>
         <div class="doc-row"><span class="doc-name"><a href="#instrument">Instrument</a></span><span class="doc-desc">BOOK Ch.3</span></div>
         <div class="doc-row"><span class="doc-name"><a href="#probes">Probes</a></span><span class="doc-desc">BOOK Ch.7</span></div>
+        <div class="doc-row walk-only"><span class="doc-name"><a href="#transfer">Transfer</a></span><span class="doc-desc">Stage 5a · published gap vs Extract confidence</span></div>
         <div class="doc-row"><span class="doc-name"><a href="#status">Ledger</a></span><span class="doc-desc">what ran</span></div>
         <div class="doc-row"><span class="doc-name"><a href="#conclusion">Spine</a></span><span class="doc-desc">BOOK Conclusion</span></div>
         <div class="doc-row"><span class="doc-name"><a href="#improve">Improve</a></span><span class="doc-desc">Decision #46 methodology</span></div>
