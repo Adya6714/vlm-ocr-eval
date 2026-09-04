@@ -351,6 +351,20 @@ Claim B numbers to real Tier C (paper scope; DECISIONS.md #58).
       choice mass depends on image content (DECISIONS.md #56).
       Outputs: `data/probe_results/attention_ablation_hindi_natural_seed{N}.jsonl`;
       analysis: `docs/attention_ablation_analysis.md`. Unit tests 11/11.
+- [x] BUILT — VERIFIED **GT-likelihood / entropy (estimator-bias check).**
+      Teacher-forced inference on the ground-truth token sequence (not
+      self-generated argmax), recording per-step `log p(gt_token)` and
+      full-softmax Shannon entropy. Same Probe 5b Hindi `Random(0)` pool
+      + blank: 60 real + 60 blank × 3 seeds = **360 records**.
+      Whole-sequence mean log p(GT): real **−1.783** (SD 1.274) vs blank
+      **−1.751** (SD 1.280); mean entropy real **0.0210** vs blank
+      **0.0253**. First-token p(GT) is ~10⁻¹⁰–10⁻¹² on both conditions
+      across all seeds; rest-of-sequence mean log p ≈ **−1.140** (real) /
+      **−1.135** (blank) (~0.32). Dissociation replicates under a
+      bias-free estimator (DECISIONS.md #62).
+      Outputs: `data/probe_results/probe_gt_likelihood_hindi_natural_seed{N}.jsonl`;
+      analysis: `docs/gt_likelihood_analysis.md`.
+      Code: `src/probes/probe_gt_likelihood.py`.
 - [x] BUILT — VERIFIED **Probe 6 — Synthetic-to-real gap (paper scope).**
       Tier C Hindi plain+degraded+blank vs synthetic Claim B (Probe 3/5).
       Held-out validity is leakage-free (0 overlaps between

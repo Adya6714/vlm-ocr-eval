@@ -1486,3 +1486,36 @@ Drive dumps on the repo root “for convenience.”
 Bengali checkpoints alone are ~2 GB. **Why not (b):** every probe
 already writes the IMPLEMENTATION.md path. **Why not (c):** root zips
 made the checkout look like an inbox and hid the actual jsonl.
+
+---
+
+### 62. GT-likelihood probe: teacher-forced log p(GT) + entropy vs max-softmax bias
+
+**Decision:** build and verify `probe_gt_likelihood.py` — teacher-forced
+scoring of the **ground-truth** token sequence with full-softmax entropy
+at each step — as a second confidence/grounding estimator on the same
+Hindi Tier C + blank sample as Probe 5b / Probe 6 real_plain.
+
+**Why this was built:** mean max-softmax over self-generated tokens is
+upward-biased by construction (the decoder selects its own argmax). A
+critic can dismiss Claim B as an artifact of that estimator. Length-
+normalized log p of those same chosen tokens still uses the same
+channel. Teacher-forced `log p(gt_token)` and `H(p)` do not.
+
+**Verified result (360 records, 3 seeds):** whole-sequence mean log p(GT)
+real −1.783 vs blank −1.751; mean entropy real 0.0210 vs blank 0.0253;
+first-token p(GT) catastrophically low and real≈blank on every seed;
+rest-of-sequence mean log p ≈ −1.14 on both. The real/blank dissociation
+**replicates** under this bias-free estimator (see
+`docs/gt_likelihood_analysis.md`).
+
+**Alternatives considered:** (a) only report mean(log max-softmax) from
+saved `step_confidences`; (b) skip and treat max-softmax as sufficient;
+(c) require a new architecture change before claiming estimator
+independence.
+
+**Why not (a):** still the self-selected token. **Why not (b):** the
+critique is fair and cheap to answer with one inference pass.
+**Why not (c):** the existing `generate(force_next_ids=…,
+return_full_probs=True)` path already supports teacher forcing.
+

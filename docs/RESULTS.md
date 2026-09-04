@@ -29,6 +29,7 @@ Design choices: [`DECISIONS.md`](../DECISIONS.md).
 | Probe 5 calibration (natural) | ~99% conf, 14–24% acc, ECE ≈ 0.81 | `probe5_hindi_*_seed{0,1,2}.jsonl` | [`results_analysis.md`](results_analysis.md) | `src/probes/probe5_calibration.py` |
 | Probe 5b zero-shot floor | 720 records; cond. range 0.0037; 360/360 substitution | `probe5b_hindi_natural_seed{0,1,2}.jsonl` | [`probe5b_analysis.md`](probe5b_analysis.md), [`statistical_repair.md`](statistical_repair.md) | `src/probes/probe5b_zeroshot_floor.py` |
 | Attention ablation | full 0.9861 vs zero 0.9891; Δ −0.0030; prior suff. 0.8827 | `attention_ablation_hindi_natural_seed{0,1,2}.jsonl` | [`attention_ablation_analysis.md`](attention_ablation_analysis.md) | `src/probes/probe_attention_ablation.py` |
+| GT-likelihood (teacher-forced) | log p(GT) real −1.783 / blank −1.751; first-token ~1e-10–1e-12 both | `probe_gt_likelihood_hindi_natural_seed{0,1,2}.jsonl` | [`gt_likelihood_analysis.md`](gt_likelihood_analysis.md) | `src/probes/probe_gt_likelihood.py` |
 | Probe 6 Tier C | conf 0.9861 / 0.9768 / 0.9799; acc 0.0; 0 leakage | `probe6_synthetic_real_hindi_seed{0,1,2}.jsonl` | [`probe6_synthetic_real_analysis.md`](probe6_synthetic_real_analysis.md) | `src/probes/probe6_synthetic_real_gap.py` |
 | Stage 5a transfer | published gap 39.98 pp vs conf Δ 0.0027 | `sarvam_transfer_probe.jsonl` | [`sarvam_transfer_analysis.md`](sarvam_transfer_analysis.md) | `src/probes/sarvam_transfer_probe.py` |
 

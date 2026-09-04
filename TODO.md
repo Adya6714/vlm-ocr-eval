@@ -138,19 +138,14 @@ not invented templates.
   records; Kashmiri Bonferroni retracted; between-cond range 0.0037
   < seed SDs; script substitution 360/360;
   `docs/probe5b_analysis.md`, DECISIONS.md #52–#53)
-- [!] Attention ablation (Claim B mechanism) — code + 11 unit tests
-  done; Colab run blocked (no local hindi/natural checkpoints).
-  `probe_attention_ablation.py` →
-  `attention_ablation_hindi_natural_seed{N}.jsonl`; analysis →
-  `docs/attention_ablation_analysis.md` (DECISIONS.md #56)
-- [!] Probe 6 (paper scope) — Tier C plain+degraded+blank vs synthetic
-  Claim B; leakage **confirmed 0 overlaps** (manifests vs
-  `data/raw/hindi/images/`). Code + 5/5 tests + analysis stub.
-  Inference **blocked** (no local hindi/natural checkpoints).
-  Full original Probe 6 deferred (DECISIONS.md #58).
-  `probe6_synthetic_real_gap.py` →
-  `probe6_synthetic_real_hindi_seed{N}.jsonl`;
-  `docs/probe6_synthetic_real_analysis.md`
+- [x] Attention ablation (Claim B mechanism) — BUILT — VERIFIED
+  (3 seeds, 180 images; seed-honest rewrite in
+  `docs/attention_ablation_analysis.md`; DECISIONS.md #56)
+- [x] GT-likelihood / entropy — BUILT — VERIFIED (360 records;
+  teacher-forced log p(GT) + entropy; first-token real≈blank ~1e-10–1e-12;
+  `docs/gt_likelihood_analysis.md`, DECISIONS.md #62)
+- [x] Probe 6 (paper scope) — BUILT — VERIFIED (Tier C plain+degraded+blank;
+  0 leakage; `docs/probe6_synthetic_real_analysis.md`; DECISIONS.md #58)
 
 ## Stage 6 — Sarvam transfer + triage cascade (days 34–36)
 
