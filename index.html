@@ -935,8 +935,8 @@
         <p class="hero-sub">Token-level confidence in autoregressive OCR can remain near ceiling when visual evidence is removed, when encoder memory is zeroed, and when the script is unseen — even as recognition accuracy collapses.</p>
         <div class="abstract-box">
           <p><strong>Claim.</strong> Decoder confidence is widely treated as a proxy for visual certainty. This work tests that proxy on a blank Indic OCR instrument: if confidence tracked the image, it would fall on blank and matched-noise inputs, after encoder memory is deleted, and on scripts never seen at training time.</p>
-          <p><strong>Method.</strong> A ~19.5M-parameter encoder–decoder with a grapheme-cluster vocabulary and no Indic pretraining is trained on exposure-controlled line crops (natural / flattened / inverted). Probes then measure real versus blank versus matched-noise confidence, a training-curve disambiguation, calibration and zero-shot script substitution, encoder-memory ablation, and held-out real-scan transfer. Scoring applies grapheme-aware encoding equivalence before residual error is counted.</p>
-          <p><strong>Finding.</strong> On Hindi, mean confidence is 0.9940 on real lines versus 0.9899 on blanks (gap +0.0041). Across training, the real–blank gap is indistinguishable from zero while loss falls ~18× (3.210 → 0.182). Zeroing encoder memory changes mean confidence by −0.0030; ~12% of token-choice mass remains image-dependent. On held-out real scans, line accuracy is 0.0000 at confidence 0.9861 (plain) and 0.9768 (degraded). Probe 5b (720 records, three seeds) finds a between-condition confidence range of 0.0037, below Hindi seed SD (0.0043). Content and confidence are dissociated.</p>
+          <p><strong>Method.</strong> A ~19.5M-parameter encoder–decoder with a grapheme-cluster vocabulary and no Indic pretraining is trained on exposure-controlled line crops (natural / flattened / inverted). Probes then measure real versus blank versus matched-noise confidence, a training-curve disambiguation, calibration and zero-shot script substitution, encoder-memory ablation, teacher-forced ground-truth log-likelihood with full-softmax entropy, and held-out real-scan transfer. Scoring applies grapheme-aware encoding equivalence before residual error is counted.</p>
+          <p><strong>Finding.</strong> On Hindi, mean confidence is 0.9940 on real lines versus 0.9899 on blanks (gap +0.0041). Across training, the real–blank gap is indistinguishable from zero while loss falls ~18× (3.210 → 0.182). Zeroing encoder memory changes mean confidence by −0.0030; ~12% of token-choice mass remains image-dependent. Teacher-forced mean log&nbsp;p(GT) is −1.783 on real versus −1.751 on blank (n=180 each); first-token p(GT) is ~10⁻¹⁰–10⁻¹² on both conditions across three seeds, while rest-of-sequence mean log&nbsp;p rises to ≈−1.14 (~0.32) regardless of image. On held-out real scans, line accuracy is 0.0000 at confidence 0.9861 (plain) and 0.9768 (degraded). Probe 5b (720 records, three seeds) finds a between-condition confidence range of 0.0037, below Hindi seed SD (0.0043). Content and confidence are dissociated, and the dissociation is not an artifact of max-softmax self-selection.</p>
         </div>
       </div>
       <aside class="hero-visual" aria-label="Measured dissociation at a glance">
@@ -959,7 +959,7 @@
               <div class="d-sub">Δ −0.003</div>
             </div>
           </div>
-          <p class="gap-footnote">Line accuracy on held-out real scans: <strong>0.0000</strong> at confidence ≈0.98. The meter does not track the page.</p>
+          <p class="gap-footnote">Line accuracy on held-out real scans: <strong>0.0000</strong> at confidence ≈0.98. Teacher-forced first-token p(GT) is ~10⁻¹⁰–10⁻¹² on both real and blank.</p>
         </div>
       </aside>
     </div>
@@ -981,7 +981,7 @@
         </div>
 
         <div class="status-strip">
-          <span class="pill done">Done: Stage 0 · 1 · Hindi 2a · probes 2/3/3b/5/5b/6 · ablation · 5a</span>
+          <span class="pill done">Done: Stage 0 · 1 · Hindi 2a · probes 2/3/3b/5/5b/6 · ablation · GT-lik · 5a</span>
           <span class="pill amber">Partial: Bengali sweep (quota)</span>
           <span class="pill pending">Not run: 2b prereq · Stage 5b rank-corr · cascade</span>
           <span class="pill out">Deferred: Stage 2b / 3 / 5-full / 6</span>
@@ -1298,7 +1298,7 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
       <h2 class="section-title walk-only">We built the model so we can open it up</h2>
       <h2 class="section-title paper-only">Diagnostic probes</h2>
       <p class="lede walk-only">Accuracy tells almost nothing about <em>how</em> the model arrived there. Think of the instrument as a patient in a lab, and the probes as medical tests. They are the project’s real deliverable.</p>
-      <p class="lede paper-only">Accuracy does not identify the computation that produced it. The probes are the primary measurements: exposure, confusion, visual grounding, calibration, encoder-memory ablation, and held-out real-scan transfer.</p>
+      <p class="lede paper-only">Accuracy does not identify the computation that produced it. The probes are the primary measurements: exposure, confusion, visual grounding, calibration, encoder-memory ablation, teacher-forced GT likelihood, and held-out real-scan transfer.</p>
 
       <div class="probe-q">
         <h3>1 · Exposure — does seeing more help?</h3>
@@ -1309,6 +1309,8 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
         <p>Real / blank / matched noise, plus a training-curve disambiguation (3b). Fluent high confidence on blank is language-prior guessing. <strong>BUILT — VERIFIED</strong>, 3 seeds.</p>
         <h3>Ablation · Does confidence need the image?</h3>
         <p>Zero encoder memory before projection. Confidence barely moves (Δ −0.0030) while ~12% of token-choice mass still depends on the image. Content and confidence are dissociated. <strong>BUILT — VERIFIED</strong>, 3 seeds.</p>
+        <h3>GT-likelihood · Is max-softmax the whole story?</h3>
+        <p>Teacher-force the ground-truth sequence; score <code>log p(gt)</code> and full-softmax entropy. Whole-sequence mean log&nbsp;p(GT): real <strong>−1.783</strong> vs blank <strong>−1.751</strong>. First-token p(GT) ~10⁻¹⁰–10⁻¹² on both; rest-of-sequence ≈0.32 on both. Dissociation replicates under a bias-free estimator. <strong>BUILT — VERIFIED</strong>, 360 records.</p>
         <h3>4 · Fair scoring</h3>
         <p>Same Tier 1/2 rules on instrument outputs as on Tesseract.</p>
         <h3 class="walk-only">5 · Calibration — can I trust confidence?</h3>
@@ -1719,6 +1721,7 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
           <tr><td>Probe 3 / 3b</td><td>3-seed blank/noise + training curve; gap indistinguishable from 0</td><td><span class="status-tag done">Verified</span></td></tr>
           <tr><td>Probe 5 / 5b</td><td>3-seed calibration; 5b = 720 records, script substitution 360/360</td><td><span class="status-tag done">Verified</span></td></tr>
           <tr><td>Attention ablation</td><td>Encoder memory zeroed; conf Δ −0.0030; ~12% token mass still image-dependent</td><td><span class="status-tag done">Verified</span></td></tr>
+          <tr><td>GT-likelihood</td><td>Teacher-forced log&nbsp;p(GT) real −1.783 vs blank −1.751; first-token ~1e-10–1e-12 both; 360 records</td><td><span class="status-tag done">Verified</span></td></tr>
           <tr><td>Probe 6 — Tier C</td><td>3 seeds; real plain/degraded/blank; 0 training-path overlaps</td><td><span class="status-tag done">Verified</span></td></tr>
           <tr class="walk-only"><td>Stage 5a — transfer</td><td>35 Extract pages; published acc gap 39.98&nbsp;pp vs confidence Δ 0.0027</td><td><span class="status-tag done">Verified</span></td></tr>
           <tr><td>Stage 2b prereq</td><td><span class="mono">benchmark_base_models.py</span> written, not executed</td><td><span class="status-tag notrun">Not run</span></td></tr>
@@ -1742,7 +1745,11 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
       <h2 class="section-title paper-only">Measured results</h2>
       <div class="finding-callout">
         <div class="fc-label">Attention ablation — MEASURED (Claim B mechanism)</div>
-        <p>3 seeds, 180 Hindi Tier&nbsp;C images. Mean confidence full <strong>0.9861</strong> vs zero-memory <strong>0.9891</strong> (Δ <strong>−0.0030</strong>). Top-1 agreement <strong>0.8794</strong>; prior sufficiency <strong>0.8827</strong> (~12% of token-choice mass still depends on the image). Confidence is prior-dominated; content is not 100% prior.</p>
+        <p>3 seeds, 180 Hindi Tier&nbsp;C images. Mean confidence full <strong>0.9861</strong> vs zero-memory <strong>0.9891</strong> (Δ <strong>−0.0030</strong>). Top-1 agreement <strong>0.8794</strong>; prior sufficiency <strong>0.8827</strong> (~12% of token-choice mass still depends on the image). Per-seed confidence deltas flip sign (−0.0234 / +0.0035 / +0.0109); the primary signal is distributional KL, not a stable confidence delta.</p>
+      </div>
+      <div class="finding-callout">
+        <div class="fc-label">GT-likelihood — MEASURED (estimator-bias check, 360 records)</div>
+        <p>Teacher-forced ground-truth sequences on the same Hindi pool + blank. Whole-sequence mean log&nbsp;p(GT): real <strong>−1.783</strong> (SD 1.274) vs blank <strong>−1.751</strong> (SD 1.280). Mean entropy: real <strong>0.0210</strong> vs blank <strong>0.0253</strong>. First-token p(GT) is catastrophically low on both (seed0 real 2.05×10⁻¹⁰ / blank 9.32×10⁻¹⁰; seed1 1.35×10⁻¹¹ / 3.13×10⁻¹¹; seed2 3.88×10⁻¹² / 8.70×10⁻¹²). Rest-of-sequence mean log&nbsp;p ≈ <strong>−1.140</strong> / <strong>−1.135</strong> (~0.32). Dissociation is not a max-softmax artifact.</p>
       </div>
       <div class="finding-callout">
         <div class="fc-label">Probe 3 / 3b — MEASURED (3 seeds)</div>
@@ -1795,7 +1802,7 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
           <tr><td>Blank control</td><td>—</td><td>0.0000</td></tr>
         </tbody>
       </table>
-      <p class="prose" style="margin-top:16px; color:var(--ink-soft); font-size:0.94rem;">Accuracy gap Hindi→Kashmiri: <strong>39.98&nbsp;pp</strong>. Confidence delta: <strong>0.0027</strong>. Blank at 0.0000 shows the channel can go to zero — it just does not, on scripts the same benchmark calls hard. The instrument probes (ablation, 5b, 6) are the mechanistic “why,” not an indictment.</p>
+      <p class="prose" style="margin-top:16px; color:var(--ink-soft); font-size:0.94rem;">Accuracy gap Hindi→Kashmiri: <strong>39.98&nbsp;pp</strong>. Confidence delta: <strong>0.0027</strong>. Blank at 0.0000 shows the channel can go to zero — it just does not, on scripts the same benchmark calls hard. The instrument probes (ablation, GT-likelihood, 5b, 6) are the mechanistic “why,” not an indictment.</p>
     </div>
   </div>
 </section>
@@ -1838,7 +1845,7 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
       <p class="ledger-note">Amber · free Colab T4 · Hindi probes now in-tree</p>
       <div class="ledger-grid">
         <div class="ledger-row">
-          <div class="ledger-col"><h3>Hindi probe suite</h3><div class="col-label">What ran</div><p>Probes 2, 3, 3b, 5, 5b (720 records), 6 (Tier&nbsp;C, leakage-free), attention ablation. All 3-seed jsonl committed.</p></div>
+          <div class="ledger-col"><h3>Hindi probe suite</h3><div class="col-label">What ran</div><p>Probes 2, 3, 3b, 5, 5b (720 records), 6 (Tier&nbsp;C, leakage-free), attention ablation, GT-likelihood (360 records). All 3-seed jsonl committed.</p></div>
           <div class="ledger-col"><div class="col-label" style="margin-top:2.1rem;">Still not claimed</div><p>Probe 1 β (unlearnable flattened/inverted text). Full Probe 6 (Tier&nbsp;B sweep, handwriting, multi-system gaps).</p></div>
         </div>
         <div class="ledger-row">
@@ -1907,14 +1914,14 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
       <div class="section-kicker paper-label">Limitations</div>
       <h2 class="section-title walk-only">Weak spots already visible in the code — not generic advice</h2>
       <h2 class="section-title paper-only">Limitations and planned upgrades</h2>
-      <p class="lede walk-only">Decision&nbsp;#46. Two of the seven upgrades are now built (3-seed headlines; encoder-memory ablation as a mechanistic Probe&nbsp;3). The rest remain checkable next work — not generic advice.</p>
-      <p class="lede paper-only">Decision&nbsp;#46. Three-seed aggregation and encoder-memory ablation are built. Equal-frequency ECE bins, patch-shuffle, mixed-effects models, a second-labeler kappa, and fuller bootstrap CIs are not. Probe&nbsp;1’s exposure coefficient is withheld: flattened and inverted line accuracy collapsed (~0%). The Bengali sweep is partial (GPU quota).</p>
+      <p class="lede walk-only">Decision&nbsp;#46 / #62. Three-seed headlines, encoder-memory ablation, and teacher-forced GT-likelihood are built. The rest remain checkable next work — not generic advice.</p>
+      <p class="lede paper-only">Decision&nbsp;#46 / #62. Three-seed aggregation, encoder-memory ablation, and teacher-forced GT log-likelihood + entropy are built. Equal-frequency ECE bins, patch-shuffle, mixed-effects models, a second-labeler kappa, and fuller bootstrap CIs are not. Probe&nbsp;1’s exposure coefficient is withheld: flattened and inverted line accuracy collapsed (~0%). The Bengali sweep is partial (GPU quota).</p>
       <div class="scope-grid">
         <div class="scope-row">
           <div class="scope-tag"><span class="stage">Built</span>Seeds</div>
           <div class="scope-why">
             <h4>Mean ± std across three seeds</h4>
-            <p>Probes 2, 3, 3b, 5, 5b, 6 and attention ablation now report 3-seed aggregates from in-tree jsonl. Seed-0 Kashmiri “significance” was retracted on that basis.</p>
+            <p>Probes 2, 3, 3b, 5, 5b, 6, attention ablation, and GT-likelihood now report 3-seed aggregates from in-tree jsonl. Seed-0 Kashmiri “significance” was retracted on that basis.</p>
           </div>
         </div>
         <div class="scope-row">
