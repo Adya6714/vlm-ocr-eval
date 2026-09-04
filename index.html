@@ -21,6 +21,23 @@
     --hairline:#C9C4B4;
     --hairline-strong:#A7A18E;
     --maxw:920px;
+    --mode-accent:var(--brick);
+    --mode-wash:rgba(139,51,36,0.06);
+    --mode-wash-2:rgba(43,58,103,0.05);
+  }
+  body[data-mode="paper"]{
+    --paper:#EEF0F2;
+    --paper-raised:#E4E8EC;
+    --ink:#16181C;
+    --ink-soft:#3E4450;
+    --ink-blue:#1F3A5F;
+    --ochre:#7A6A3A;
+    --brick:#5C3A2E;
+    --hairline:#C2C7CE;
+    --hairline-strong:#9AA3AE;
+    --mode-accent:var(--ink-blue);
+    --mode-wash:rgba(31,58,95,0.07);
+    --mode-wash-2:rgba(22,24,28,0.04);
   }
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
@@ -30,12 +47,17 @@
   }
   body{
     margin:0;
-    background:var(--paper);
+    background:
+      radial-gradient(1200px 520px at 8% -10%, var(--mode-wash), transparent 60%),
+      radial-gradient(900px 480px at 92% 8%, var(--mode-wash-2), transparent 55%),
+      linear-gradient(180deg, var(--paper) 0%, var(--paper) 100%);
+    background-attachment:fixed;
     color:var(--ink);
     font-family:'IBM Plex Sans', sans-serif;
     font-size:17px;
     line-height:1.6;
     -webkit-font-smoothing:antialiased;
+    transition:background-color 280ms ease, color 280ms ease;
   }
   a{color:var(--ink-blue);}
   a:focus-visible, button:focus-visible, .hoverable:focus-visible{
@@ -50,9 +72,10 @@
   /* ---- top bar ---- */
   .topbar{
     position:sticky; top:0; z-index:50;
-    background:rgba(242,240,232,0.92);
-    backdrop-filter:blur(6px);
+    background:color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter:blur(10px);
     border-bottom:1px solid var(--hairline);
+    transition:background 280ms ease, border-color 280ms ease;
   }
   .topbar-inner{
     max-width:1080px; margin:0 auto; padding:14px 28px;
@@ -103,25 +126,64 @@
   .lede{font-size:1.08rem; color:var(--ink-soft); max-width:62ch;}
 
   /* ---- hero ---- */
-  .hero{padding:64px 0 60px; border-bottom:1px solid var(--hairline);}
-  .hero-inner{max-width:1080px; margin:0 auto; padding:0 28px;}
+  .hero{
+    padding:72px 0 68px;
+    border-bottom:1px solid var(--hairline);
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:'';
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(var(--hairline) 1px, transparent 1px),
+      linear-gradient(90deg, var(--hairline) 1px, transparent 1px);
+    background-size:48px 48px;
+    opacity:0.18;
+    pointer-events:none;
+    mask-image:linear-gradient(180deg, rgba(0,0,0,0.55), transparent 85%);
+  }
+  .hero-inner{
+    max-width:1080px; margin:0 auto; padding:0 28px;
+    position:relative;
+  }
+  .hero-layout{
+    display:grid;
+    grid-template-columns:minmax(0, 1.15fr) minmax(260px, 0.85fr);
+    gap:40px 48px;
+    align-items:start;
+  }
+  @media (max-width:900px){
+    .hero-layout{grid-template-columns:1fr; gap:28px;}
+  }
+  .hero-copy{min-width:0;}
+  .hero-visual{min-width:0;}
   .hero-kicker{
     font-family:'IBM Plex Mono', monospace; font-size:0.78rem;
-    text-transform:uppercase; letter-spacing:0.14em; color:var(--ink-blue);
+    text-transform:uppercase; letter-spacing:0.14em; color:var(--mode-accent);
     margin-bottom:18px;
+    display:inline-flex; align-items:center; gap:10px;
+  }
+  .hero-kicker::before{
+    content:''; width:18px; height:2px; background:var(--mode-accent);
+    animation:kickerPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes kickerPulse{
+    0%,100%{opacity:0.45; transform:scaleX(0.7);}
+    50%{opacity:1; transform:scaleX(1);}
   }
   h1{
     font-family:'Fraunces', serif; font-weight:500;
-    font-size:clamp(2.3rem, 5.4vw, 3.7rem);
-    line-height:1.06;
+    font-size:clamp(2.15rem, 4.8vw, 3.35rem);
+    line-height:1.08;
     letter-spacing:-0.015em;
     margin:0 0 22px;
-    max-width:28ch;
+    max-width:22ch;
   }
-  .hero.paper-hero h1{max-width:18ch; font-size:clamp(2.1rem, 4.6vw, 3.2rem);}
+  .hero.paper-hero h1{max-width:16ch; font-size:clamp(2.3rem, 5vw, 3.5rem);}
   h1 em{font-style:italic; color:var(--ink-blue);}
   .hero-sub{
-    font-size:1.18rem; color:var(--ink-soft); max-width:56ch; margin:0 0 34px;
+    font-size:1.12rem; color:var(--ink-soft); max-width:54ch; margin:0 0 28px;
   }
   .status-strip{
     display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px;
@@ -129,11 +191,108 @@
   .pill{
     font-family:'IBM Plex Mono', monospace; font-size:0.75rem;
     border:1px solid var(--hairline-strong); border-radius:3px;
-    padding:5px 10px; color:var(--ink-soft); background:var(--paper-raised);
+    padding:5px 10px; color:var(--ink-soft); background:color-mix(in srgb, var(--paper-raised) 80%, transparent);
   }
   .pill.done{border-color:var(--ink-blue); color:var(--ink-blue);}
   .pill.pending{border-color:var(--ochre); color:var(--ochre);}
   .pill.out{border-color:var(--hairline-strong); color:var(--ink-soft); opacity:0.75;}
+
+  /* ---- hero gap / dissociation visuals ---- */
+  .gap-panel{
+    border:1px solid var(--hairline-strong);
+    background:color-mix(in srgb, var(--paper) 70%, var(--paper-raised));
+    padding:22px 22px 18px;
+    position:relative;
+  }
+  .gap-panel::after{
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg, var(--brick), var(--ink-blue));
+  }
+  .gap-panel-label{
+    font-family:'IBM Plex Mono', monospace; font-size:0.68rem;
+    text-transform:uppercase; letter-spacing:0.1em; color:var(--ink-soft);
+    margin:0 0 16px;
+  }
+  .gap-row{margin:0 0 16px;}
+  .gap-row:last-of-type{margin-bottom:10px;}
+  .gap-meta{
+    display:flex; justify-content:space-between; gap:12px;
+    font-family:'IBM Plex Mono', monospace; font-size:0.74rem;
+    margin-bottom:6px;
+  }
+  .gap-meta .g-name{color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.06em;}
+  .gap-meta .g-val{color:var(--ink); font-weight:500;}
+  .gap-track{
+    height:12px; background:color-mix(in srgb, var(--hairline) 55%, transparent);
+    position:relative; overflow:hidden;
+  }
+  .gap-fill{
+    height:100%; width:0;
+    background:var(--ink-blue);
+    animation:fillBar 1.1s cubic-bezier(.2,.7,.2,1) forwards;
+  }
+  .gap-fill.conf{background:var(--brick);}
+  .gap-fill.blank{background:var(--hairline-strong); animation-delay:0.15s;}
+  .gap-fill.hi{animation-delay:0.05s;}
+  .gap-fill.ka{animation-delay:0.18s;}
+  .gap-fill.conf-hi{animation-delay:0.28s;}
+  .gap-fill.conf-ka{animation-delay:0.38s;}
+  @keyframes fillBar{to{width:var(--w);}}
+  .gap-footnote{
+    margin:14px 0 0;
+    font-size:0.82rem; color:var(--ink-soft); line-height:1.45;
+    border-top:1px dashed var(--hairline-strong); padding-top:12px;
+  }
+  .gap-footnote strong{color:var(--brick); font-family:'IBM Plex Mono', monospace;}
+
+  .dissoc-grid{
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;
+  }
+  @media (max-width:520px){ .dissoc-grid{grid-template-columns:1fr;} }
+  .dissoc-cell{
+    border:1px solid var(--hairline);
+    padding:14px 12px 12px;
+    background:var(--paper);
+    text-align:center;
+  }
+  .dissoc-cell .d-cond{
+    font-family:'IBM Plex Mono', monospace; font-size:0.66rem;
+    text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-soft);
+  }
+  .dissoc-cell .d-num{
+    font-family:'Fraunces', serif; font-size:1.55rem; font-weight:500;
+    color:var(--ink-blue); margin:8px 0 2px;
+    animation:numIn 0.7s ease both;
+  }
+  .dissoc-cell.flat .d-num{color:var(--brick);}
+  .dissoc-cell .d-sub{
+    font-family:'IBM Plex Mono', monospace; font-size:0.7rem; color:var(--ink-soft);
+  }
+  @keyframes numIn{
+    from{opacity:0; transform:translateY(8px);}
+    to{opacity:1; transform:none;}
+  }
+  .dissoc-cell:nth-child(2) .d-num{animation-delay:0.12s;}
+  .dissoc-cell:nth-child(3) .d-num{animation-delay:0.24s;}
+
+  .hero-rise > *{
+    animation:riseIn 0.65s cubic-bezier(.2,.7,.2,1) both;
+  }
+  .hero-rise > *:nth-child(1){animation-delay:0.02s;}
+  .hero-rise > *:nth-child(2){animation-delay:0.08s;}
+  .hero-rise > *:nth-child(3){animation-delay:0.14s;}
+  .hero-rise > *:nth-child(4){animation-delay:0.2s;}
+  .hero-rise > *:nth-child(5){animation-delay:0.26s;}
+  .hero-rise > *:nth-child(6){animation-delay:0.32s;}
+  .hero-rise > *:nth-child(7){animation-delay:0.38s;}
+  .hero-visual{animation:riseIn 0.75s cubic-bezier(.2,.7,.2,1) 0.18s both;}
+  @keyframes riseIn{
+    from{opacity:0; transform:translateY(14px);}
+    to{opacity:1; transform:none;}
+  }
+  body.mode-switching .hero-rise > *,
+  body.mode-switching .hero-visual{animation:none;}
 
   /* ---- signature: interactive confidence strip ---- */
   .signature{
@@ -142,43 +301,132 @@
     background:var(--paper-raised);
     border-radius:4px;
     padding:28px 30px 24px;
+    position:relative;
+    overflow:hidden;
+  }
+  .signature::before{
+    content:'';
+    position:absolute; inset:0 auto 0 0; width:3px;
+    background:linear-gradient(180deg, var(--brick), var(--ink-blue));
+  }
+  .signature-head{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px; flex-wrap:wrap; margin-bottom:10px;
   }
   .signature-label{
     font-family:'IBM Plex Mono', monospace; font-size:0.72rem;
     text-transform:uppercase; letter-spacing:0.1em; color:var(--ink-soft);
-    margin-bottom:16px;
+    margin:0;
   }
-  .glyph-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;}
+  .signature-explain{
+    margin:0 0 20px; max-width:62ch;
+    font-size:0.94rem; color:var(--ink-soft); line-height:1.5;
+  }
+  .signature-explain em{color:var(--ink); font-style:italic; font-family:'Fraunces', serif;}
+  .glyph-row{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px;}
+  .glyph-tile{
+    appearance:none; -webkit-appearance:none;
+    background:transparent; border:none; padding:0;
+    cursor:pointer; text-align:center;
+    transition:transform 160ms ease;
+  }
+  .glyph-tile:hover, .glyph-tile:focus-visible{transform:translateY(-4px);}
+  .glyph-tile:focus-visible{outline:none;}
+  .glyph-tile:focus-visible .glyph{
+    outline:2px solid var(--ink-blue); outline-offset:3px;
+  }
   .glyph{
-    width:46px; height:58px; border-radius:3px;
-    background:var(--ink); position:relative; cursor:pointer;
+    display:block; width:56px; height:68px; border-radius:3px;
+    background:var(--ink); position:relative;
     border:2px solid var(--ink);
-    transition:transform 120ms ease, border-color 120ms ease;
+    transition:border-color 160ms ease, box-shadow 160ms ease;
+    margin:0 auto 8px;
   }
   .glyph::after{
-    content:''; position:absolute; left:10px; right:10px; top:8px; height:2px;
+    content:''; position:absolute; left:10px; right:10px; top:10px; height:2px;
     background:var(--paper); opacity:0.85;
   }
   .glyph::before{
-    content:''; position:absolute; left:14px; right:14px; bottom:10px; height:14px;
+    content:''; position:absolute; left:14px; right:14px; bottom:12px; height:16px;
     border-radius:2px; background:var(--paper); opacity:0.55;
   }
-  .glyph:hover, .glyph:focus-visible{transform:translateY(-3px); border-color:var(--ink-blue);}
+  .glyph-tile:hover .glyph{border-color:var(--ink-blue);}
   .glyph.blank{background:var(--paper); border-style:dashed;}
   .glyph.blank::after, .glyph.blank::before{display:none;}
-  .glyph.noise{background:var(--paper); border-color:var(--hairline-strong);}
+  .glyph.noise{
+    background:
+      repeating-linear-gradient(45deg, var(--hairline-strong) 0 1px, transparent 1px 5px),
+      repeating-linear-gradient(-45deg, var(--hairline) 0 1px, var(--paper) 1px 6px);
+    border-color:var(--hairline-strong);
+  }
   .glyph.noise::after, .glyph.noise::before{display:none;}
+  .glyph-tile.selected .glyph{
+    border-color:var(--ink-blue);
+    box-shadow:inset 0 0 0 1px var(--ink-blue), 0 6px 18px rgba(43,58,103,0.12);
+  }
+  .glyph-caption{
+    display:block;
+    font-family:'IBM Plex Mono', monospace; font-size:0.68rem;
+    text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft);
+  }
+  .glyph-tile.selected .glyph-caption{color:var(--ink-blue);}
+  .glyph-tile.invite .glyph{animation:glyphInvite 1.8s ease-in-out infinite;}
+  @keyframes glyphInvite{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-3px);}
+  }
   .readout{
     font-family:'IBM Plex Mono', monospace; font-size:0.92rem;
-    min-height:64px;
-    padding-top:14px; border-top:1px dashed var(--hairline-strong);
+    min-height:88px;
+    padding-top:16px; border-top:1px dashed var(--hairline-strong);
   }
   .readout .cond{color:var(--ink-soft); font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em;}
-  .readout .conf-num{font-size:1.6rem; color:var(--ink-blue); display:inline-block; margin:2px 10px 2px 0;}
+  .readout .conf-row{
+    display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin:6px 0 10px;
+  }
+  .readout .conf-num{
+    font-size:1.7rem; color:var(--ink-blue);
+    animation:numIn 0.45s ease both;
+  }
   .readout .conf-num.flat{color:var(--brick);}
-  .readout .note{color:var(--ink-soft); font-size:0.85rem; display:block; margin-top:4px; max-width:52ch; font-family:'IBM Plex Sans', sans-serif;}
+  .readout .conf-unit{font-size:0.78rem; color:var(--ink-soft);}
+  .conf-meter{
+    height:8px; max-width:280px;
+    background:color-mix(in srgb, var(--hairline) 60%, transparent);
+    border-radius:2px; overflow:hidden; margin-bottom:10px;
+  }
+  .conf-meter-fill{
+    height:100%; width:0; border-radius:2px;
+    background:var(--ink-blue);
+    transition:width 700ms cubic-bezier(.2,.7,.2,1), background 200ms ease;
+  }
+  .conf-meter-fill.flat{background:var(--brick);}
+  .readout .note{color:var(--ink-soft); font-size:0.88rem; display:block; margin-top:2px; max-width:54ch; font-family:'IBM Plex Sans', sans-serif; line-height:1.45;}
+  .readout.is-idle .conf-meter{opacity:0.35;}
   .signature-caption{
     font-size:0.82rem; color:var(--ink-soft); margin-top:14px; max-width:60ch;
+  }
+
+  /* ---- scroll reveal + light card motion ---- */
+  .reveal{
+    opacity:0; transform:translateY(16px);
+    transition:opacity 0.55s cubic-bezier(.2,.7,.2,1), transform 0.55s cubic-bezier(.2,.7,.2,1);
+  }
+  .reveal.in{opacity:1; transform:none;}
+  .kv-card, .file-card, .evidence-card, .freq-card, .scope-row{
+    transition:transform 180ms ease, border-color 180ms ease, background 180ms ease;
+  }
+  .kv-card:hover{transform:translateX(3px);}
+  .file-card:hover, .evidence-card:hover, .freq-card:hover{
+    transform:translateY(-2px);
+    border-color:var(--hairline-strong);
+  }
+  .navlinks a.is-active{color:var(--ink); border-bottom-color:var(--mode-accent);}
+  .progress-rail{
+    position:fixed; top:0; left:0; height:2px; width:0; z-index:60;
+    background:linear-gradient(90deg, var(--brick), var(--ink-blue));
+    pointer-events:none;
+    transition:width 80ms linear;
   }
 
   /* ---- generic content blocks ---- */
@@ -239,6 +487,13 @@
   .finding-callout{
     border-left:3px solid var(--brick); background:var(--paper-raised);
     padding:16px 20px; margin-top:22px; max-width:70ch;
+    position:relative;
+  }
+  .finding-callout::before{
+    content:'';
+    position:absolute; top:0; right:0; width:72px; height:72px;
+    background:radial-gradient(circle at top right, color-mix(in srgb, var(--brick) 12%, transparent), transparent 70%);
+    pointer-events:none;
   }
   .finding-callout .fc-label{
     font-family:'IBM Plex Mono', monospace; font-size:0.7rem; text-transform:uppercase;
@@ -320,16 +575,28 @@
   .mode-toggle{
     display:inline-flex; gap:0; border:1px solid var(--hairline-strong);
     border-radius:3px; overflow:hidden; margin-left:8px;
+    background:var(--paper-raised);
   }
   .mode-toggle button{
     font-family:'IBM Plex Mono', monospace; font-size:0.75rem;
     background:transparent; border:none; color:var(--ink-soft);
-    padding:5px 12px; cursor:pointer;
+    padding:6px 13px; cursor:pointer;
+    transition:background 160ms ease, color 160ms ease;
   }
   .mode-toggle button[aria-pressed="true"]{
     background:var(--ink-blue); color:var(--paper);
   }
-  .mode-toggle button:hover:not([aria-pressed="true"]){color:var(--ink); background:var(--paper-raised);}
+  .mode-toggle button:hover:not([aria-pressed="true"]){color:var(--ink); background:color-mix(in srgb, var(--paper) 70%, transparent);}
+  body.mode-flash::after{
+    content:'';
+    position:fixed; inset:0; pointer-events:none; z-index:100;
+    background:color-mix(in srgb, var(--paper) 55%, transparent);
+    animation:modeFlash 320ms ease forwards;
+  }
+  @keyframes modeFlash{
+    from{opacity:0.55;}
+    to{opacity:0;}
+  }
 
   /* ---- walkthrough / paper layout via flex order ---- */
   .mode-root{display:flex; flex-direction:column;}
@@ -460,11 +727,20 @@
 
   /* paper abstract */
   .abstract-box{
-    border-left:3px solid var(--ink-blue); padding:4px 0 4px 20px;
+    border-left:3px solid var(--mode-accent);
+    padding:14px 0 14px 20px;
     max-width:70ch; color:var(--ink-soft); font-size:1.02rem;
+    background:linear-gradient(90deg, color-mix(in srgb, var(--mode-accent) 8%, transparent), transparent 70%);
   }
   .abstract-box p{margin:0 0 12px;}
   .abstract-box p:last-child{margin:0;}
+  .abstract-box strong{color:var(--ink);}
+  .paper-hero .abstract-box{
+    margin-top:8px;
+    border-top:1px solid var(--hairline);
+    border-bottom:1px solid var(--hairline);
+    padding-top:18px; padding-bottom:18px;
+  }
 
   /* ---- part divider + Part Two tint ---- */
   .part-divider{
@@ -615,6 +891,7 @@
 </style>
 </head>
 <body data-mode="walkthrough">
+<div class="progress-rail" id="progressRail" aria-hidden="true"></div>
 
 <div class="topbar">
   <div class="topbar-inner">
@@ -653,14 +930,41 @@
 <!-- PAPER HERO + ABSTRACT -->
 <header class="hero paper-hero mode-item paper-only" id="hero-paper" style="--walk-order:0; --paper-order:1">
   <div class="hero-inner">
-    <div class="hero-kicker">Working title · preprint draft</div>
-    <p class="not-product">Diagnostic OCR · from-scratch instrument · Hindi probe suite</p>
-    <h1>Confidence Without Sight</h1>
-    <p class="hero-sub">Token-level confidence in autoregressive OCR can remain near ceiling when visual evidence is removed, when encoder memory is zeroed, and when the script is unseen — even as recognition accuracy collapses.</p>
-    <div class="abstract-box">
-      <p><strong>Claim.</strong> Decoder confidence is widely treated as a proxy for visual certainty. This work tests that proxy on a blank Indic OCR instrument: if confidence tracked the image, it would fall on blank and matched-noise inputs, after encoder memory is deleted, and on scripts never seen at training time.</p>
-      <p><strong>Method.</strong> A ~19.5M-parameter encoder–decoder with a grapheme-cluster vocabulary and no Indic pretraining is trained on exposure-controlled line crops (natural / flattened / inverted). Probes then measure real versus blank versus matched-noise confidence, a training-curve disambiguation, calibration and zero-shot script substitution, encoder-memory ablation, and held-out real-scan transfer. Scoring applies grapheme-aware encoding equivalence before residual error is counted.</p>
-      <p><strong>Finding.</strong> On Hindi, mean confidence is 0.9940 on real lines versus 0.9899 on blanks (gap +0.0041). Across training, the real–blank gap is indistinguishable from zero while loss falls ~18× (3.210 → 0.182). Zeroing encoder memory changes mean confidence by −0.0030; ~12% of token-choice mass remains image-dependent. On held-out real scans, line accuracy is 0.0000 at confidence 0.9861 (plain) and 0.9768 (degraded). Probe 5b (720 records, three seeds) finds a between-condition confidence range of 0.0037, below Hindi seed SD (0.0043). Content and confidence are dissociated.</p>
+    <div class="hero-layout">
+      <div class="hero-copy hero-rise">
+        <div class="hero-kicker">Working title · preprint draft</div>
+        <p class="not-product">Diagnostic OCR · from-scratch instrument · Hindi probe suite</p>
+        <h1>Confidence Without Sight</h1>
+        <p class="hero-sub">Token-level confidence in autoregressive OCR can remain near ceiling when visual evidence is removed, when encoder memory is zeroed, and when the script is unseen — even as recognition accuracy collapses.</p>
+        <div class="abstract-box">
+          <p><strong>Claim.</strong> Decoder confidence is widely treated as a proxy for visual certainty. This work tests that proxy on a blank Indic OCR instrument: if confidence tracked the image, it would fall on blank and matched-noise inputs, after encoder memory is deleted, and on scripts never seen at training time.</p>
+          <p><strong>Method.</strong> A ~19.5M-parameter encoder–decoder with a grapheme-cluster vocabulary and no Indic pretraining is trained on exposure-controlled line crops (natural / flattened / inverted). Probes then measure real versus blank versus matched-noise confidence, a training-curve disambiguation, calibration and zero-shot script substitution, encoder-memory ablation, and held-out real-scan transfer. Scoring applies grapheme-aware encoding equivalence before residual error is counted.</p>
+          <p><strong>Finding.</strong> On Hindi, mean confidence is 0.9940 on real lines versus 0.9899 on blanks (gap +0.0041). Across training, the real–blank gap is indistinguishable from zero while loss falls ~18× (3.210 → 0.182). Zeroing encoder memory changes mean confidence by −0.0030; ~12% of token-choice mass remains image-dependent. On held-out real scans, line accuracy is 0.0000 at confidence 0.9861 (plain) and 0.9768 (degraded). Probe 5b (720 records, three seeds) finds a between-condition confidence range of 0.0037, below Hindi seed SD (0.0043). Content and confidence are dissociated.</p>
+        </div>
+      </div>
+      <aside class="hero-visual" aria-label="Measured dissociation at a glance">
+        <div class="gap-panel">
+          <div class="gap-panel-label">Instrument · Hindi · confidence stays high</div>
+          <div class="dissoc-grid">
+            <div class="dissoc-cell">
+              <div class="d-cond">Real</div>
+              <div class="d-num">0.994</div>
+              <div class="d-sub">mean conf</div>
+            </div>
+            <div class="dissoc-cell flat">
+              <div class="d-cond">Blank</div>
+              <div class="d-num">0.990</div>
+              <div class="d-sub">gap +0.004</div>
+            </div>
+            <div class="dissoc-cell flat">
+              <div class="d-cond">Zero mem</div>
+              <div class="d-num">0.989</div>
+              <div class="d-sub">Δ −0.003</div>
+            </div>
+          </div>
+          <p class="gap-footnote">Line accuracy on held-out real scans: <strong>0.0000</strong> at confidence ≈0.98. The meter does not track the page.</p>
+        </div>
+      </aside>
     </div>
   </div>
 </header>
@@ -668,43 +972,85 @@
 <!-- DEEP-DIVE HERO -->
 <header class="hero mode-item walk-only" id="hero" style="--walk-order:1; --paper-order:0">
   <div class="hero-inner">
-    <div class="hero-kicker">Sarvam Deep-Dive · Vision interview</div>
-    <p class="not-product">Not a competing OCR — a mechanism question for Sarvam Vision</p>
-    <h1>Probing Sarvam Vision: why does confidence stay flat across a 40-point accuracy gap?</h1>
-    <p class="hero-sub">Sarvam’s own published word accuracy is Hindi <strong>95.91</strong> / Kashmiri <strong>55.93</strong> (a 39.98&nbsp;pp gap). Live Extract-API confidence on the same three languages is Hindi <strong>0.9997</strong> / Kashmiri <strong>0.9970</strong> (delta <strong>0.0027</strong>; Santhali 0.9974). Blank pages score <strong>0.0000</strong> — the channel can go to zero; it does not, on the scripts the same bench calls hard.</p>
+    <div class="hero-layout">
+      <div class="hero-copy hero-rise">
+        <div class="hero-kicker">Sarvam Deep-Dive · Vision interview</div>
+        <p class="not-product">Not a competing OCR — a mechanism question for Sarvam Vision</p>
+        <h1>Probing Sarvam Vision: why does confidence stay flat across a 40-point accuracy gap?</h1>
+        <p class="hero-sub">Sarvam’s own published word accuracy is Hindi <strong>95.91</strong> / Kashmiri <strong>55.93</strong> (a 39.98&nbsp;pp gap). Live Extract-API confidence on the same three languages is Hindi <strong>0.9997</strong> / Kashmiri <strong>0.9970</strong> (delta <strong>0.0027</strong>; Santhali 0.9974). Blank pages score <strong>0.0000</strong> — the channel can go to zero; it does not, on the scripts the same bench calls hard.</p>
 
-    <div class="abstract-box" style="margin-bottom:22px;">
-      <p>I built this for a conversation at Sarvam, not as a generic OCR landing page. You already publish the Hindi–Kashmiri accuracy gap. I asked a narrower question: does Extract confidence move with that gap? On 35 cached pages it does not. Blank at 0.0000 rules out a stuck-at-one meter. The rest of this page is the instrument I trained so we can open <em>why</em> — blank/noise, training curve, encoder-memory ablation, zero-shot scripts — rather than only score another engine.</p>
+        <div class="abstract-box" style="margin-bottom:22px;">
+          <p>I built this for a conversation at Sarvam, not as a generic OCR landing page. You already publish the Hindi–Kashmiri accuracy gap. I asked a narrower question: does Extract confidence move with that gap? On 35 cached pages it does not. Blank at 0.0000 rules out a stuck-at-one meter. The rest of this page is the instrument I trained so we can open <em>why</em> — blank/noise, training curve, encoder-memory ablation, zero-shot scripts — rather than only score another engine.</p>
+        </div>
+
+        <div class="status-strip">
+          <span class="pill done">Done: Stage 0 · 1 · Hindi 2a · probes 2/3/3b/5/5b/6 · ablation · 5a</span>
+          <span class="pill amber">Partial: Bengali sweep (quota)</span>
+          <span class="pill pending">Not run: 2b prereq · Stage 5b rank-corr · cascade</span>
+          <span class="pill out">Deferred: Stage 2b / 3 / 5-full / 6</span>
+        </div>
+
+        <p class="one-liner">The point of owning a model is not to brag about accuracy; it is to ask whether the model knows when it does not know.</p>
+      </div>
+
+      <aside class="hero-visual" aria-label="Published accuracy versus Extract confidence">
+        <div class="gap-panel">
+          <div class="gap-panel-label">Stage 5a · published acc vs Extract conf</div>
+          <div class="gap-row">
+            <div class="gap-meta"><span class="g-name">Hindi accuracy</span><span class="g-val">95.91</span></div>
+            <div class="gap-track"><div class="gap-fill hi" style="--w:95.91%"></div></div>
+          </div>
+          <div class="gap-row">
+            <div class="gap-meta"><span class="g-name">Kashmiri accuracy</span><span class="g-val">55.93</span></div>
+            <div class="gap-track"><div class="gap-fill ka" style="--w:55.93%"></div></div>
+          </div>
+          <div class="gap-row">
+            <div class="gap-meta"><span class="g-name">Hindi confidence</span><span class="g-val">0.9997</span></div>
+            <div class="gap-track"><div class="gap-fill conf conf-hi" style="--w:99.97%"></div></div>
+          </div>
+          <div class="gap-row">
+            <div class="gap-meta"><span class="g-name">Kashmiri confidence</span><span class="g-val">0.9970</span></div>
+            <div class="gap-track"><div class="gap-fill conf conf-ka" style="--w:99.70%"></div></div>
+          </div>
+          <div class="gap-row">
+            <div class="gap-meta"><span class="g-name">Blank control</span><span class="g-val">0.0000</span></div>
+            <div class="gap-track"><div class="gap-fill blank" style="--w:2%"></div></div>
+          </div>
+          <p class="gap-footnote">Accuracy gap <strong>39.98&nbsp;pp</strong>. Confidence delta <strong>0.0027</strong>. Blank proves the meter can move.</p>
+        </div>
+      </aside>
     </div>
 
-    <div class="finding-callout" style="margin-top:8px; margin-bottom:22px;">
-      <div class="fc-label">Stage 5a · measured, 35 pages, cache-once</div>
-      <p>Published gap <strong>39.98&nbsp;pp</strong> (Hindi 95.91 vs Kashmiri 55.93). Extract confidence Hindi <strong>0.9997</strong> · Santhali <strong>0.9974</strong> · Kashmiri <strong>0.9970</strong> — delta <strong>0.0027</strong>. Blank <strong>0.0000</strong>. That is a design-assumption question, not a claim the system is broken.</p>
-    </div>
-
-    <div class="status-strip">
-      <span class="pill done">Done: Stage 0 · 1 · Hindi 2a · probes 2/3/3b/5/5b/6 · ablation · 5a</span>
-      <span class="pill amber">Partial: Bengali sweep (quota)</span>
-      <span class="pill pending">Not run: 2b prereq · Stage 5b rank-corr · cascade</span>
-      <span class="pill out">Deferred: Stage 2b / 3 / 5-full / 6</span>
-    </div>
-
-    <p class="one-liner">The point of owning a model is not to brag about accuracy; it is to ask whether the model knows when it does not know.</p>
-
-    <div class="signature" style="margin-top:40px;">
-      <div class="signature-label">Mechanism — Probe 3 idea (click). Illustrative, not settled proof.</div>
+    <div class="signature" style="margin-top:40px;" id="probe3-demo">
+      <div class="signature-head">
+        <p class="signature-label">Interactive · Probe 3 in one click</p>
+        <span class="tag-illustrative">Toy demo · measured numbers later</span>
+      </div>
+      <p class="signature-explain">
+        Does the model’s <em>confidence</em> fall when there is nothing to read?
+        Click a tile: a real line of text, a blank page, or matched noise.
+        If blank stays nearly as high as real, confidence is not tracking the image — it is guessing from language habit.
+      </p>
       <div class="glyph-row" id="glyphRow">
-        <div class="glyph" data-cond="real" tabindex="0" role="button" aria-label="Real line"></div>
-        <div class="glyph" data-cond="real" tabindex="0" role="button" aria-label="Real line"></div>
-        <div class="glyph" data-cond="real" tabindex="0" role="button" aria-label="Real line"></div>
-        <div class="glyph blank" data-cond="blank" tabindex="0" role="button" aria-label="Blank"></div>
-        <div class="glyph noise" data-cond="noise" tabindex="0" role="button" aria-label="Noise"></div>
+        <button type="button" class="glyph-tile invite" data-cond="real" aria-label="Real line of text">
+          <span class="glyph" aria-hidden="true"></span>
+          <span class="glyph-caption">Real</span>
+        </button>
+        <button type="button" class="glyph-tile invite" data-cond="blank" aria-label="Blank page">
+          <span class="glyph blank" aria-hidden="true"></span>
+          <span class="glyph-caption">Blank</span>
+        </button>
+        <button type="button" class="glyph-tile invite" data-cond="noise" aria-label="Matched noise">
+          <span class="glyph noise" aria-hidden="true"></span>
+          <span class="glyph-caption">Noise</span>
+        </button>
       </div>
-      <div class="readout" id="readout">
-        <span class="cond">click a block above</span>
-        <div class="note">Real / blank / matched noise. If blank ≈ real, confidence may be language-prior guessing — not vision.</div>
+      <div class="readout is-idle" id="readout">
+        <span class="cond">pick a tile</span>
+        <div class="conf-row"><span class="conf-num">—</span><span class="conf-unit">mean confidence</span></div>
+        <div class="conf-meter" aria-hidden="true"><div class="conf-meter-fill" id="confMeter"></div></div>
+        <span class="note">Expected if vision mattered: blank and noise drop hard. What we actually see on the instrument: almost no drop.</span>
       </div>
-      <span class="tag-illustrative">Illustrative — see Part Two for status</span>
     </div>
 
     <details class="say-this">
@@ -1674,44 +2020,116 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
 </footer>
 
 <script>
-  const data = {
-    real:  { conf: '0.9929', flat:false, note:'Illustrative — real line (hindi/natural/seed0). Mechanism demo; see Part Two for REPORTED status.' },
-    blank: { conf: '0.9898', flat:true,  note:'Illustrative — blank. Barely any drop. If this holds: language prior, not vision.' },
-    noise: { conf: '0.9877', flat:true,  note:'Illustrative — matched noise. Still near real-image confidence.' }
-  };
-  const readout = document.getElementById('readout');
-  document.querySelectorAll('.glyph').forEach(el=>{
-    const fire = ()=>{
-      const c = data[el.dataset.cond];
-      readout.innerHTML = `<span class="cond">${el.dataset.cond}</span><br>
-        <span class="conf-num ${c.flat?'flat':''}">${c.conf}</span> mean confidence
-        <span class="note">${c.note}</span>`;
+  (function(){
+    const data = {
+      real:  { conf: '0.9929', pct: 99.29, flat:false, label:'Real line', note:'Text is on the page. Confidence near ceiling — as you’d hope if it were reading.' },
+      blank: { conf: '0.9898', pct: 98.98, flat:true,  label:'Blank page', note:'No glyphs at all — and confidence barely moves. That is the Probe 3 signal: the meter is not looking.' },
+      noise: { conf: '0.9877', pct: 98.77, flat:true,  label:'Matched noise', note:'Texture without letters. Still near real. Full seed aggregates live in Findings / Part Two.' }
     };
-    el.addEventListener('click', fire);
-    el.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); fire(); }});
-  });
+    const readout = document.getElementById('readout');
+    const tiles = document.querySelectorAll('.glyph-tile');
+    function fire(el){
+      tiles.forEach(g=>{ g.classList.remove('selected','invite'); });
+      el.classList.add('selected');
+      const c = data[el.dataset.cond];
+      readout.classList.remove('is-idle');
+      readout.innerHTML =
+        `<span class="cond">${c.label}</span>
+         <div class="conf-row"><span class="conf-num ${c.flat?'flat':''}">${c.conf}</span><span class="conf-unit">mean confidence</span></div>
+         <div class="conf-meter" aria-hidden="true"><div class="conf-meter-fill ${c.flat?'flat':''}" id="confMeter" style="width:0%"></div></div>
+         <span class="note">${c.note}</span>`;
+      const fill = document.getElementById('confMeter');
+      requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ fill.style.width = c.pct + '%'; }); });
+    }
+    tiles.forEach(el=> el.addEventListener('click', ()=> fire(el)));
+  })();
 </script>
 <script>
   (function(){
     const body = document.body;
     const walkBtn = document.getElementById('modeWalk');
     const paperBtn = document.getElementById('modePaper');
-    function setMode(mode){
+    function setMode(mode, flash){
       body.setAttribute('data-mode', mode);
       walkBtn.setAttribute('aria-pressed', mode === 'walkthrough' ? 'true' : 'false');
       paperBtn.setAttribute('aria-pressed', mode === 'paper' ? 'true' : 'false');
       document.title = mode === 'paper'
         ? 'Confidence Without Sight — preprint'
         : 'vlm-ocr-eval — Sarvam Deep-Dive';
+      if (flash){
+        body.classList.remove('mode-flash');
+        void body.offsetWidth;
+        body.classList.add('mode-flash');
+        window.setTimeout(()=> body.classList.remove('mode-flash'), 340);
+      }
       try { localStorage.setItem('vlm-ocr-eval-mode', mode); } catch(e){}
+      if (typeof window.__revealRefresh === 'function') window.__revealRefresh();
     }
-    walkBtn.addEventListener('click', ()=> setMode('walkthrough'));
-    paperBtn.addEventListener('click', ()=> setMode('paper'));
+    walkBtn.addEventListener('click', ()=> setMode('walkthrough', true));
+    paperBtn.addEventListener('click', ()=> setMode('paper', true));
     try {
       const saved = localStorage.getItem('vlm-ocr-eval-mode');
-      if (saved === 'paper' || saved === 'walkthrough') setMode(saved);
-      else setMode('walkthrough');
-    } catch(e){ setMode('walkthrough'); }
+      if (saved === 'paper' || saved === 'walkthrough') setMode(saved, false);
+      else setMode('walkthrough', false);
+    } catch(e){ setMode('walkthrough', false); }
+  })();
+</script>
+<script>
+  (function(){
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const rail = document.getElementById('progressRail');
+    function onScroll(){
+      const doc = document.documentElement;
+      const max = doc.scrollHeight - window.innerHeight;
+      const p = max > 0 ? (window.scrollY / max) * 100 : 0;
+      if (rail) rail.style.width = p + '%';
+    }
+    window.addEventListener('scroll', onScroll, {passive:true});
+    onScroll();
+
+    let io = null;
+    function revealRefresh(){
+      if (reduce){
+        document.querySelectorAll('.reveal').forEach(el=> el.classList.add('in'));
+        return;
+      }
+      document.querySelectorAll('section.mode-item, .signature, .finding-callout').forEach(el=>{
+        if (!el.classList.contains('reveal')) el.classList.add('reveal');
+      });
+      if (io) io.disconnect();
+      io = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{
+          if (e.isIntersecting){
+            e.target.classList.add('in');
+            io.unobserve(e.target);
+          }
+        });
+      }, {rootMargin:'0px 0px -6% 0px', threshold:0.06});
+      document.querySelectorAll('.reveal:not(.in)').forEach(el=>{
+        // display:none sections (other mode) get marked in so they aren't stuck when switched
+        const hidden = el.offsetParent === null && getComputedStyle(el).display === 'none';
+        if (hidden){ el.classList.add('in'); return; }
+        io.observe(el);
+      });
+    }
+    window.__revealRefresh = revealRefresh;
+    revealRefresh();
+
+    const links = [...document.querySelectorAll('.navlinks a[href^="#"]')];
+    const map = links.map(a=>{
+      const id = a.getAttribute('href').slice(1);
+      return {a, el: document.getElementById(id)};
+    }).filter(x=> x.el);
+    function markActive(){
+      let cur = null;
+      const y = window.scrollY + 120;
+      map.forEach(({a, el})=>{
+        if (el.offsetTop <= y) cur = a;
+      });
+      links.forEach(a=> a.classList.toggle('is-active', a === cur && a.offsetParent !== null));
+    }
+    window.addEventListener('scroll', markActive, {passive:true});
+    markActive();
   })();
 </script>
 </body>
