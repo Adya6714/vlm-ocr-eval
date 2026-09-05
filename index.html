@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>vlm-ocr-eval</title>
+<title>Reading Without Looking</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -883,16 +883,30 @@
     font-family:'Fraunces', serif; font-weight:500; font-size:1.05rem;
     margin:0 0 6px;
   }
-  .probe-q p{margin:0 0 16px; color:var(--ink-soft); font-size:0.94rem; max-width:64ch;}
+  .pub-fig{margin:22px 0 28px; max-width:100%;}
+  .pub-fig img{
+    width:100%; height:auto; display:block;
+    border:1px solid var(--hairline); background:#fff;
+  }
+  .pub-fig figcaption{
+    font-size:0.82rem; color:var(--ink-soft); margin:8px 0 0; max-width:72ch;
+  }
+  .regime{font-family:'IBM Plex Mono', monospace; font-size:0.68rem;
+    letter-spacing:0.06em; text-transform:uppercase; color:var(--ochre);}
+  .null-banner{
+    margin:0 0 22px; padding:14px 16px; max-width:70ch;
+    border-left:3px solid var(--brick); background:var(--paper-raised);
+  }
+  .null-banner p{margin:0; font-size:0.95rem;}
+  .pdf-link{font-size:0.88rem; margin:10px 0 0;}
 
-</style>
 </head>
 <body data-mode="walkthrough">
 <div class="progress-rail" id="progressRail" aria-hidden="true"></div>
 
 <div class="topbar">
   <div class="topbar-inner">
-    <div class="brand">vlm-ocr-eval <span class="dim walk-only">/ Sarvam Deep-Dive</span><span class="dim paper-only">/ Preprint</span></div>
+    <div class="brand">vlm-ocr-eval <span class="dim walk-only">/ Extract confidence audit</span><span class="dim paper-only">/ Preprint</span></div>
     <nav class="navlinks">
       <a href="#hero" class="walk-only">Idea</a>
       <a href="#hero-paper" class="paper-only">Title</a>
@@ -915,8 +929,8 @@
       <a href="#improve" class="paper-only">Limitations</a>
       <a href="#future">Future</a>
       <span class="mode-toggle" role="group" aria-label="Reading mode">
-        <button type="button" id="modeWalk" aria-pressed="true" aria-label="Deep-Dive">Deep-Dive</button>
-        <button type="button" id="modePaper" aria-pressed="false" aria-label="Research Paper">Preprint</button>
+        <button type="button" id="modeWalk" aria-pressed="true" aria-label="Does Extract confidence track your published gap?">Extract audit</button>
+        <button type="button" id="modePaper" aria-pressed="false" aria-label="Research paper">Preprint</button>
       </span>
     </nav>
   </div>
@@ -929,37 +943,41 @@
   <div class="hero-inner">
     <div class="hero-layout">
       <div class="hero-copy hero-rise">
-        <div class="hero-kicker">Working title · preprint draft</div>
+        <div class="hero-kicker">Preprint · NeurIPS 2026 format · site copy of <em>Reading Without Looking</em></div>
         <p class="not-product">Diagnostic OCR · from-scratch instrument · Hindi probe suite</p>
-        <h1>Confidence Without Sight</h1>
-        <p class="hero-sub">Token-level confidence in autoregressive OCR can remain near ceiling when visual evidence is removed, when encoder memory is zeroed, and when the script is unseen — even as recognition accuracy collapses.</p>
+        <h1>Reading Without Looking</h1>
+        <p class="hero-sub">Position-resolved evidence of visual bypass in a small document OCR model. The instrument does not read real scans. Decoder confidence tracks the linguistic plausibility of what is being generated, not whether the image supports it.</p>
+        <p class="pdf-link"><a href="paper/main.pdf">Canonical preprint PDF</a> (this page is a reading aid; the PDF is the paper.)</p>
+        <div class="null-banner">
+          <p><strong>The instrument does not read real scans.</strong> Grapheme CER (Probe 5b, pooled): Hindi real <strong>0.985</strong>, blank <strong>0.949</strong>, Ol Chiki <strong>0.970</strong>, Perso-Arabic <strong>0.991</strong>. Probe 6: real_plain <strong>0.986</strong> vs blank <strong>0.942</strong>. Real and blank CER are statistically indistinguishable after seed clustering (t = 0.257, p = 0.822). There is no reading ability to dissociate from confidence.</p>
+        </div>
         <div class="abstract-box">
-          <p><strong>Claim.</strong> Decoder confidence is widely treated as a proxy for visual certainty. This work tests that proxy on a blank Indic OCR instrument: if confidence tracked the image, it would fall on blank and matched-noise inputs, after encoder memory is deleted, and on scripts never seen at training time.</p>
-          <p><strong>Method.</strong> A ~19.5M-parameter encoder–decoder with a grapheme-cluster vocabulary and no Indic pretraining is trained on exposure-controlled line crops (natural / flattened / inverted). Probes then measure real versus blank versus matched-noise confidence, a training-curve disambiguation, calibration and zero-shot script substitution, encoder-memory ablation, teacher-forced ground-truth log-likelihood with full-softmax entropy, and held-out real-scan transfer. Scoring applies grapheme-aware encoding equivalence before residual error is counted.</p>
-          <p><strong>Finding.</strong> On Hindi, mean confidence is 0.9940 on real lines versus 0.9899 on blanks (gap +0.0041). Across training, the real–blank gap is indistinguishable from zero while loss falls ~18× (3.210 → 0.182). Zeroing encoder memory changes mean confidence by −0.0030; ~12% of token-choice mass remains image-dependent. Teacher-forced mean log&nbsp;p(GT) is −1.783 on real versus −1.751 on blank (n=180 each); first-token p(GT) is ~10⁻¹⁰–10⁻¹² on both conditions across three seeds, while rest-of-sequence mean log&nbsp;p rises to ≈−1.14 (~0.32) regardless of image. On held-out real scans, line accuracy is 0.0000 at confidence 0.9861 (plain) and 0.9768 (degraded). Probe 5b (720 records, three seeds) finds a between-condition confidence range of 0.0037, below Hindi seed SD (0.0043). Content and confidence are dissociated, and the dissociation is not an artifact of max-softmax self-selection.</p>
+          <p><strong>Claim.</strong> Autoregressive OCR confidence is often treated as visual certainty. On this instrument that proxy fails because the model is not reading: at position 0 it assigns geometric-mean p(GT) of 2.204×10⁻¹¹ (real) and 6.328×10⁻¹¹ (blank) against uniform 2.725×10⁻³ over V ≈ 367, while self-generated max-softmax at that step is 0.902 real / 0.895 blank.</p>
+          <p><strong>Method.</strong> A ~19.5M-parameter encoder–decoder with a grapheme-cluster vocabulary and no Indic pretraining is trained on exposure-controlled line crops. Probes measure synthetic vs real-scan regimes, encoder-memory ablation, teacher-forced GT likelihood, and held-out transfer. Scoring applies grapheme-aware encoding equivalence before residual error is counted.</p>
+          <p><strong>Finding.</strong> <span class="regime">Synthetic lines (Probe 3 / 5 natural)</span> mean confidence 0.9940 real vs 0.9899 blank. <span class="regime">Real scans (Probe 5b)</span> mean confidence 0.9873 vs 0.9857. Zeroing encoder memory changes mean confidence by −0.0030. Per-image top-1 disagreement is 12.1%; the step-level argmax flip rate is 8.2% over 4,990 steps (96.7% of ablation KL sits in those flipped steps). Teacher-forced log p(GT) by position (real / blank): 2–9 = −0.48 / −0.41, 10–19 = −0.15 / −0.16, 20–39 = −0.27 / −0.28, 40+ = −6.12 / −6.28. Held-out Probe 6 line accuracy is 0.0000. Confidence tracks linguistic plausibility of the generated string, not image support.</p>
         </div>
       </div>
       <aside class="hero-visual" aria-label="Measured dissociation at a glance">
         <div class="gap-panel">
-          <div class="gap-panel-label">Instrument · Hindi · confidence stays high</div>
+          <div class="gap-panel-label">Probe 5b · real scans · grapheme CER ≈ 1</div>
           <div class="dissoc-grid">
             <div class="dissoc-cell">
-              <div class="d-cond">Real</div>
-              <div class="d-num">0.994</div>
-              <div class="d-sub">mean conf</div>
+              <div class="d-cond">Hindi real</div>
+              <div class="d-num">0.985</div>
+              <div class="d-sub">grapheme CER</div>
             </div>
             <div class="dissoc-cell flat">
               <div class="d-cond">Blank</div>
-              <div class="d-num">0.990</div>
-              <div class="d-sub">gap +0.004</div>
+              <div class="d-num">0.949</div>
+              <div class="d-sub">not a read</div>
             </div>
-            <div class="dissoc-cell flat">
-              <div class="d-cond">Zero mem</div>
-              <div class="d-num">0.989</div>
-              <div class="d-sub">Δ −0.003</div>
+            <div class="dissoc-cell">
+              <div class="d-cond">Conf real</div>
+              <div class="d-num">0.987</div>
+              <div class="d-sub">real-scan mean</div>
             </div>
           </div>
-          <p class="gap-footnote">Line accuracy on held-out real scans: <strong>0.0000</strong> at confidence ≈0.98. Teacher-forced first-token p(GT) is ~10⁻¹⁰–10⁻¹² on both real and blank.</p>
+          <p class="gap-footnote">Pos-0 pairing: p(GT) geom. mean 2.204×10⁻¹¹ real vs max-softmax 0.902. Synthetic-line confidence (Probe 3) is a different regime: 0.9940 vs 0.9899.</p>
         </div>
       </aside>
     </div>
@@ -971,13 +989,15 @@
   <div class="hero-inner">
     <div class="hero-layout">
       <div class="hero-copy hero-rise">
-        <div class="hero-kicker">Sarvam Deep-Dive · Vision interview</div>
-        <p class="not-product">Not a competing OCR — a mechanism question for Sarvam Vision</p>
-        <h1>Probing Sarvam Vision: why does confidence stay flat across a 40-point accuracy gap?</h1>
-        <p class="hero-sub">Sarvam’s own published word accuracy is Hindi <strong>95.91</strong> / Kashmiri <strong>55.93</strong> (a 39.98&nbsp;pp gap). Live Extract-API confidence on the same three languages is Hindi <strong>0.9997</strong> / Kashmiri <strong>0.9970</strong> (delta <strong>0.0027</strong>; Santhali 0.9974). Blank pages score <strong>0.0000</strong> — the channel can go to zero; it does not, on the scripts the same bench calls hard.</p>
-
+        <div class="hero-kicker">Sarvam Vision · confidence audit</div>
+        <p class="not-product">Not a competing OCR — a mechanism question for Extract confidence</p>
+        <h1>Does Extract confidence track your published gap?</h1>
+        <p class="hero-sub">Published word accuracy: Hindi 95.91 / Kashmiri 55.93 (<strong>39.98 pp</strong>). Live Extract-API confidence on the same three languages: Hindi 0.9997 / Kashmiri 0.9970 (delta <strong>0.0027</strong>; Santhali 0.9974). Blank pages score 0.0000 — the channel can go to zero; it does not, on the scripts the same bench calls hard.</p>
+        <div class="null-banner">
+          <p><strong>Lead with the instrument’s null.</strong> The from-scratch reader does not read real scans (grapheme CER Hindi real 0.985 vs blank 0.949; Ol Chiki 0.970; Perso-Arabic 0.991; Probe 6 real_plain 0.986 vs blank 0.942). That null is what makes the position-0 test interpretable: there is no hidden reading skill, only a language prior that is still ~0.90 confident at the first generated token while p(GT) is ~10⁻¹¹.</p>
+        </div>
         <div class="abstract-box" style="margin-bottom:22px;">
-          <p>I built this for a conversation at Sarvam, not as a generic OCR landing page. You already publish the Hindi–Kashmiri accuracy gap. I asked a narrower question: does Extract confidence move with that gap? On 35 cached pages it does not. Blank at 0.0000 rules out a stuck-at-one meter. The rest of this page is the instrument I trained so we can open <em>why</em> — blank/noise, training curve, encoder-memory ablation, zero-shot scripts — rather than only score another engine.</p>
+          <p>This mode is for a conversation at Sarvam. The preprint lives on the other tab and in <a href="paper/main.pdf">paper/main.pdf</a>; it does not name Sarvam. You already publish the Hindi–Kashmiri accuracy gap. The narrower question: does Extract confidence move with that gap? On 35 cached pages it does not. Blank at 0.0000 rules out a stuck-at-one meter. The rest of this page is the instrument trained so we can open <em>why</em> — blank/noise, training curve, encoder-memory ablation, zero-shot scripts — rather than only score another engine.</p>
         </div>
 
         <div class="status-strip">
@@ -1026,7 +1046,7 @@
       <p class="signature-explain">
         Does the model’s <em>confidence</em> fall when there is nothing to read?
         Click a tile: a real line of text, a blank page, or matched noise.
-        If blank stays nearly as high as real, confidence is not tracking the image — it is guessing from language habit.
+        Numbers below are <span class="regime">synthetic Probe 3</span> (not real-scan Probe 5b). If blank stays nearly as high as real, confidence is not tracking the image.
       </p>
       <div class="glyph-row" id="glyphRow">
         <button type="button" class="glyph-tile invite" data-cond="real" aria-label="Real line of text">
@@ -1051,12 +1071,11 @@
     </div>
 
     <details class="say-this">
-      <summary>SAY THIS</summary>
-      <div class="say-body"><p>“I’m not shipping OCR. Sarvam already publishes a 40-point Hindi–Kashmiri accuracy gap; Extract confidence on those languages differs by 0.0027, while blank goes to zero. I’m asking whether confidence is designed to track hardness — and I built a blank instrument so we can open the mechanism.”</p></div>
-    </details>
-    <details class="say-this">
-      <summary>SAY THIS · if they ask “so what should we change?”</summary>
-      <div class="say-body"><p>“I would not start with a bigger model. Blank at zero already shows the meter can move. The question is whether confidence is supposed to track published hardness, or only ‘is there a page.’ If it is the former, the instrument probes — especially encoder-memory ablation — are a cheap way to see whether the decoder’s prior is doing the confident work.”</p></div>
+      <summary>Claims on this mode</summary>
+      <div class="say-body">
+        <p>Sarvam already publishes a 39.98 pp Hindi–Kashmiri accuracy gap; Extract confidence on those languages differs by 0.0027, while blank Extract pages go to 0.0000. The question is whether confidence is designed to track published hardness.</p>
+        <p>The instrument is a null case on real scans (CER near 1.0). That is why position 0 is informative: the decoder is ~0.90 confident on its own first token while assigning the true grapheme ~10⁻¹¹. Encoder-memory ablation is a cheap test of whether the decoder prior is doing the confident work. A larger model is not the first lever if the meter already moves to zero on blank pages.</p>
+      </div>
     </details>
   </div>
 </header>
@@ -1130,7 +1149,7 @@
         <span class="tier-arrow">→</span>
         <div class="tier-node">Human<br>residual</div>
       </div>
-      <p class="prose" style="margin-top:20px; font-size:0.92rem; color:var(--ink-soft);"><strong>Measured</strong> in this checkout: ~20.4% of Tesseract’s non-exact Hindi/Bengali predictions are Tier&nbsp;1 — not real errors.</p>
+      <p class="prose" style="margin-top:20px; font-size:0.92rem; color:var(--ink-soft);"><strong>Measured</strong> among non-exact predictions: Tesseract Tier&nbsp;1 <strong>20.4%</strong> (31/152) is a <em>lower bound</em> — 60.0% of Tesseract rows are UNREVIEWED. Surya 16.9% (44.1% UNREVIEWED). PaddleOCR 10.0% (n=10, 90.0% UNREVIEWED; too small to carry a claim). Tier&nbsp;2 resolves <strong>0%</strong> on all three engines.</p>
     </div>
   </div>
 </section>
@@ -1308,9 +1327,9 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
         <h3>3 · Grounding — is it looking?</h3>
         <p>Real / blank / matched noise, plus a training-curve disambiguation (3b). Fluent high confidence on blank is language-prior guessing. <strong>BUILT — VERIFIED</strong>, 3 seeds.</p>
         <h3>Ablation · Does confidence need the image?</h3>
-        <p>Zero encoder memory before projection. Confidence barely moves (Δ −0.0030) while ~12% of token-choice mass still depends on the image. Content and confidence are dissociated. <strong>BUILT — VERIFIED</strong>, 3 seeds.</p>
+        <p>Zero encoder memory before projection. Mean confidence Δ −0.0030. Per-image top-1 disagreement is 12.1%; step-level argmax flip rate is 8.2% over 4,990 steps (96.7% of KL). Confidence tracks linguistic plausibility, not image support. <strong>BUILT — VERIFIED</strong>, 3 seeds.</p>
         <h3>GT-likelihood · Is max-softmax the whole story?</h3>
-        <p>Teacher-force the ground-truth sequence; score <code>log p(gt)</code> and full-softmax entropy. Whole-sequence mean log&nbsp;p(GT): real <strong>−1.783</strong> vs blank <strong>−1.751</strong>. First-token p(GT) ~10⁻¹⁰–10⁻¹² on both; rest-of-sequence ≈0.32 on both. Dissociation replicates under a bias-free estimator. <strong>BUILT — VERIFIED</strong>, 360 records.</p>
+        <p>Teacher-force the ground-truth sequence; score <code>log p(gt)</code> and full-softmax entropy. Position 0: geom. mean p(GT) 2.204×10⁻¹¹ real / 6.328×10⁻¹¹ blank vs self-generated max-softmax 0.902 / 0.895. Later buckets (real / blank log p): 2–9 −0.48 / −0.41; 10–19 −0.15 / −0.16; 20–39 −0.27 / −0.28; 40+ −6.12 / −6.28 (second collapse below uniform). <strong>BUILT — VERIFIED</strong>, 360 records.</p>
         <h3>4 · Fair scoring</h3>
         <p>Same Tier 1/2 rules on instrument outputs as on Tesseract.</p>
         <h3 class="walk-only">5 · Calibration — can I trust confidence?</h3>
@@ -1712,7 +1731,7 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
       <table class="data">
         <thead><tr><th>Stage</th><th>What ran</th><th>Status</th></tr></thead>
         <tbody>
-          <tr><td>Stage 0 — taxonomy</td><td>Real GlotOCR pages; Tier 1/2; 20.4% of Tesseract non-exact are encoding variants (provisional until adjudication labels)</td><td><span class="status-tag done">Done</span></td></tr>
+          <tr><td>Stage 0 — taxonomy</td><td>Tesseract Tier 1 among non-exact 20.4% (lower bound; 60.0% UNREVIEWED). Surya 16.9% (44.1% UNREVIEWED). PaddleOCR 10.0% (n=10). Tier 2 0% on all three engines.</td><td><span class="status-tag done">Done</span></td></tr>
           <tr><td>Stage 1 — renderer</td><td>HarfBuzz dial + manifests; Hindi GT TV ≤ 0.08</td><td><span class="status-tag done">Done</span></td></tr>
           <tr><td>Stage 2a — Hindi instrument</td><td>9/9 checkpoints; Probe 3/5/5b jsonl in-tree</td><td><span class="status-tag done">Done</span></td></tr>
           <tr><td>Bengali sweep</td><td>Started; Colab GPU quota mid-run across two accounts</td><td><span class="status-tag partial">Partial</span></td></tr>
@@ -1720,13 +1739,13 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
           <tr><td>Probe 2 — confusion</td><td>GT-aligned substitutions; 3 seeds; jsonl in-tree</td><td><span class="status-tag done">Verified</span></td></tr>
           <tr><td>Probe 3 / 3b</td><td>3-seed blank/noise + training curve; gap indistinguishable from 0</td><td><span class="status-tag done">Verified</span></td></tr>
           <tr><td>Probe 5 / 5b</td><td>3-seed calibration; 5b = 720 records, script substitution 360/360</td><td><span class="status-tag done">Verified</span></td></tr>
-          <tr><td>Attention ablation</td><td>Encoder memory zeroed; conf Δ −0.0030; ~12% token mass still image-dependent</td><td><span class="status-tag done">Verified</span></td></tr>
-          <tr><td>GT-likelihood</td><td>Teacher-forced log&nbsp;p(GT) real −1.783 vs blank −1.751; first-token ~1e-10–1e-12 both; 360 records</td><td><span class="status-tag done">Verified</span></td></tr>
+          <tr><td>Attention ablation</td><td>Conf Δ −0.0030. Per-image top-1 disagreement 12.1%; step flip 8.2% / 4,990 steps; 96.7% of KL at flips</td><td><span class="status-tag done">Verified</span></td></tr>
+          <tr><td>GT-likelihood</td><td>Pos-0 p(GT) ~10⁻¹¹ vs max-softmax ~0.90; buckets 2–9 / 10–19 / 20–39 / 40+; 360 records</td><td><span class="status-tag done">Verified</span></td></tr>
           <tr><td>Probe 6 — Tier C</td><td>3 seeds; real plain/degraded/blank; 0 training-path overlaps</td><td><span class="status-tag done">Verified</span></td></tr>
           <tr class="walk-only"><td>Stage 5a — transfer</td><td>35 Extract pages; published acc gap 39.98&nbsp;pp vs confidence Δ 0.0027</td><td><span class="status-tag done">Verified</span></td></tr>
           <tr><td>Stage 2b prereq</td><td><span class="mono">benchmark_base_models.py</span> written, not executed</td><td><span class="status-tag notrun">Not run</span></td></tr>
           <tr><td>Stage 2b / 3 / 5-full / 6</td><td>Demo LoRA, structure metrics, full rank-correlation, cascade — deferred</td><td><span class="status-tag oos">Out of scope</span></td></tr>
-          <tr><td>Remaining #46 upgrades</td><td>Equal-frequency ECE bins, patch-shuffle, mixed effects, kappa, bootstrap CIs. 3-seed aggregation and encoder-memory ablation are now built.</td><td><span class="status-tag oos">Partial</span></td></tr>
+          <tr><td>Remaining #46 upgrades</td><td>Equal-mass ECE (10 bins) and seed-clustered bootstrap CIs (2,000) are now computed. Patch-shuffle, mixed effects, kappa remain.</td><td><span class="status-tag oos">Partial</span></td></tr>
         </tbody>
       </table>
     </div>
@@ -1743,31 +1762,66 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
       <div class="section-kicker paper-label">Results</div>
       <h2 class="section-title walk-only">Measured in this checkout</h2>
       <h2 class="section-title paper-only">Measured results</h2>
+      <div class="null-banner">
+        <p><strong>The instrument does not read real scans.</strong> Grapheme CER: Hindi real 0.985, blank 0.949, Ol Chiki 0.970, Perso-Arabic 0.991 (Probe 5b). Probe 6: real_plain 0.986 vs blank 0.942. Seed-clustered t = 0.257, p = 0.822 on CER; t = 0.505, p = 0.664 on confidence. That is the headline, not a limitation footnote.</p>
+      </div>
+      <figure class="pub-fig">
+        <img src="docs/figures/fig1_position_dissociation.png" alt="Position-resolved GT log-likelihood and confidence: collapse at position 0, language-model-like mid sequence, second collapse past 40.">
+        <figcaption>Fig. 1 — Position dissociation. Teacher-forced log p(GT) vs self-generated confidence. Sources: docs/figures/; PDF in paper/figures/.</figcaption>
+      </figure>
       <div class="finding-callout">
-        <div class="fc-label">Attention ablation — MEASURED (Claim B mechanism)</div>
-        <p>3 seeds, 180 Hindi Tier&nbsp;C images. Mean confidence full <strong>0.9861</strong> vs zero-memory <strong>0.9891</strong> (Δ <strong>−0.0030</strong>). Top-1 agreement <strong>0.8794</strong>; prior sufficiency <strong>0.8827</strong> (~12% of token-choice mass still depends on the image). Per-seed confidence deltas flip sign (−0.0234 / +0.0035 / +0.0109); the primary signal is distributional KL, not a stable confidence delta.</p>
+        <div class="fc-label">Position-0 pairing — MEASURED</div>
+        <p>Geometric mean p(GT) at position 0: <strong>2.204×10⁻¹¹</strong> real, <strong>6.328×10⁻¹¹</strong> blank, against uniform <strong>2.725×10⁻³</strong> over V ≈ 367 (~8 orders below chance). Self-generated max-softmax at that same position: <strong>0.902</strong> real, <strong>0.895</strong> blank. GT is the argmax at <strong>0/180</strong> position-0 steps and <strong>92.6%</strong> of later real steps.</p>
       </div>
       <div class="finding-callout">
-        <div class="fc-label">GT-likelihood — MEASURED (estimator-bias check, 360 records)</div>
-        <p>Teacher-forced ground-truth sequences on the same Hindi pool + blank. Whole-sequence mean log&nbsp;p(GT): real <strong>−1.783</strong> (SD 1.274) vs blank <strong>−1.751</strong> (SD 1.280). Mean entropy: real <strong>0.0210</strong> vs blank <strong>0.0253</strong>. First-token p(GT) is catastrophically low on both (seed0 real 2.05×10⁻¹⁰ / blank 9.32×10⁻¹⁰; seed1 1.35×10⁻¹¹ / 3.13×10⁻¹¹; seed2 3.88×10⁻¹² / 8.70×10⁻¹²). Rest-of-sequence mean log&nbsp;p ≈ <strong>−1.140</strong> / <strong>−1.135</strong> (~0.32). Dissociation is not a max-softmax artifact.</p>
+        <div class="fc-label">Attention ablation — MEASURED</div>
+        <p>Mean confidence full <strong>0.9861</strong> vs zero-memory <strong>0.9891</strong> (Δ <strong>−0.0030</strong>). Per-image top-1 disagreement is <strong>12.1%</strong> (agreement 0.8794). Step-level argmax flip rate is <strong>8.2%</strong> over <strong>4,990</strong> steps. Those flipped steps hold <strong>96.7%</strong> of ablation KL (mean KL 0.027 agreeing vs 8.87 flipped). Confidence at agreeing vs flipped steps: 0.998 / 0.893 with the encoder, 0.998 / 0.825 without.</p>
+      </div>
+      <figure class="pub-fig">
+        <img src="docs/figures/fig2_ablation_kl.png" alt="Ablation KL concentrated at the minority of steps where the argmax flips.">
+        <figcaption>Fig. 2 — Ablation KL decomposition. Almost all KL sits in the 8.2% of steps that flip.</figcaption>
+      </figure>
+      <div class="finding-callout">
+        <div class="fc-label">GT-likelihood buckets — MEASURED (not the rest-of-sequence mean −1.14)</div>
+        <p>Whole-sequence mean log&nbsp;p(GT): real −1.783 vs blank −1.751. Averaging all positions ≥ 1 is dominated by position 1’s −8.1. Position buckets (real / blank): <strong>2–9 = −0.48 / −0.41</strong>, <strong>10–19 = −0.15 / −0.16</strong>, <strong>20–39 = −0.27 / −0.28</strong>, <strong>40+ = −6.12 / −6.28</strong> (second collapse, below uniform). n-gram ladder, rest-of-sequence: unigram −4.17, bigram −2.25, trigram −0.99, 4-gram −0.44, 5-gram −0.26. Positions 2–9 (−0.48) and 20–39 (−0.27) sit on the 4-gram and 5-gram references.</p>
       </div>
       <div class="finding-callout">
-        <div class="fc-label">Probe 3 / 3b — MEASURED (3 seeds)</div>
-        <p>Natural pooled: real <strong>0.9940</strong> · blank <strong>0.9899</strong> · noise <strong>0.9904</strong> (gap +0.0041). Training curve: real−blank gap sign-flips 4/5 steps, |SD|&gt;|mean| 4/5, while loss falls ~18× (3.210 → 0.182). Undertraining and ungrounded confidence are not competing explanations.</p>
+        <div class="fc-label">Probe 3 / 3b — MEASURED · synthetic lines</div>
+        <p><span class="regime">Synthetic natural (Probe 3)</span> pooled mean confidence: real <strong>0.9940</strong> · blank <strong>0.9899</strong> · noise <strong>0.9904</strong> (gap +0.0041). Training curve: real−blank gap sign-flips 4/5 steps, |SD|&gt;|mean| 4/5, while loss falls ~18× (3.210 → 0.182).</p>
       </div>
       <div class="finding-callout">
-        <div class="fc-label">Probe 5 / 5b — MEASURED (3 seeds)</div>
-        <p>Natural: ~99% confidence, line accuracy 14–24%, ECE ≈ 0.81. Probe 5b: 720 records; between-condition range of seed means <strong>0.0037</strong> &lt; hindi seed SD <strong>0.0043</strong>. Script substitution <strong>360/360</strong>. Seed-0 Kashmiri-vs-Hindi “significance” is <strong>retracted</strong> (does not replicate).</p>
+        <div class="fc-label">Calibration vs discrimination — MEASURED</div>
+        <p><span class="regime">Synthetic natural (Probe 5)</span>: AUROC of confidence against correctness <strong>0.838</strong> (per seed 0.763, 0.924, 0.832); ECE <strong>0.812</strong> (pooled equal-mass 0.8107, 10 bins). Discrimination and calibration come apart. <span class="regime">Real scans (Probe 5b)</span>: AUROC 0.570 by median-CER split. Mean confidence 0.9873 real vs 0.9857 blank.</p>
+      </div>
+      <figure class="pub-fig">
+        <img src="docs/figures/fig3_confidence_distributions.png" alt="Confidence distributions remaining near ceiling on real, blank, and unseen scripts.">
+        <figcaption>Fig. 3 — Confidence distributions. Real-scan means stay in a 0.0037-wide window.</figcaption>
+      </figure>
+      <figure class="pub-fig">
+        <img src="docs/figures/fig4_regime_contrast.png" alt="AUROC 0.838 on synthetic natural lines versus 0.570 on real scans; ECE near 0.81 on synthetic.">
+        <figcaption>Fig. 4 — Regime contrast. Synthetic lines vs real scans: ranking vs calibration.</figcaption>
+      </figure>
+      <div class="finding-callout">
+        <div class="fc-label">Statistics — MEASURED</div>
+        <p>Paired Wilcoxon CER (real − blank): seed 0 <strong>+0.180</strong>, seed 1 <strong>+0.088</strong>, seed 2 <strong>−0.159</strong> (sign flips). Seed-clustered bootstrap CIs, 2,000 replicates, on CER, confidence, position-0 geometric mean, and both AUROCs (see docs/paper_defensibility_stats.md). Length explains 23–24% of CER variance; exact length-matched pairs (n = 54) gap +0.039, p = 0.197. Variance: confidence is 9% image / 7% seed / 84% residual on real, 0% / 18% / 82% on blank. GT likelihood is 84–85% image.</p>
       </div>
       <div class="finding-callout">
         <div class="fc-label">Probe 6 — MEASURED (3 seeds, leakage-free)</div>
-        <p>Held-out Tier&nbsp;C Hindi: 0 overlaps with training manifests. Confidence real_plain <strong>0.9861</strong> · real_degraded <strong>0.9768</strong> · blank <strong>0.9799</strong>; Tier 1/2 line accuracy <strong>0.0000</strong>. Claim B is not a synthetic-only artifact.</p>
+        <p>Held-out Tier&nbsp;C Hindi: 0 overlaps with training manifests. <span class="regime">Real-scan transfer</span> confidence real_plain <strong>0.9861</strong> · real_degraded <strong>0.9768</strong> · blank <strong>0.9799</strong>; Tier 1/2 line accuracy <strong>0.0000</strong>. CER real_plain 0.986 vs blank 0.942.</p>
       </div>
+      <div class="finding-callout">
+        <div class="fc-label">Output behaviour — MEASURED</div>
+        <p>Unique decoded strings / 60: real 22–30; blank 3 of 60 at seeds 0 and 1 (median pairwise edit distance 0 at seed 1). Generated length mean 27.96 real vs 31.39 blank — blank output is longer, not shorter.</p>
+      </div>
+      <figure class="pub-fig walk-only">
+        <img src="docs/figures/fig5_output_degeneracy.png" alt="Pairwise output degeneracy heatmap; blank seed 1 nearly uniformly dark.">
+        <figcaption>Fig. 5 — Output degeneracy. Blank seed 1 is almost entirely dark: the same few strings.</figcaption>
+      </figure>
       <div class="evidence-grid" style="margin-top:24px;">
         <div class="evidence-card">
           <div class="ev-tag">Measured · Stage 0</div>
           <h3>Encoding noise</h3>
-          <p>~<span class="ev-num">20.4%</span> of Tesseract non-exact preds are Tier&nbsp;1. Tier 2 validation is a complete 38-pair set; corpus TIER2 after Tier 1 is 0%.</p>
+          <p>Tesseract Tier&nbsp;1 among non-exact: <span class="ev-num">20.4%</span> (lower bound; 60.0% UNREVIEWED). Surya 16.9% (44.1% UNREVIEWED). PaddleOCR 10.0% (n=10). Tier 2 is 0% on all three engines.</p>
         </div>
         <div class="evidence-card">
           <div class="ev-tag">Measured · Stage 1</div>
@@ -1887,7 +1941,7 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
       <div class="kv-grid">
         <div class="kv-card">
           <h3>1 · Score fairly</h3>
-          <p>Score Indic OCR with grapheme-aware, Tier-1-aware metrics. On the order of one in five of Tesseract’s non-exact preds can be encoding variants — not wrong readings.</p>
+          <p>Score Indic OCR with grapheme-aware, Tier-1-aware metrics. Tesseract’s 20.4% Tier&nbsp;1 share among non-exact is a lower bound (60.0% UNREVIEWED). Surya 16.9%; PaddleOCR 10.0% (n=10). Tier 2 is 0% on all three engines.</p>
         </div>
         <div class="kv-card">
           <h3>2 · Design exposure</h3>
@@ -1915,7 +1969,7 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
       <h2 class="section-title walk-only">Weak spots already visible in the code — not generic advice</h2>
       <h2 class="section-title paper-only">Limitations and planned upgrades</h2>
       <p class="lede walk-only">Decision&nbsp;#46 / #62. Three-seed headlines, encoder-memory ablation, and teacher-forced GT-likelihood are built. The rest remain checkable next work — not generic advice.</p>
-      <p class="lede paper-only">Decision&nbsp;#46 / #62. Three-seed aggregation, encoder-memory ablation, and teacher-forced GT log-likelihood + entropy are built. Equal-frequency ECE bins, patch-shuffle, mixed-effects models, a second-labeler kappa, and fuller bootstrap CIs are not. Probe&nbsp;1’s exposure coefficient is withheld: flattened and inverted line accuracy collapsed (~0%). The Bengali sweep is partial (GPU quota).</p>
+      <p class="lede paper-only">Decision&nbsp;#46 / #62. Three-seed aggregation, encoder-memory ablation, teacher-forced GT log-likelihood, equal-mass ECE (10 bins, pooled 0.8107), and seed-clustered bootstrap CIs (2,000) are built. Patch-shuffle, mixed-effects models, and a second-labeler kappa are not. Probe&nbsp;1’s exposure coefficient is withheld: flattened and inverted line accuracy collapsed (~0%). The Bengali sweep is partial (GPU quota).</p>
       <div class="scope-grid">
         <div class="scope-row">
           <div class="scope-tag"><span class="stage">Built</span>Seeds</div>
@@ -1928,14 +1982,14 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
           <div class="scope-tag"><span class="stage">Built</span>Probe 3</div>
           <div class="scope-why">
             <h4>Mechanistic ablation (encoder memory)</h4>
-            <p>Zero encoder output before projection. Confidence Δ −0.0030; ~12% of token-choice mass still image-dependent. Cross-attention <em>maps</em> (does attention move to the glyph?) are still not built.</p>
+            <p>Zero encoder output before projection. Confidence Δ −0.0030. Per-image top-1 disagreement 12.1%; step-level flip rate 8.2% over 4,990 steps. Cross-attention <em>maps</em> (does attention move to the glyph?) are still not built.</p>
           </div>
         </div>
         <div class="scope-row">
           <div class="scope-tag"><span class="stage">1</span>Calibration</div>
           <div class="scope-why">
-            <h4>Equal-frequency bins + ECE / Brier</h4>
-            <p>Fixed-width bins at n≈30 make singleton buckets look as authoritative as n=18. Adaptive binning and a summary ECE (plus Brier) fix the printer we already ship.</p>
+            <h4>Equal-mass ECE (built) · remaining printer work</h4>
+            <p>Ten equal-mass bins on synthetic natural: pooled ECE 0.8107, AUROC 0.838. Adaptive reporting is done; Brier and a second-labeler kappa are not.</p>
           </div>
         </div>
         <div class="scope-row">
@@ -1949,7 +2003,7 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
           <div class="scope-tag"><span class="stage">5–7</span>Stats</div>
           <div class="scope-why">
             <h4>Mixed effects · kappa · bootstrap CIs</h4>
-            <p>Probe&nbsp;1 nesting; second labeler on a residual subsample; effect-size intervals instead of significance stars at this N. Not built (5b/3b have a first bootstrap pass; the #46 upgrade is the fuller program).</p>
+            <p>Probe&nbsp;1 nesting; second labeler on a residual subsample. Seed-clustered bootstrap CIs (2,000) on CER, confidence, pos-0 geometric mean, and both AUROCs are now in docs/paper_defensibility_stats.md. Mixed effects and kappa are not.</p>
           </div>
         </div>
       </div>
@@ -1990,8 +2044,8 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
       <h2 class="section-title walk-only">Suggested path</h2>
       <h2 class="section-title paper-only">Section order</h2>
       <div class="docs-list">
-        <div class="doc-row primary walk-only"><span class="doc-name"><a href="#hero">Idea</a></span><span class="doc-desc">the Sarvam question</span></div>
-        <div class="doc-row primary paper-only"><span class="doc-name"><a href="#hero-paper">Title</a></span><span class="doc-desc">abstract</span></div>
+        <div class="doc-row primary walk-only"><span class="doc-name"><a href="#hero">Extract audit</a></span><span class="doc-desc">39.98 pp accuracy vs 0.0027 confidence</span></div>
+        <div class="doc-row primary paper-only"><span class="doc-name"><a href="#hero-paper">Title</a></span><span class="doc-desc">Reading Without Looking · <a href="paper/main.pdf">PDF</a></span></div>
         <div class="doc-row paper-only"><span class="doc-name"><a href="#motivation">Related Work</a></span><span class="doc-desc">non-silent failure · synthetic–real split</span></div>
         <div class="doc-row walk-only"><span class="doc-name"><a href="#whyhard">Why hard</a></span><span class="doc-desc">BOOK Ch.0</span></div>
         <div class="doc-row paper-only"><span class="doc-name"><a href="#whyhard">Introduction</a></span><span class="doc-desc">Ch. 0</span></div>
@@ -2016,8 +2070,8 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
   <div class="wrap-wide">
     <div>
       <div class="fmark">vlm-ocr-eval</div>
-      <p class="fnote walk-only">Sarvam Deep-Dive — published Hindi–Kashmiri accuracy versus Extract confidence, then a blank instrument to open the mechanism. Measured vs reported labeled as in BOOK.md.</p>
-      <p class="fnote paper-only">Preprint draft of <em>Confidence Without Sight</em>. A blank Indic OCR instrument; probes of whether decoder confidence is grounded in the image. Measured versus withheld results are labeled as such.</p>
+      <p class="fnote walk-only">Extract confidence audit — published Hindi–Kashmiri accuracy (39.98 pp) versus Extract confidence (0.0027), then a blank instrument (real-scan CER ≈ 1) to open the mechanism. Same URL as the preprint tab; the PDF does not name Sarvam.</p>
+      <p class="fnote paper-only"><em>Reading Without Looking</em> · <a href="paper/main.pdf">paper/main.pdf</a>. This GitHub Pages URL also hosts an Extract-API audit behind a toggle; the preprint itself does not reference that product. Numbers on this tab follow docs/paper_defensibility_stats.md.</p>
     </div>
     <div class="mono" style="font-size:0.8rem; color:var(--ink-soft);">GitHub Pages · repo-root index.html</div>
   </div>
@@ -2026,9 +2080,9 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
 <script>
   (function(){
     const data = {
-      real:  { conf: '0.9929', pct: 99.29, flat:false, label:'Real line', note:'Text is on the page. Confidence near ceiling — as you’d hope if it were reading.' },
-      blank: { conf: '0.9898', pct: 98.98, flat:true,  label:'Blank page', note:'No glyphs at all — and confidence barely moves. That is the Probe 3 signal: the meter is not looking.' },
-      noise: { conf: '0.9877', pct: 98.77, flat:true,  label:'Matched noise', note:'Texture without letters. Still near real. Full seed aggregates live in Findings / Part Two.' }
+      real:  { conf: '0.9929', pct: 99.29, flat:false, label:'Real line · Probe 3 synthetic', note:'Synthetic natural lines, not real scans. Confidence near ceiling — as you’d hope if it were reading.' },
+      blank: { conf: '0.9898', pct: 98.98, flat:true,  label:'Blank · Probe 3 synthetic', note:'No glyphs — confidence barely moves. Real-scan CER is still ≈1.0 (Probe 5b); this tile is the synthetic-line meter.' },
+      noise: { conf: '0.9877', pct: 98.77, flat:true,  label:'Matched noise · Probe 3 synthetic', note:'Texture without letters. Still near real on synthetic Probe 3. Real-scan means are 0.9873 vs 0.9857.' }
     };
     const readout = document.getElementById('readout');
     const tiles = document.querySelectorAll('.glyph-tile');
@@ -2058,8 +2112,8 @@ Instrument:   Image → encoder → decoder → probabilities → text</pre>
       walkBtn.setAttribute('aria-pressed', mode === 'walkthrough' ? 'true' : 'false');
       paperBtn.setAttribute('aria-pressed', mode === 'paper' ? 'true' : 'false');
       document.title = mode === 'paper'
-        ? 'Confidence Without Sight — preprint'
-        : 'vlm-ocr-eval — Sarvam Deep-Dive';
+        ? 'Reading Without Looking — preprint'
+        : 'Does Extract confidence track your published gap?';
       if (flash){
         body.classList.remove('mode-flash');
         void body.offsetWidth;

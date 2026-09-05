@@ -1651,6 +1651,26 @@ regenerate; (c) keep `checklist.tex` unused.
 (c) is 26 KB of unused template. Overleaf projects bound to the old folder
 name must be re-pointed.
 
+---
 
+### 69. GitHub Pages: one URL, two modes; preprint PDF is the paper
+
+**Decision:** Keep `index.html` as a mode toggle (Extract audit vs
+preprint). `paper/main.tex` still does not name Sarvam. Paper mode titles
+and copy use *Reading Without Looking*, links `paper/main.pdf`, and does
+not present Extract-API numbers. The Extract tab is a separate product
+question on the same Pages URL. Site numbers are taken from
+`docs/paper_defensibility_stats.md` / `paper/main.tex`, not from older
+site copy.
+
+**Alternatives considered:** (a) split the preprint onto a second Pages
+path with no toggle; (b) keep the toggle but strip all instrument
+results from the Extract tab; (c) leave the historical working title
+*Confidence Without Sight* on the site.
+
+**Why:** (a) is cleaner isolation but splits one repo’s public artifact.
+(b) would hide the instrument null that makes the Sarvam conversation
+interpretable. (c) contradicts the paper title. Coupling at the URL is
+accepted and labeled in the paper-mode footer.
 
 
