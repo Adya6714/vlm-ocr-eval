@@ -186,6 +186,8 @@ not invented templates.
   mixed-effects Probe 1; kappa on a hand-review subsample; bootstrap
   CIs — not this phase
 - [ ] Keep `DECISIONS.md` current — append, don't rewrite
+      (latest: \#65--\#67 paper instrument specs, nine vs three checkpoints,
+      bibliography verification)
 - [x] Heavy scripts (OCR batches, training) written for Colab: one
   `--data-root`, no local-only paths, export into the IMPLEMENTATION.md
   output path (`run_baselines.py` + AGENTS.md; DECISIONS.md #32)

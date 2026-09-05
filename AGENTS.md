@@ -175,6 +175,11 @@ export is how the checkpoint gets back here.
 - No invented citations, no invented benchmark numbers from other
   papers. If a claim needs literature support, it needs an actual
   fetched source, not a plausible-sounding recollection.
+- When reporting results already written to `docs/` (especially
+  `docs/paper_defensibility_stats.md`), cite the file and line range.
+  Do not restate tables or headline numbers in chat: a previous summary
+  disagreed with the committed markdown on several figures. The doc is
+  the source of truth.
 
 ## Writing BOOK.md
 

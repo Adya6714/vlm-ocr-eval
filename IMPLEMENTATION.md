@@ -213,9 +213,10 @@ GlotOCR slice after #28.
       + manifest so the instrument/Probe 1 machinery can run without
       Stage 1 renderer output. Not a finding. Remains QUEUED: this
       *is* the fake path.
-- [x] Target size: ~30–60M params (~19.5M realized). Trains on one
-      script in well under an hour on a free T4 — verified on real
-      Hindi manifests (9 Probe 1 runs).
+- [x] Target size: ~30–60M params (~19.5M realized at $|V|=367$).
+      Paper Section 3 records the trained hyperparameters (DECISIONS.md
+      \#65). Nine Hindi Probe 1 checkpoints; mechanistic claims use
+      the three natural seeds only (\#66).
 
 ### 2b. The demo (LoRA on a real small VLM)
 

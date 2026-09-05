@@ -964,11 +964,18 @@ In this codebase the decoder has five layers and hidden size 384
 (`train.py`) bridges the encoder’s 320-d memory to the decoder’s 384-d
 width, so each half stays independently smoke-testable.
 
-**Measured** on a tiny smoke vocabulary (~10 tokens): the full
-`InstrumentModel` is about **19.5M** parameters (19,470,016). With a
-real Devanagari vocabulary the total grows toward the design target of
-roughly 30–60M, because the embedding table and output head scale with
-vocab size.
+**Measured** at Hindi natural vocabulary size $|V|=367$ (tied embedding
+and output head): the full `InstrumentModel` is **19,607,104**
+parameters. The encoder alone is 7,460,800. Because the output matrix
+is tied, growing the grapheme table from a smoke vocabulary to
+Devanagari barely moves the total; the old 30–60M envelope was a
+design ceiling, not the trained Hindi checkpoint (Decision #65).
+
+Probe 1 still trains **nine** Hindi runs (natural / flattened /
+inverted $\times$ three seeds). The paper’s mechanistic measurements
+use only the three natural seeds (Decision #66): flattened and inverted
+collapsed to near-zero line accuracy, so they are not extra copies of
+the same reader.
 
 ### What “causal mask” means
 

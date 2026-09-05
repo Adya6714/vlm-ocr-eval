@@ -1577,4 +1577,61 @@ probes without checkpoint weights.
   inference without weights is impossible, so those probes remain honestly
   flagged as queued for Colab execution.
 
+---
+
+### 65. Paper Section 3 reports the trained instrument, not a design target
+
+**Decision:** Section 3 of `neurips_2026.tex` states the architecture and
+optimiser that `src/models/instrument/` actually trains: encoder 6×320 / 5
+heads / patch 14 / height 70\,px; decoder 5×384 / 6 heads; tied embedding;
+AdamW $3\times10^{-4}$, batch 32, 5{,}000 steps, fp16. Parameter count is
+the instantiated `InstrumentModel` at $|V|=367$ (19{,}607{,}104). Corpus
+size is the shipped Hindi line manifests (100 pages/mode).
+
+**Alternatives considered:** (a) leave Section 3 qualitative; (b) quote the
+old 30--60M design envelope; (c) claim TV $\le 0.08$ on all three training
+corpora.
+
+**Why:** (a) is the thin section the draft already had. (b) is the
+pre-training size target, not the Hindi checkpoint. (c) is the Stage 1
+*gate*, not a measurement of `data/manifests/hindi_{flattened,inverted}.jsonl`
+against the natural-support targets (TV 0.22 and 0.54 on 2026-09-05). The
+paper now reports the gate as a specification and the measured TV as a
+missed gate for flattened/inverted.
+
+---
+
+### 66. Mechanistic paper claims use three natural checkpoints, not nine
+
+**Decision:** Probe 1 still trains nine Hindi models (3 conditions $\times$ 3
+seeds). The paper's CER, position, ablation, zero-shot, and calibration
+results are scoped to `checkpoint_hindi_natural_seed{0,1,2}` only.
+Flattened/inverted checkpoints are a separate failed exposure experiment
+(near-zero line accuracy), not extra seeds of the same reading model.
+
+**Alternatives considered:** (a) one natural checkpoint, ignore seeds; (b)
+pool all nine as if they were the same model; (c) retrain flattened/inverted
+as LoRA on natural.
+
+**Why not (a):** Decision \#14. **Why not (b):** flattened/inverted did not
+learn readable OCR; pooling them with natural would mix a language-model
+collapse with the visual-bypass measurement. **Why not (c):** that would be
+a new training run, not a description of what was trained.
+
+---
+
+### 67. Bibliography author lists and UNVERIFIED venues filled from live sources
+
+**Decision:** Fill `devanagari2026stresstest` (Singh),
+`readingbetweenlines2025` (Yao et al.), `videoworldmodels2026` (Xu), and
+`lin2024visualgptscore` (Lin, Chen, Pathak, Zhang, Ramanan; ICML 2024 PMLR
+235:29914--29934, arXiv:2306.01879). Replace UNVERIFIED notes on Guo 2017,
+Hendrycks \& Gimpel 2017, Geifman \& El-Yaniv 2017, Goyal et al.\ 2017, and
+Agrawal et al.\ 2018 with PMLR / OpenReview / NeurIPS / CVF page data
+fetched 2026-09-05.
+
+**Why:** the Overleaf `.bib` had TODO authors and memory-only venue lines.
+Live arXiv Atom + venue HTML, not recollection.
+
+
 
