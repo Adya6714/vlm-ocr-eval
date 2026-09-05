@@ -227,6 +227,8 @@ def make_fig1_position_dissociation(
     pooled token-step mean equals nanmean of per-seed means at each index.
     The 40+ marker uses the same pooled mean as Follow-Up 6's Positions 40+ row.
     n-gram reference ordinates are Analysis 7 rest-of-sequence means (pos ≥ 1).
+    The inset is a separate top-right panel (not overlaid on the series).
+    The legend sits flush under the x-axis, not in a second reserved band.
     """
     n_series = 40  # plotted indices 0..39
     plus_x = 41.5  # visual gap after 39
@@ -318,10 +320,21 @@ def make_fig1_position_dissociation(
             "plus_max": float(np.nanmax(plus_seed)),
         }
 
-    fig, (ax1, ax2) = plt.subplots(
-        2, 1, figsize=(5.5, 3.55), sharex=True,
-        gridspec_kw={"height_ratios": [1.55, 0.85], "hspace": 0.14}
+    fig = plt.figure(figsize=(5.5, 3.15))
+    gs = fig.add_gridspec(
+        2, 2,
+        height_ratios=[1.55, 0.88],
+        width_ratios=[3.45, 1.15],
+        hspace=0.08,
+        wspace=0.14,
+        left=0.12,
+        right=0.99,
+        top=0.98,
+        bottom=0.17,
     )
+    ax1 = fig.add_subplot(gs[0, 0])
+    axins = fig.add_subplot(gs[0, 1])
+    ax2 = fig.add_subplot(gs[1, :], sharex=ax1)
 
     # Follow-Up 6 header: uniform log(1/367); Analysis 7 rest-of-sequence n-grams.
     uniform_logp = math.log(1.0 / v_grapheme)
@@ -353,7 +366,7 @@ def make_fig1_position_dissociation(
     )
     ax1.fill_between(
         xs, tf_curves["real"]["min"], tf_curves["real"]["max"],
-        color=COLOR_REAL, alpha=0.18, label="seed range (real)"
+        color=COLOR_REAL, alpha=0.18, label="_nolegend_"
     )
     ax1.plot(
         xs, tf_curves["blank"]["mean"],
@@ -362,7 +375,7 @@ def make_fig1_position_dissociation(
     )
     ax1.fill_between(
         xs, tf_curves["blank"]["min"], tf_curves["blank"]["max"],
-        color=COLOR_BLANK, alpha=0.18, label="seed range (blank)"
+        color=COLOR_BLANK, alpha=0.18, label="_nolegend_"
     )
 
     ax1.axvline(40.25, color="#bbbbbb", linewidth=0.7, linestyle=":")
@@ -398,7 +411,6 @@ def make_fig1_position_dissociation(
         bbox=dict(boxstyle="round,pad=0.2", facecolor="white", edgecolor="0.7", alpha=0.9),
     )
 
-    axins = ax1.inset_axes([0.34, 0.08, 0.38, 0.50])
     axins.plot(
         xs[2:], tf_curves["real"]["mean"][2:],
         color=COLOR_REAL, linestyle="-", marker="o", markersize=1.8, markevery=4,
@@ -416,6 +428,7 @@ def make_fig1_position_dissociation(
     axins.set_xticks([2, 20, 39])
     axins.tick_params(labelsize=5.5)
     axins.set_title("pos 2–39", fontsize=6, pad=1)
+    axins.set_ylabel("$\\log p(\\mathrm{GT})$", fontsize=6)
     for spine in axins.spines.values():
         spine.set_visible(True)
         spine.set_linewidth(0.6)
@@ -467,9 +480,10 @@ def make_fig1_position_dissociation(
                 labels.append(li)
     fig.legend(
         handles, labels,
-        loc="upper center", bbox_to_anchor=(0.5, -0.02),
+        loc="upper center", bbox_to_anchor=(0.55, 0.155),
         ncol=4, frameon=True, framealpha=0.95, edgecolor="0.8",
-        fontsize=6.2, columnspacing=0.9, handlelength=1.8,
+        fontsize=6.2, columnspacing=0.65, handlelength=1.45,
+        borderpad=0.25, labelspacing=0.15, handletextpad=0.35,
     )
 
     if mode == "working":
@@ -484,8 +498,9 @@ def make_fig1_position_dissociation(
         for ax in (ax1, ax2):
             ax.spines["top"].set_visible(False)
             ax.spines["right"].set_visible(False)
+        axins.spines["top"].set_visible(True)
+        axins.spines["right"].set_visible(True)
 
-    fig.subplots_adjust(bottom=0.22)
     return fig
 
 

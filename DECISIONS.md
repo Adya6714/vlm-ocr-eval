@@ -1673,4 +1673,19 @@ results from the Extract tab; (c) leave the historical working title
 interpretable. (c) contradicts the paper title. Coupling at the URL is
 accepted and labeled in the paper-mode footer.
 
+---
+
+### 70. Figure 1 inset lower-right; legend not double-padded
+
+**Decision:** Give the positions 2--39 zoom its own column on the top row
+(`GridSpec` width ratio $\approx$ 3.4:1.2) so it does not overlay the
+main series. Combined legend uses `loc="upper center"` at
+`bbox_to_anchor=(0.515, 0.125)` with `subplots_adjust(bottom=0.12)`.
+
+**Alternatives considered:** (a) shrink a centre inset in place; (b)
+lower-right inset still in the parent axes; (c) drop the inset.
+
+**Why:** (a) and (b) still occupy the mid-sequence $x$-range. (c) hides
+the 4-gram vs 5-gram split that the caption now names.
+
 
