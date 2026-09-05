@@ -14,6 +14,10 @@ those two image sets are identical: all 60 GT rows under Random(0)
 with n_samples ≥ 60):
   - real: the plain scan, resized to canonical height
   - blank: solid white of the same size (probe3 make_blank)
+  - noise: matched Gaussian noise (probe3 make_matched_noise) — optional
+    via --extra-conditions; tests response to *any* visual variation
+  - scrambled: patch-permutation of the real image — optional; destroys
+    spatial structure while preserving local patch statistics
 
 Per record: per-step log p(gt_token), per-step entropy H(p), then
 length-normalized means. Resumable append+skip on (condition, image_path).
@@ -42,9 +46,8 @@ _PROBES_DIR = Path(__file__).resolve().parent
 if str(_PROBES_DIR) not in sys.path:
     sys.path.insert(0, str(_PROBES_DIR))
 
-from probe3_blank_control import make_blank  # noqa: E402
+from probe3_blank_control import make_blank, make_matched_noise  # noqa: E402
 from probe5b_zeroshot_floor import (  # noqa: E402
-    IN_DISTRIBUTION_LANGUAGE,
     resolve_repo_root,
 )
 from probe_attention_ablation import build_hindi_sample  # noqa: E402
@@ -63,7 +66,43 @@ if _INSTRUMENT_DIR not in sys.path:
 from generate import generate  # noqa: E402
 from train import checkpoint_path  # noqa: E402
 
-CONDITIONS = ("real", "blank")
+BASE_CONDITIONS = ("real", "blank")
+EXTRA_CONDITIONS = ("noise", "scrambled")
+ALL_CONDITIONS = BASE_CONDITIONS + EXTRA_CONDITIONS
+
+
+def make_scrambled_patches(
+    image: Image.Image,
+    rng: np.random.Generator,
+    patch: int = 16,
+) -> Image.Image:
+    """
+    Permute non-overlapping patches of a grayscale line crop.
+
+    Why: blank is low-information in one specific way (constant field).
+    Matched Gaussian noise destroys structure differently. Scrambled
+    patches keep local ink statistics but break reading order / glyph
+    geometry — a third visual control for the TF likelihood probe.
+    """
+    arr = np.array(image.convert("L"), dtype="uint8")
+    h, w = arr.shape
+    # Crop to multiples of patch so the tile grid is exact.
+    h2, w2 = (h // patch) * patch, (w // patch) * patch
+    if h2 < patch or w2 < patch:
+        # Degenerate tiny image: fall back to pixel shuffle.
+        flat = arr.reshape(-1).copy()
+        rng.shuffle(flat)
+        return Image.fromarray(flat.reshape(arr.shape), mode="L")
+    crop = arr[:h2, :w2]
+    tiles = crop.reshape(h2 // patch, patch, w2 // patch, patch)
+    tiles = tiles.swapaxes(1, 2).reshape(-1, patch, patch)
+    order = rng.permutation(tiles.shape[0])
+    tiles = tiles[order]
+    nh, nw = h2 // patch, w2 // patch
+    rebuilt = tiles.reshape(nh, nw, patch, patch).swapaxes(1, 2).reshape(h2, w2)
+    out = arr.copy()
+    out[:h2, :w2] = rebuilt
+    return Image.fromarray(out, mode="L")
 
 
 def gt_force_ids(tokenizer, ground_truth: str) -> list[int]:
@@ -101,30 +140,54 @@ def load_completed_keys(out_path: Path) -> set[tuple[str, str]]:
     return done
 
 
-def build_tasks(data_root: Path, repo_root: Path, n_samples: int) -> list[dict]:
+def build_tasks(
+    data_root: Path,
+    repo_root: Path,
+    n_samples: int,
+    conditions: tuple[str, ...] = BASE_CONDITIONS,
+) -> list[dict]:
     """
-    Real + blank tasks on the Probe 5b Hindi sample.
+    Image-condition tasks on the Probe 5b Hindi sample.
 
     Same Random(0) draw as probe5b / attention ablation / probe6's
     full Hindi pool (intersection verified: 60/60 identical paths).
+    Optional noise / scrambled conditions share the matched GT text.
     """
+    unknown = set(conditions) - set(ALL_CONDITIONS)
+    if unknown:
+        raise ValueError(f"unknown conditions: {sorted(unknown)}")
     hindi = build_hindi_sample(data_root, repo_root, n_samples)
     tasks: list[dict] = []
     for item in hindi:
-        tasks.append({
-            "condition": "real",
-            "row": item["row"],
-            "image_path": item["image_path"],
-            "source_path": item["image_path"],
-        })
-        tasks.append({
-            "condition": "blank",
-            "row": item["row"],
-            "image_path": item["image_path"],
-            "source_path": item["image_path"],
-            "blank_source_path": item["image_path"],
-        })
+        for cond in conditions:
+            task = {
+                "condition": cond,
+                "row": item["row"],
+                "image_path": item["image_path"],
+                "source_path": item["image_path"],
+            }
+            if cond in ("blank", "noise", "scrambled"):
+                task["blank_source_path"] = item["image_path"]
+            tasks.append(task)
     return tasks
+
+
+def render_condition_image(
+    task: dict,
+    rng: np.random.Generator,
+) -> Image.Image:
+    """Map a task condition to the PIL image fed into score_one."""
+    base = resize_to_canonical_height(Image.open(task["source_path"]))
+    cond = task["condition"]
+    if cond == "real":
+        return base
+    if cond == "blank":
+        return make_blank(base)
+    if cond == "noise":
+        return make_matched_noise(base, rng)
+    if cond == "scrambled":
+        return make_scrambled_patches(base, rng)
+    raise ValueError(f"unknown condition {cond}")
 
 
 def score_one(
@@ -201,7 +264,8 @@ def print_dry_run(
     ckpt = checkpoint_path(str(output_root), script, condition, seed)
     completed = load_completed_keys(out_path)
     pending = [t for t in tasks if (t["condition"], t["image_path"]) not in completed]
-    by_cond = {c: sum(1 for t in tasks if t["condition"] == c) for c in CONDITIONS}
+    conds = sorted({t["condition"] for t in tasks})
+    by_cond = {c: sum(1 for t in tasks if t["condition"] == c) for c in conds}
     print(f"[gt_likelihood] DRY-RUN seed={seed}")
     print(f"  checkpoint: {ckpt}  exists={Path(ckpt).exists()}")
     print(f"  out: {out_path}")
@@ -226,6 +290,8 @@ def run_probe(
     out_path: Path,
     device_str: str = "cpu",
     dry_run: bool = False,
+    image_conditions: tuple[str, ...] = BASE_CONDITIONS,
+    noise_seed: int = 0,
 ) -> None:
     """
     Teacher-forced GT likelihood for one hindi/natural checkpoint.
@@ -234,7 +300,7 @@ def run_probe(
     printed every image — silence would look like a hang on Colab.
     """
     repo_root = resolve_repo_root(data_root)
-    tasks = build_tasks(data_root, repo_root, n_samples)
+    tasks = build_tasks(data_root, repo_root, n_samples, image_conditions)
 
     if dry_run:
         print_dry_run(tasks, output_root, script, condition, seed, out_path)
@@ -251,6 +317,7 @@ def run_probe(
     model, tokenizer = load_model_and_tokenizer(
         output_root, script, condition, seed, device,
     )
+    rng = np.random.default_rng(noise_seed)
 
     completed = load_completed_keys(out_path)
     pending = [t for t in tasks if (t["condition"], t["image_path"]) not in completed]
@@ -258,7 +325,8 @@ def run_probe(
     already = total - len(pending)
     print(
         f"[gt_likelihood] {script}/{condition}/seed={seed}: "
-        f"{total} tasks ({already} done, {len(pending)} remaining)"
+        f"{total} tasks ({already} done, {len(pending)} remaining); "
+        f"image_conditions={image_conditions}"
     )
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -266,11 +334,7 @@ def run_probe(
         for i, task in enumerate(pending):
             row = task["row"]
             gt_text = row.get("text") or ""
-            if task["condition"] == "blank":
-                base = resize_to_canonical_height(Image.open(task["blank_source_path"]))
-                image = make_blank(base)
-            else:
-                image = resize_to_canonical_height(Image.open(task["source_path"]))
+            image = render_condition_image(task, rng)
 
             body = score_one(model, tokenizer, image, gt_text, device)
             record = {
@@ -301,7 +365,7 @@ def run_probe(
             )
 
     # End-of-run condition means from the full file (includes resumed rows).
-    by_cond: dict[str, list[dict]] = {c: [] for c in CONDITIONS}
+    by_cond: dict[str, list[dict]] = {c: [] for c in image_conditions}
     for line in out_path.read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
@@ -309,7 +373,7 @@ def run_probe(
         if rec.get("condition") in by_cond:
             by_cond[rec["condition"]].append(rec)
     print(f"[gt_likelihood] wrote {out_path}")
-    for cond in CONDITIONS:
+    for cond in image_conditions:
         recs = by_cond[cond]
         lps = [r["mean_log_p_gt"] for r in recs if r.get("mean_log_p_gt") is not None]
         ents = [r["mean_entropy"] for r in recs if r.get("mean_entropy") is not None]
@@ -356,7 +420,30 @@ def main() -> None:
         action="store_true",
         help="Print planned tasks/checkpoint paths; do not load model or write",
     )
+    ap.add_argument(
+        "--extra-conditions",
+        nargs="*",
+        default=[],
+        choices=list(EXTRA_CONDITIONS),
+        help=(
+            "Also score noise and/or scrambled inputs (paper item 3). "
+            "Default is real+blank only so existing jsonl stays unchanged."
+        ),
+    )
+    ap.add_argument(
+        "--noise-seed",
+        type=int,
+        default=0,
+        help="RNG seed for matched Gaussian noise / patch scramble",
+    )
     args = ap.parse_args()
+
+    image_conditions = tuple(BASE_CONDITIONS) + tuple(args.extra_conditions)
+    # Deduplicate while preserving order
+    seen = set()
+    image_conditions = tuple(
+        c for c in image_conditions if not (c in seen or seen.add(c))
+    )
 
     run_probe(
         Path(args.output_root),
@@ -368,6 +455,8 @@ def main() -> None:
         Path(args.out),
         args.device,
         dry_run=args.dry_run,
+        image_conditions=image_conditions,
+        noise_seed=args.noise_seed,
     )
 
 

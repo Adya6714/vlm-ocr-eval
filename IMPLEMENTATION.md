@@ -365,6 +365,27 @@ Claim B numbers to real Tier C (paper scope; DECISIONS.md #58).
       Outputs: `data/probe_results/probe_gt_likelihood_hindi_natural_seed{N}.jsonl`;
       analysis: `docs/gt_likelihood_analysis.md`.
       Code: `src/probes/probe_gt_likelihood.py`.
+- [x] BUILT — VERIFIED **Paper-defensibility follow-ups & publication figures.**
+      Offline (no new inference): `src/analysis/paper_defensibility_stats.py`
+      → `docs/paper_defensibility_stats.md` + position-curve PNG
+      (`docs/figures/gt_likelihood_position_curve.png`) — AUROC/Spearman,
+      image×seed variance decomposition, flattened/inverted accuracy,
+      Stage 0 per-engine Tier 1, first-token vs uniform (V≈367), plus
+      9 offline analyses: paired Wilcoxon tests (with seed and image clustering),
+      seed-clustered bootstrap CIs (2,000 reps), length-controlled CER regression,
+      position-0 probability distribution & histogram, zero-shot script table fill,
+      n-gram sweep up to 5-gram, Tier 2 breakdown, and equal-mass ECE (10 bins).
+      Unified figure generator: `src/analysis/make_paper_figures.py`
+      → Figures 1–4 publication PDF in `paper/figures/` and Figures 1–5 working PNG
+      in `docs/figures/` (DECISIONS.md #64).
+      Needs Colab (forward passes only; scripts dry-run OK locally, checkpoints not on laptop):
+      - shuffled image–text TF: `src/probes/probe_gt_mismatch.py`
+        → `data/probe_results/probe_gt_mismatch_hindi_natural_seed{N}.jsonl`
+      - cross-attn contrib norms: `src/probes/probe_cross_attn_norms.py`
+        → `data/probe_results/cross_attn_norms_hindi_natural_seed{N}.jsonl`
+      - noise + scrambled TF: `probe_gt_likelihood.py --extra-conditions noise scrambled`
+        (append to existing jsonl or write a sibling out path)
+      DECISIONS.md #63, #64.
 - [x] BUILT — VERIFIED **Probe 6 — Synthetic-to-real gap (paper scope).**
       Tier C Hindi plain+degraded+blank vs synthetic Claim B (Probe 3/5).
       Held-out validity is leakage-free (0 overlaps between

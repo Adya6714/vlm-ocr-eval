@@ -2759,6 +2759,20 @@ make smoke-test
 
 # Unit tests
 pytest -q
+
+# Paper defensibility statistics (offline battery, 9 analyses + reviewer items)
+PYTHONPATH=src/eval:src python3 src/analysis/paper_defensibility_stats.py \
+  --results-root data/probe_results \
+  --manifest-root data/manifests \
+  --out docs/paper_defensibility_stats.md \
+  --plot docs/figures/gt_likelihood_position_curve.png
+
+# Paper figure generation (dual PDF for paper/figures and PNG for docs/figures)
+PYTHONPATH=src/eval python3 src/analysis/make_paper_figures.py \
+  --results-root data/probe_results \
+  --out-dir docs/figures \
+  --paper-dir paper/figures \
+  --seeds 0 1 2
 ```
 
 Probe 3/5 aggregates need a checkpoint directory (often on Colab Drive):

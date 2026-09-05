@@ -144,6 +144,20 @@ not invented templates.
 - [x] GT-likelihood / entropy — BUILT — VERIFIED (360 records;
   teacher-forced log p(GT) + entropy; first-token real≈blank ~1e-10–1e-12;
   `docs/gt_likelihood_analysis.md`, DECISIONS.md #62)
+- [x] Paper defensibility stats (offline) — BUILT — VERIFIED (10 reviewer
+  items + 9 offline analyses: paired Wilcoxon tests with cluster adjustment,
+  seed-clustered bootstrap 2,000-rep CIs, length-controlled regression,
+  position-0 distributions & histograms, zero-shot script table completion,
+  n-gram sweep up to 5-gram, Tier 2 breakdown, equal-mass ECE; regenerable script
+  `src/analysis/paper_defensibility_stats.py`, summary
+  `docs/paper_defensibility_stats.md`, plot `docs/figures/gt_likelihood_position_curve.png`;
+  probes scaffolded for mismatch TF, cross-attn norms, noise: DECISIONS.md #63, #64)
+- [x] Paper figures generator — BUILT — VERIFIED (`src/analysis/make_paper_figures.py`;
+  dual export: Figs 1–4 publication PDF in `paper/figures/` and Figs 1–5 working PNG
+  in `docs/figures/`; DECISIONS.md #64)
+- [!] Probes for mismatch TF, cross-attn norms, noise/scrambled: code authored and dry-run
+  clean; local execution on CPU blocked by lack of checkpoint weights
+  (`checkpoint_hindi_natural_seed{0,1,2}.pt` only on Colab/Drive); queued for Colab run
 - [x] Probe 6 (paper scope) — BUILT — VERIFIED (Tier C plain+degraded+blank;
   0 leakage; `docs/probe6_synthetic_real_analysis.md`; DECISIONS.md #58)
 

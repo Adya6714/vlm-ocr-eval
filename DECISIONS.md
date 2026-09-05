@@ -1519,3 +1519,62 @@ critique is fair and cheap to answer with one inference pass.
 **Why not (c):** the existing `generate(force_next_ids=…,
 return_full_probs=True)` path already supports teacher forcing.
 
+---
+
+### 63. Paper-defensibility follow-ups: mismatch TF, cross-attn norms, noise/scrambled
+
+**Decision:** split the remaining reviewer-facing measurements into
+(1) an offline regenerator over committed jsonl
+(`paper_defensibility_stats.py`) and (2) three Colab forward-pass probes
+that cannot be faked from disk: shuffled image–text teacher forcing
+(`probe_gt_mismatch.py`), per-layer cross-attn contribution norms
+(`probe_cross_attn_norms.py`), and optional noise/scrambled conditions on
+the existing GT-likelihood probe (`--extra-conditions`).
+
+**Why:** blank ≈ real is confounded by blank degeneracy; wrong-real ≈
+right-real is the clean modality test. Cross-attn ‖out‖/‖stream‖ is the
+missing direct bypass measurement (not in attention ablation jsonl).
+Gaussian + patch-scramble are the third visual axis. Calibration AUROC,
+variance decomposition, position curves, Tier 1, and flat/inv accuracy
+need no GPU.
+
+**Alternatives considered:** (a) only extend the draft with inferred
+arithmetic; (b) one mega-probe that does everything; (c) require a
+decoder rewrite to expose cross-attn.
+
+**Why not (a):** several numbers were already being inferred from tables.
+**Why not (b):** resume keys and output schemas differ (mismatch pairs a
+foreign GT; norms are layer vectors). **Why not (c):** wrapping
+`TransformerDecoderLayer.forward` is enough.
+
+---
+
+### 64. Unified paper figure generator and offline defensibility battery
+
+**Decision:** implement a single unified figure generation entrypoint
+(`src/analysis/make_paper_figures.py`) producing synchronized dual-format
+figures (publication vector PDF in `paper/figures/` and 150 dpi working PNG in
+`docs/figures/`), and expand `src/analysis/paper_defensibility_stats.py`
+with a 9-part offline defensibility analysis suite.
+
+**Alternatives considered:** (a) separate ad-hoc plotting scripts per figure;
+(b) relying on unclustered / unpaired statistics; (c) reporting point estimates
+without confidence intervals; (d) running forward passes locally for missing
+probes without checkpoint weights.
+
+**Why rejected:**
+- (a) causes drift between working visuals and final paper submissions. A
+  single CLI entry point guarantees identical data extraction and styling.
+- (b) unpaired tests throw away the 60-image paired design, and naive pooled
+  tests mask seed-level variance (e.g. CER diff flips across seeds, yielding
+  a non-significant cluster t=0.257, p=0.822 when properly clustered by seed).
+- (c) reviewers require intervals on headline numbers; seed-clustered
+  bootstrap (2,000 replicates) provides valid non-parametric intervals.
+- (d) attempted `--device cpu` for `probe_gt_mismatch.py` and
+  `probe_cross_attn_norms.py`, but confirmed that model checkpoints
+  (`checkpoint_hindi_natural_seed{0,1,2}.pt`) are not present in the local
+  repo checkout (they reside on Colab/Drive per `COLAB_RUNS.md`); running
+  inference without weights is impossible, so those probes remain honestly
+  flagged as queued for Colab execution.
+
+

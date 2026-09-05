@@ -70,3 +70,11 @@ move consistently in either direction across seeds. Content and confidence are
 dissociated in that sense — not because confidence is proven invariant to the
 encoder, but because a large distributional shift coexists with an unstable,
 near-zero mean confidence delta.
+
+## Not in these jsonl files
+
+Per-layer cross-attention contribution norms
+(`‖cross-attn output‖ / ‖residual stream‖`) are **not** recorded here.
+That measurement is `src/probes/probe_cross_attn_norms.py` (Colab;
+DECISIONS.md #63) and is required before claiming a residual-mass
+"modality bypass" percentage.
