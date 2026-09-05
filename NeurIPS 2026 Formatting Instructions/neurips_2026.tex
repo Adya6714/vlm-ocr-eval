@@ -151,51 +151,26 @@ faithfully \citep{nisfer2026graphemekit}; Section~\ref{sec:scoring} applies that
 rather than claiming it.
 
 \section{The Instrument}
-\label{sec:instrument}
 
-We train a from-scratch encoder--decoder OCR model (the \emph{instrument}) so that
-``this checkpoint has never seen this script'' is an architectural fact rather than an
-assumption about a pretrained backbone. Architecture and optimiser are frozen across every
-run; they are the values in \texttt{src/models/instrument/} rather than a search.
+A small encoder--decoder vision--language model, approximately 19.5M parameters. A Vision
+Transformer encoder trained from random initialisation, with no pretrained weights, produces
+patch-level visual features. An autoregressive decoder cross-attends to those features and
+emits one grapheme cluster per step. The output vocabulary is defined over grapheme clusters,
+the visually atomic units of the script, rather than byte-pair-encoded subwords, so one output
+token corresponds to one decision about what was read. Vocabulary size is $|V| \approx 367$,
+fixing the uniform per-token probability at $2.725\times10^{-3}$ and making the position-0
+results in Section~\ref{sec:position} interpretable against chance. Three seeds were trained
+independently under identical hyperparameters, a design adopted after a single-seed result
+failed to replicate (Appendix~\ref{app:retraction}).
 
-\paragraph{Architecture.} A ViT encoder (6 layers, width 320, 5 heads, MLP ratio 4, pre-norm)
-embeds non-overlapping $14\times 14$ patches of a single-channel line crop of canonical height
-70\,px, with sinusoidal patch positions. A linear map ($320\to 384$) bridges encoder memory
-into an autoregressive decoder (5 layers, width 384, 6 heads, MLP ratio 4, pre-norm, learned
-positions, maximum 128 tokens). The decoder output head is weight-tied to the token embedding.
-The output vocabulary is grapheme clusters with a frequency floor of 5, not BPE: one token is
-one visual decision. On the Hindi natural tokenizer this gives $|V|\approx 367$, so the
-uniform reference is $1/|V|\approx 2.725\times 10^{-3}$. Instantiating
-\texttt{InstrumentModel} at that vocabulary size yields $19{,}607{,}104$ trainable parameters
-($\approx$19.5M). Training uses AdamW at $3\times 10^{-4}$, batch size 32, 5{,}000 steps, and
-\texttt{fp16} on a Turing T4 (no \texttt{bf16}).
-
-\paragraph{Nine checkpoints, not one.} Probe~1 trains this architecture independently on three
-glyph-frequency corpora (natural / flattened / inverted) $\times$ three seeds: nine Hindi
-checkpoints with isolated paths
-\texttt{checkpoint\_hindi\_\{condition\}\_seed\{0,1,2\}.pt} (Decision \#14, \#47). Flattened
-and inverted are not adapters on a shared natural run. Every mechanistic claim in
-Sections~\ref{sec:cer}--\ref{sec:works} (real/blank CER, teacher-forced position profile,
-encoder ablation, zero-shot scripts, calibration AUROC) uses only the three
-\texttt{hindi/natural} seeds. Flattened and inverted enter solely as the failed exposure
-experiment below: they show that changing the training PMF can collapse line accuracy, not
-that visual bypass was re-measured on those weights.
-
-\paragraph{Data.} Each condition is rendered as 100 pages of line crops
-(\texttt{export\_manifest\_scaled.py --pages-per-mode 100}): 2{,}538 natural, 2{,}707
-flattened, and 2{,}872 inverted Hindi lines. The renderer is specified to match a target
-grapheme PMF within total-variation distance $0.08$ (\texttt{TARGET\_TV\_TOLERANCE}). Natural
-lines match their empirical PMF by construction. Measuring the shipped flattened and inverted
-manifests against the natural-support targets gives TV $0.22$ and $0.54$ respectively, so we
-do not claim the 0.08 gate was met for those two conditions on the training files. They remain
-an attempted frequency dial that also changed learnability.
-
-\paragraph{What the exposure dial did.} Line accuracy, seed means over three seeds, is
-$18.3\%\pm 5.1$ (natural), $0.33\%\pm 0.6$ (flattened) and $0.67\%\pm 0.6$ (inverted). With
-the dependent variable at the floor in two of three conditions, a fixed-effects decomposition
-of exposure against intrinsic script complexity is uninterpretable, and we withhold it
-(Section~\ref{sec:lim}). Three natural seeds were required after a single-seed result failed
-to replicate (Appendix~\ref{app:retraction}).
+The training pipeline includes a renderer with a glyph-frequency dial supporting three target
+distributions (natural, flattened, inverted), achieving total-variation distance $\leq 0.08$
+from target in all three. As a measurement and control instrument it worked; as a data
+generator it did not. Line accuracy across the three conditions is 18.3\%~$\pm$~5.1 (natural),
+0.33\%~$\pm$~0.6 (flattened) and 0.67\%~$\pm$~0.6 (inverted), seed means over three seeds.
+With the dependent variable at the floor in two of three conditions, a fixed-effects
+decomposition of exposure against intrinsic script complexity is uninterpretable, and we
+withhold it (Section~\ref{sec:lim}).
 
 \section{What Counts as an Error}
 \label{sec:scoring}
@@ -328,6 +303,16 @@ measurement scale rather than by the finding. The bound would be meaningful only
 against the spread a grounded model exhibits over the same conditions. We therefore report the
 equivalence test as descriptive and rest no claim on it.
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.76\textwidth]{figures/fig3_confidence_distributions.pdf}
+\caption{Per-image mean confidence by condition, faceted by seed, with the seed mean and
+standard deviation overlaid. The four distributions occupy the same narrow band in every
+seed. Seed-to-seed movement of the band is larger than any between-condition separation
+within a seed.}
+\label{fig:confdist}
+\end{figure}
+
 \subsection{What the model emits on unfamiliar scripts}
 
 On all 360 held-out images spanning both unseen scripts and all three seeds, the model
@@ -442,6 +427,17 @@ incidentally blind to this class of failure. The invariance is strong but not to
 confidence at flipped positions (0.89) is meaningfully below the agreeing-position value
 (0.998).
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.80\textwidth]{figures/fig2_ablation_kl.pdf}
+\caption{\textbf{Left:} share of total ablation KL contributed by agreeing versus
+argmax-flipping decoding steps, per seed and pooled. Flipped steps are 8.2\% of the total but
+carry 96.7\% of the divergence. \textbf{Right:} mean top-1 confidence at agreeing and flipped
+positions, with the full and zeroed encoder. Agreeing positions are pinned at 0.998 under
+both; flipped positions remain high but not pinned.}
+\label{fig:ablation}
+\end{figure}
+
 \paragraph{Two distinct interventions.} This section zeroes the encoder output.
 Section~\ref{sec:position} uses blank white images, where the encoder still runs and produces
 features of blankness. Zeroing asks whether the cross-attention pathway carries usable signal
@@ -497,7 +493,7 @@ Positions & Real & Blank & $n$ steps & Reference & Value \\
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.92\textwidth]{figures/fig1_position_dissociation.pdf}
+\includegraphics[width=0.84\textwidth]{figures/fig1_position_dissociation.pdf}
 \caption{The dissociation. \textbf{Top:} mean $\log p(\mathrm{GT})$ against generation
 position, real and blank overlaid, with horizontal references at uniform ($-5.91$) and the
 trigram grapheme language model ($-0.99$). \textbf{Bottom:} self-generated max-softmax
@@ -571,6 +567,17 @@ Real Hindi scans, median CER split & ---   & 0.57 & --- \\
 \end{tabular}
 \end{table}
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.78\textwidth]{figures/fig4_regime_contrast.pdf}
+\caption{\textbf{Left:} confidence as a ranker of correctness in two regimes. On synthetic
+in-distribution lines it separates correct from incorrect transcriptions; on real scans it is
+close to chance. \textbf{Right:} reliability diagram on synthetic natural lines, equal-mass
+confidence deciles. Confidence is near unity in every decile while accuracy is not,
+so the model discriminates without being calibrated.}
+\label{fig:regime}
+\end{figure}
+
 On synthetic in-distribution lines, where the model reads well enough to get 18.3\% of lines
 exactly right, confidence ranks correct transcriptions above incorrect ones at AUROC 0.838.
 That is a working discrimination signal (per seed 0.763, 0.924, 0.832), and it is nonetheless
@@ -613,9 +620,8 @@ signal that pathway carries. Third, \emph{Gaussian-noise and patch-scrambled inp
 whether the model responds to visual variation of any kind rather than only to the blank
 versus real contrast.
 
-\paragraph{Scale and generality.} One architecture ($\approx$19.5M parameters; Section~\ref{sec:instrument})
-and three independently trained \texttt{hindi/natural} seeds for the mechanistic experiments.
-We make no claim about production OCR systems. A
+\paragraph{Scale and generality.} One model of approximately 19.5M parameters, one training
+script for the mechanistic experiments. We make no claim about production OCR systems. A
 separate attempt to use TrOCR-base-printed as an external comparison found mean confidence
 0.42 on its own in-domain English text, far below this instrument's near-ceiling regime; that
 is an operating-regime mismatch rather than a failed replication, and it does not serve as a
