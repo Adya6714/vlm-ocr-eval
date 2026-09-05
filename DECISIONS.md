@@ -1704,4 +1704,19 @@ ylabels/`labelpad`; (b) place `inset_axes` in data coordinates.
 **Why:** the pre-tightening figure was already submittable; remaining
 time is not for this layout.
 
+---
+
+### 72. Positive-control citation is a reported preprint, not independent verification
+
+**Decision:** Describe Singh (arXiv:2606.29213) as a single-author preprint
+that reports real-scan Devanagari competence, not as independently verified.
+State that the three remaining probes plus that control are inference-only
+and were scoped out by compute.
+
+**Alternatives considered:** (a) keep ``independently verified''; (b) drop
+the citation.
+
+**Why:** the reference is not peer-reviewed; it is the sole justification
+for the control choice.
+
 

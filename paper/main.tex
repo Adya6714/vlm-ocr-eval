@@ -606,8 +606,9 @@ as a demonstrated mechanism.
 demonstrated Devanagari reading ability on which the position-0 diagnostic returns a different
 answer. Without that contrast the diagnostic has no measured dynamic range, and a reader
 cannot distinguish a working instrument from a broken one on this evidence alone. The natural
-control is a model with independently verified real-scan Devanagari competence
-\citep{devanagari2026stresstest}, on which position-resolved teacher-forced
+control is a model reported competent on real Devanagari scans
+\citep{devanagari2026stresstest}, a single-author preprint rather than a
+peer-reviewed result, on which position-resolved teacher-forced
 $\log p(\mathrm{GT})$ is directly computable from open weights. We regard this as the next
 experiment rather than an optional extension.
 
@@ -622,6 +623,10 @@ behavioural claim that the model ignores the encoder into a direct measurement o
 signal that pathway carries. Third, \emph{Gaussian-noise and patch-scrambled inputs}, testing
 whether the model responds to visual variation of any kind rather than only to the blank
 versus real contrast.
+All three, together with the positive control above, are inference-only
+measurements requiring no further training. They were scoped out of the present
+phase by available compute rather than by design, and the probe implementations
+are released with the code.
 
 \paragraph{Scale and generality.} One model of approximately 19.5M parameters, one training
 script for the mechanistic experiments. We make no claim about production OCR systems. A
