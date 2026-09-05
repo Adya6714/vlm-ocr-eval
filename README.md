@@ -103,7 +103,7 @@ Committed jsonl: `data/probe_results/`. Local Colab zips/checkpoints: `_local_ar
 | [`IMPLEMENTATION.md`](./IMPLEMENTATION.md) | Module spec + status |
 | [`DECISIONS.md`](./DECISIONS.md) | Numbered design choices |
 | [`TODO.md`](./TODO.md) | Ordered work |
-| [`AGENTS.md`](./AGENTS.md) | Agent workflow |
+| [`paper/README.md`](./paper/README.md) | Preprint sources, build, figure status |
 | [`COLAB_RUNS.md`](./COLAB_RUNS.md) | What ran where |
 | [`docs/probe5b_analysis.md`](./docs/probe5b_analysis.md) | Probe 5b claim-facing write-up |
 | [`docs/probe3_curve_analysis.md`](./docs/probe3_curve_analysis.md) | Probe 3b curve write-up |

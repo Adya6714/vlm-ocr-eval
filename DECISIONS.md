@@ -1633,5 +1633,24 @@ fetched 2026-09-05.
 **Why:** the Overleaf `.bib` had TODO authors and memory-only venue lines.
 Live arXiv Atom + venue HTML, not recollection.
 
+---
+
+### 68. Single paper directory `paper/`
+
+**Decision:** rename the Overleaf tree from `NeurIPS 2026 Formatting
+Instructions/` to `paper/`; compile `main.tex` (not `neurips_2026.tex`);
+write publication PDFs only to `paper/figures/` (the generator default);
+gitignore LaTeX aux files; drop unmodified `checklist.tex` until a main-track
+submission.
+
+**Alternatives considered:** (a) keep the template folder name and set
+`--paper-dir` to that path; (b) keep two figure trees and copy after each
+regenerate; (c) keep `checklist.tex` unused.
+
+**Why:** (a) still has spaces in the path. (b) is how Fig 1 would go stale.
+(c) is 26 KB of unused template. Overleaf projects bound to the old folder
+name must be re-pointed.
+
+
 
 

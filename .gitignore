@@ -43,3 +43,13 @@ _local_archives/
 # Checkpoints and probe smoke artifacts
 checkpoints/
 /tmp/
+
+# LaTeX / Overleaf compile junk (keep paper/main.pdf if added on purpose)
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.synctex.gz
+*.fdb_latexmk
+*.fls

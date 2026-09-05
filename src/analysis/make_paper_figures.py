@@ -86,6 +86,8 @@ COLOR_SANTHALI = "#2ca02c"  # Forest green
 COLOR_KASHMIRI = "#9467bd"  # Purple
 COLOR_REF_UNIFORM = "#555555"
 COLOR_REF_TRIGRAM = "#222222"
+COLOR_REF_4GRAM = "#7f7f7f"
+COLOR_REF_5GRAM = "#8c564b"
 
 
 # ==============================================================================
@@ -208,7 +210,8 @@ def make_fig1_position_dissociation(
     Why this figure carries the paper:
       - Top panel: Mean teacher-forced log p(GT) collapses at position 0 to
         ~-24.5 (~10^-11 probability), then immediately recovers by position 2
-        to match trigram LM (-0.99) and 4-gram LM (-0.44) levels. Crucially,
+        to match trigram / 4-gram / 5-gram LM references (see
+        docs/paper_defensibility_stats.md §7). Crucially,
         real scans and solid blank images are visually indistinguishable.
       - Bottom panel: In self-generated mode, the model emits tokens with near-
         unit confidence (0.98–1.00) from the very first position.
@@ -286,17 +289,27 @@ def make_fig1_position_dissociation(
         gridspec_kw={"height_ratios": [1.4, 1.0], "hspace": 0.12}
     )
 
-    # Reference lines on top panel
+    # Rest-of-sequence grapheme LM means: docs/paper_defensibility_stats.md §7.
     uniform_logp = math.log(1.0 / v_grapheme)
     trigram_logp = -0.99
+    fourgram_logp = -0.44
+    fivegram_logp = -0.26
 
     ax1.axhline(
         uniform_logp, color=COLOR_REF_UNIFORM, linestyle=":", linewidth=1.0,
-        label=f"Uniform (1/{v_grapheme} = {uniform_logp:.2f})"
+        label=f"uniform, $1/|V|$ ({uniform_logp:.2f})"
     )
     ax1.axhline(
         trigram_logp, color=COLOR_REF_TRIGRAM, linestyle="-.", linewidth=1.0,
-        label=f"Trigram LM ({trigram_logp:.2f})"
+        label=f"trigram LM ({trigram_logp:.2f})"
+    )
+    ax1.axhline(
+        fourgram_logp, color=COLOR_REF_4GRAM, linestyle=(0, (3, 1, 1, 1)),
+        linewidth=1.0, label=f"4-gram LM ({fourgram_logp:.2f})"
+    )
+    ax1.axhline(
+        fivegram_logp, color=COLOR_REF_5GRAM, linestyle=(0, (6, 2, 1, 2)),
+        linewidth=1.0, label=f"5-gram LM ({fivegram_logp:.2f})"
     )
 
     # Top Panel Series: Real (solid + circle) and Blank (dashed + square)

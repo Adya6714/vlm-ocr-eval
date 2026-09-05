@@ -153,7 +153,8 @@ not invented templates.
   `docs/paper_defensibility_stats.md`, plot `docs/figures/gt_likelihood_position_curve.png`;
   probes scaffolded for mismatch TF, cross-attn norms, noise: DECISIONS.md #63, #64)
 - [x] Paper figures generator — BUILT — VERIFIED (`src/analysis/make_paper_figures.py`;
-  dual export: Figs 1–4 publication PDF in `paper/figures/` and Figs 1–5 working PNG
+  dual export: Figs 1–4 publication PDF in `paper/figures/` (compile root
+  `paper/main.tex`) and Figs 1–5 working PNG
   in `docs/figures/`; DECISIONS.md #64)
 - [!] Probes for mismatch TF, cross-attn norms, noise/scrambled: code authored and dry-run
   clean; local execution on CPU blocked by lack of checkpoint weights
@@ -186,8 +187,7 @@ not invented templates.
   mixed-effects Probe 1; kappa on a hand-review subsample; bootstrap
   CIs — not this phase
 - [ ] Keep `DECISIONS.md` current — append, don't rewrite
-      (latest: \#65--\#67 paper instrument specs, nine vs three checkpoints,
-      bibliography verification)
+      (latest: \#68 `paper/` as the single Overleaf/compile/figure root)
 - [x] Heavy scripts (OCR batches, training) written for Colab: one
   `--data-root`, no local-only paths, export into the IMPLEMENTATION.md
   output path (`run_baselines.py` + AGENTS.md; DECISIONS.md #32)

@@ -377,7 +377,8 @@ Claim B numbers to real Tier C (paper scope; DECISIONS.md #58).
       position-0 probability distribution & histogram, zero-shot script table fill,
       n-gram sweep up to 5-gram, Tier 2 breakdown, and equal-mass ECE (10 bins).
       Unified figure generator: `src/analysis/make_paper_figures.py`
-      → Figures 1–4 publication PDF in `paper/figures/` and Figures 1–5 working PNG
+      → Figures 1–4 publication PDF in `paper/figures/` (LaTeX
+      `\includegraphics` from `paper/main.tex`) and Figures 1–5 working PNG
       in `docs/figures/` (DECISIONS.md #64).
       Needs Colab (forward passes only; scripts dry-run OK locally, checkpoints not on laptop):
       - shuffled image–text TF: `src/probes/probe_gt_mismatch.py`
