@@ -222,11 +222,21 @@ def make_fig1_position_dissociation(
     Source data:
       - probe_gt_likelihood_hindi_natural_seed{s}.jsonl (step_log_p_gt)
       - probe5b_hindi_natural_seed{s}.jsonl (step_confidences)
+
+    Position means for 0–39 match Follow-Up 6 (docs/paper_defensibility_stats.md):
+    pooled token-step mean equals nanmean of per-seed means at each index.
+    The 40+ marker uses the same pooled mean as Follow-Up 6's Positions 40+ row.
+    n-gram reference ordinates are Analysis 7 rest-of-sequence means (pos ≥ 1).
     """
-    # 1. Collect teacher-forced log p(GT) up to pos 39
-    max_pos = 40
-    tf_data = {"real": defaultdict(lambda: defaultdict(list)), "blank": defaultdict(lambda: defaultdict(list))}
-    tf_counts = {"real": defaultdict(int), "blank": defaultdict(int)}
+    n_series = 40  # plotted indices 0..39
+    plus_x = 41.5  # visual gap after 39
+
+    tf_by_seed_pos = {
+        "real": defaultdict(lambda: defaultdict(list)),
+        "blank": defaultdict(lambda: defaultdict(list)),
+    }
+    tf_plus_all = {"real": [], "blank": []}
+    tf_plus_seed = {"real": defaultdict(list), "blank": defaultdict(list)}
 
     for s in seeds:
         path = results_root / f"probe_gt_likelihood_hindi_natural_seed{s}.jsonl"
@@ -235,13 +245,19 @@ def make_fig1_position_dissociation(
             if c not in ("real", "blank"):
                 continue
             steps = r.get("step_log_p_gt") or []
-            for pos, val in enumerate(steps[:max_pos]):
-                tf_data[c][s][pos].append(val)
-                tf_counts[c][pos] += 1
+            for pos, val in enumerate(steps):
+                if pos < n_series:
+                    tf_by_seed_pos[c][s][pos].append(val)
+                else:
+                    tf_plus_all[c].append(val)
+                    tf_plus_seed[c][s].append(val)
 
-    # 2. Collect self-generated step confidences up to pos 39
-    sg_data = {"hindi": defaultdict(lambda: defaultdict(list)), "blank": defaultdict(lambda: defaultdict(list))}
-    sg_counts = {"hindi": defaultdict(int), "blank": defaultdict(int)}
+    sg_by_seed_pos = {
+        "hindi": defaultdict(lambda: defaultdict(list)),
+        "blank": defaultdict(lambda: defaultdict(list)),
+    }
+    sg_plus_all = {"hindi": [], "blank": []}
+    sg_plus_seed = {"hindi": defaultdict(list), "blank": defaultdict(list)}
 
     for s in seeds:
         path = results_root / f"probe5b_hindi_natural_seed{s}.jsonl"
@@ -250,166 +266,226 @@ def make_fig1_position_dissociation(
             if c not in ("hindi", "blank"):
                 continue
             steps = r.get("step_confidences") or []
-            for pos, val in enumerate(steps[:max_pos]):
-                sg_data[c][s][pos].append(val)
-                sg_counts[c][pos] += 1
+            for pos, val in enumerate(steps):
+                if pos < n_series:
+                    sg_by_seed_pos[c][s][pos].append(val)
+                else:
+                    sg_plus_all[c].append(val)
+                    sg_plus_seed[c][s].append(val)
 
-    # Compute per-position curves
-    xs = np.arange(max_pos)
+    xs = np.arange(n_series)
 
-    # Top panel curves: TF log p(GT)
     tf_curves = {}
     for c in ("real", "blank"):
-        seed_means = np.zeros((len(seeds), max_pos))
+        seed_means = np.full((len(seeds), n_series), np.nan)
         for idx, s in enumerate(seeds):
-            for pos in range(max_pos):
-                vals = tf_data[c][s][pos]
-                seed_means[idx, pos] = np.mean(vals) if vals else np.nan
-        overall_mean = np.nanmean(seed_means, axis=0)
-        seed_min = np.nanmin(seed_means, axis=0)
-        seed_max = np.nanmax(seed_means, axis=0)
-        tf_curves[c] = {"mean": overall_mean, "min": seed_min, "max": seed_max}
+            for pos in range(n_series):
+                vals = tf_by_seed_pos[c][s][pos]
+                if vals:
+                    seed_means[idx, pos] = np.mean(vals)
+        plus_seed = [
+            np.mean(tf_plus_seed[c][s]) if tf_plus_seed[c][s] else np.nan
+            for s in seeds
+        ]
+        tf_curves[c] = {
+            "mean": np.nanmean(seed_means, axis=0),
+            "min": np.nanmin(seed_means, axis=0),
+            "max": np.nanmax(seed_means, axis=0),
+            # Follow-Up 6 40+ row: mean of every token-step with index ≥ 40
+            "plus": float(np.mean(tf_plus_all[c])) if tf_plus_all[c] else np.nan,
+            "plus_min": float(np.nanmin(plus_seed)),
+            "plus_max": float(np.nanmax(plus_seed)),
+        }
 
-    # Bottom panel curves: Self-gen confidence
     sg_curves = {}
     for c, target in [("hindi", "real"), ("blank", "blank")]:
-        seed_means = np.zeros((len(seeds), max_pos))
+        seed_means = np.full((len(seeds), n_series), np.nan)
         for idx, s in enumerate(seeds):
-            for pos in range(max_pos):
-                vals = sg_data[c][s][pos]
-                seed_means[idx, pos] = np.mean(vals) if vals else np.nan
-        overall_mean = np.nanmean(seed_means, axis=0)
-        seed_min = np.nanmin(seed_means, axis=0)
-        seed_max = np.nanmax(seed_means, axis=0)
-        sg_curves[target] = {"mean": overall_mean, "min": seed_min, "max": seed_max}
+            for pos in range(n_series):
+                vals = sg_by_seed_pos[c][s][pos]
+                if vals:
+                    seed_means[idx, pos] = np.mean(vals)
+        plus_seed = [
+            np.mean(sg_plus_seed[c][s]) if sg_plus_seed[c][s] else np.nan
+            for s in seeds
+        ]
+        sg_curves[target] = {
+            "mean": np.nanmean(seed_means, axis=0),
+            "min": np.nanmin(seed_means, axis=0),
+            "max": np.nanmax(seed_means, axis=0),
+            "plus": float(np.mean(sg_plus_all[c])) if sg_plus_all[c] else np.nan,
+            "plus_min": float(np.nanmin(plus_seed)),
+            "plus_max": float(np.nanmax(plus_seed)),
+        }
 
-    # Build figure: stacked panels sharing x-axis
     fig, (ax1, ax2) = plt.subplots(
-        2, 1, figsize=(5.5, 3.2), sharex=True,
-        gridspec_kw={"height_ratios": [1.4, 1.0], "hspace": 0.12}
+        2, 1, figsize=(5.5, 3.55), sharex=True,
+        gridspec_kw={"height_ratios": [1.55, 0.85], "hspace": 0.14}
     )
 
-    # Rest-of-sequence grapheme LM means: docs/paper_defensibility_stats.md §7.
+    # Follow-Up 6 header: uniform log(1/367); Analysis 7 rest-of-sequence n-grams.
     uniform_logp = math.log(1.0 / v_grapheme)
     trigram_logp = -0.99
-    fourgram_logp = -0.44
-    fivegram_logp = -0.26
+    fourgram_logp = -0.4371
+    fivegram_logp = -0.2598
 
     ax1.axhline(
         uniform_logp, color=COLOR_REF_UNIFORM, linestyle=":", linewidth=1.0,
-        label=f"uniform, $1/|V|$ ({uniform_logp:.2f})"
+        label="uniform, $1/|V|$"
     )
     ax1.axhline(
         trigram_logp, color=COLOR_REF_TRIGRAM, linestyle="-.", linewidth=1.0,
-        label=f"trigram LM ({trigram_logp:.2f})"
+        label="trigram LM"
     )
     ax1.axhline(
         fourgram_logp, color=COLOR_REF_4GRAM, linestyle=(0, (3, 1, 1, 1)),
-        linewidth=1.0, label=f"4-gram LM ({fourgram_logp:.2f})"
+        linewidth=1.0, label="4-gram LM"
     )
     ax1.axhline(
         fivegram_logp, color=COLOR_REF_5GRAM, linestyle=(0, (6, 2, 1, 2)),
-        linewidth=1.0, label=f"5-gram LM ({fivegram_logp:.2f})"
+        linewidth=1.0, label="5-gram LM"
     )
 
-    # Top Panel Series: Real (solid + circle) and Blank (dashed + square)
     ax1.plot(
         xs, tf_curves["real"]["mean"],
         color=COLOR_REAL, linestyle="-", marker="o", markersize=2.5, markevery=3,
-        linewidth=1.3, label="Real document image"
+        linewidth=1.3, label="real"
     )
     ax1.fill_between(
         xs, tf_curves["real"]["min"], tf_curves["real"]["max"],
-        color=COLOR_REAL, alpha=0.18, label="Seed range (real)"
+        color=COLOR_REAL, alpha=0.18, label="seed range (real)"
     )
-
     ax1.plot(
         xs, tf_curves["blank"]["mean"],
         color=COLOR_BLANK, linestyle="--", marker="s", markersize=2.5, markevery=3,
-        linewidth=1.3, label="Blank white control"
+        linewidth=1.3, label="blank"
     )
     ax1.fill_between(
         xs, tf_curves["blank"]["min"], tf_curves["blank"]["max"],
-        color=COLOR_BLANK, alpha=0.18, label="Seed range (blank)"
+        color=COLOR_BLANK, alpha=0.18, label="seed range (blank)"
     )
 
-    # Symlog axis for top panel
+    ax1.axvline(40.25, color="#bbbbbb", linewidth=0.7, linestyle=":")
+    ax1.errorbar(
+        [plus_x], [tf_curves["real"]["plus"]],
+        yerr=[[tf_curves["real"]["plus"] - tf_curves["real"]["plus_min"]],
+              [tf_curves["real"]["plus_max"] - tf_curves["real"]["plus"]]],
+        fmt="o", color=COLOR_REAL, markersize=3.5, capsize=2, linewidth=1.0,
+        label="_nolegend_",
+    )
+    ax1.errorbar(
+        [plus_x], [tf_curves["blank"]["plus"]],
+        yerr=[[tf_curves["blank"]["plus"] - tf_curves["blank"]["plus_min"]],
+              [tf_curves["blank"]["plus_max"] - tf_curves["blank"]["plus"]]],
+        fmt="s", color=COLOR_BLANK, markersize=3.5, capsize=2, linewidth=1.0,
+        linestyle="none", label="_nolegend_",
+    )
+
     ax1.set_yscale("symlog", linthresh=1.0)
     ax1.set_ylim(-28.0, 0.5)
     ax1.set_yticks([-25, -10, -5.91, -2, -0.99, 0])
     ax1.set_yticklabels(["−25", "−10", "−5.9", "−2", "−1.0", "0"])
     ax1.set_ylabel("Teacher-forced $\\log p(\\mathrm{GT})$")
 
-    # Annotate position 0 geometric mean
     real_geom = math.exp(tf_curves["real"]["mean"][0])
     blank_geom = math.exp(tf_curves["blank"]["mean"][0])
     ax1.annotate(
         f"Pos 0 geom mean:\nReal: ${real_geom:.1e}$\nBlank: ${blank_geom:.1e}$",
         xy=(0, tf_curves["real"]["mean"][0]),
-        xytext=(3.5, -23.0),
+        xytext=(4.2, -22.5),
         arrowprops=dict(arrowstyle="->", color="black", lw=0.7),
         fontsize=6.5,
         bbox=dict(boxstyle="round,pad=0.2", facecolor="white", edgecolor="0.7", alpha=0.9),
     )
 
-    # Bottom Panel: Self-generated max-softmax confidence
+    axins = ax1.inset_axes([0.34, 0.08, 0.38, 0.50])
+    axins.plot(
+        xs[2:], tf_curves["real"]["mean"][2:],
+        color=COLOR_REAL, linestyle="-", marker="o", markersize=1.8, markevery=4,
+        linewidth=1.0,
+    )
+    axins.plot(
+        xs[2:], tf_curves["blank"]["mean"][2:],
+        color=COLOR_BLANK, linestyle="--", marker="s", markersize=1.8, markevery=4,
+        linewidth=1.0,
+    )
+    axins.axhline(fourgram_logp, color=COLOR_REF_4GRAM, linestyle=(0, (3, 1, 1, 1)), linewidth=0.9)
+    axins.axhline(fivegram_logp, color=COLOR_REF_5GRAM, linestyle=(0, (6, 2, 1, 2)), linewidth=0.9)
+    axins.set_xlim(2, 39)
+    axins.set_ylim(-0.6, 0.0)
+    axins.set_xticks([2, 20, 39])
+    axins.tick_params(labelsize=5.5)
+    axins.set_title("pos 2–39", fontsize=6, pad=1)
+    for spine in axins.spines.values():
+        spine.set_visible(True)
+        spine.set_linewidth(0.6)
+
     ax2.plot(
         xs, sg_curves["real"]["mean"],
         color=COLOR_REAL, linestyle="-", marker="o", markersize=2.5, markevery=3,
-        linewidth=1.3, label="Real document (self-generated)"
+        linewidth=1.3, label="real (self-gen.)"
     )
     ax2.fill_between(
         xs, sg_curves["real"]["min"], sg_curves["real"]["max"],
         color=COLOR_REAL, alpha=0.18
     )
-
     ax2.plot(
         xs, sg_curves["blank"]["mean"],
         color=COLOR_BLANK, linestyle="--", marker="s", markersize=2.5, markevery=3,
-        linewidth=1.3, label="Blank white (self-generated)"
+        linewidth=1.3, label="blank (self-gen.)"
     )
     ax2.fill_between(
         xs, sg_curves["blank"]["min"], sg_curves["blank"]["max"],
         color=COLOR_BLANK, alpha=0.18
     )
+    ax2.axvline(40.25, color="#bbbbbb", linewidth=0.7, linestyle=":")
+    if not math.isnan(sg_curves["real"]["plus"]):
+        ax2.plot(
+            plus_x, sg_curves["real"]["plus"],
+            marker="o", color=COLOR_REAL, markersize=3.5, linestyle="none",
+        )
+    if not math.isnan(sg_curves["blank"]["plus"]):
+        ax2.plot(
+            plus_x, sg_curves["blank"]["plus"],
+            marker="s", color=COLOR_BLANK, markersize=3.5, linestyle="none",
+        )
 
-    ax2.set_ylim(0.0, 1.05)
-    ax2.set_yticks([0.0, 0.25, 0.5, 0.75, 1.0])
-    ax2.set_yticklabels(["0.0", "0.25", "0.50", "0.75", "1.00"])
+    ax2.set_ylim(0.5, 1.0)
+    ax2.set_yticks([0.5, 0.75, 1.0])
     ax2.set_ylabel("Self-gen. max-softmax")
     ax2.set_xlabel("Token generation position ($t$)")
+    ax2.set_xlim(-0.5, 43.0)
+    ax2.set_xticks([0, 10, 20, 30, 39, plus_x])
+    ax2.set_xticklabels(["0", "10", "20", "30", "39", "40+"])
 
-    # Shared x-axis limit and ticks
-    ax2.set_xlim(-0.5, 39.5)
-    tick_positions = [0, 5, 10, 15, 20, 25, 30, 35, 39]
-    ax2.set_xticks(tick_positions)
-
-    # Print per-position sample sizes n under the x-axis
-    sample_size_texts = [f"n={sg_counts['hindi'][p]}" for p in tick_positions]
-    for p, txt in zip(tick_positions, sample_size_texts):
-        ax2.text(
-            p, -0.28, txt, ha="center", va="top", fontsize=5.8, color="#555555",
-            transform=ax2.get_xaxis_transform()
-        )
-    ax2.text(
-        -0.5, -0.28, "Eval pool:", ha="right", va="top", fontsize=5.8, color="#555555",
-        transform=ax2.get_xaxis_transform()
+    handles, labels = [], []
+    for ax in (ax1, ax2):
+        h, lab = ax.get_legend_handles_labels()
+        for hi, li in zip(h, lab):
+            if li not in labels and not li.startswith("_"):
+                handles.append(hi)
+                labels.append(li)
+    fig.legend(
+        handles, labels,
+        loc="upper center", bbox_to_anchor=(0.5, -0.02),
+        ncol=4, frameon=True, framealpha=0.95, edgecolor="0.8",
+        fontsize=6.2, columnspacing=0.9, handlelength=1.8,
     )
 
-    # Legends & styling
-    ax1.legend(loc="lower right", fontsize=6.2, frameon=True, framealpha=0.9, edgecolor="0.8")
-    ax2.legend(loc="lower left", fontsize=6.2, frameon=True, framealpha=0.9, edgecolor="0.8")
-
     if mode == "working":
-        ax1.set_title("Figure 1: Position Dissociation — Likelihood Collapse vs Confidence Saturation", fontsize=8.5, pad=6)
+        ax1.set_title(
+            "Figure 1: Position Dissociation — Likelihood Collapse vs Confidence Saturation",
+            fontsize=8.5, pad=6,
+        )
         ax1.grid(True, linestyle=":", alpha=0.5)
         ax2.grid(True, linestyle=":", alpha=0.5)
+        axins.grid(True, linestyle=":", alpha=0.4)
     else:
-        # Publication styling: no title, crisp spines
         for ax in (ax1, ax2):
             ax.spines["top"].set_visible(False)
             ax.spines["right"].set_visible(False)
 
+    fig.subplots_adjust(bottom=0.22)
     return fig
 
 
