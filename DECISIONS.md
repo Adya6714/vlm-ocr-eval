@@ -1688,4 +1688,20 @@ lower-right inset still in the parent axes; (c) drop the inset.
 **Why:** (a) and (b) still occupy the mid-sequence $x$-range. (c) hides
 the 4-gram vs 5-gram split that the caption now names.
 
+---
+
+### 71. Revert Figure 1 layout to pre-tightening inset
+
+**Decision:** Restore `fig1_position_dissociation` PDF/PNG and
+`make_fig1_position_dissociation` from `33a96f0` (overlay
+`inset_axes([0.34, 0.08, 0.38, 0.50])`, legend below with
+`subplots_adjust(bottom=0.22)`). Keep the Section 8 lead-in and caption
+sentences that name the inset and the 40+ bucket.
+
+**Alternatives considered:** (a) keep the GridSpec side panel and fix
+ylabels/`labelpad`; (b) place `inset_axes` in data coordinates.
+
+**Why:** the pre-tightening figure was already submittable; remaining
+time is not for this layout.
+
 
