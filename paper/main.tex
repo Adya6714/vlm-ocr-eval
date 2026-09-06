@@ -31,7 +31,7 @@
 
 \begin{abstract}
 Confidence scores from document OCR models are used to decide which predictions a human
-should check. We audit that signal in a small ($\approx$19.5M parameter) encoder--decoder OCR
+should check. We audit that signal in a small ($\approx$19.6M parameter) encoder--decoder OCR
 model trained from scratch with no prior exposure to any Indic script, across three
 independently trained seeds. We first establish what the model can do: on held-out real Hindi
 scans its grapheme character error rate is 0.985, and on blank white images it is 0.949. The
@@ -44,8 +44,8 @@ more than eight orders of magnitude below what a text-only $n$-gram model fitted
 training corpus, which never sees an image, assigns to that same symbol. Self-generated
 max-softmax confidence at that position is nonetheless approximately 0.90. From position~2
 to~39 the model recovers to between $-0.15$ and $-0.48$, comparable to a position-matched 4- to
-5-gram grapheme prior and identical with and without the image; at positions 0, 1 and beyond 39
-it falls far below every $n$-gram baseline. Deleting the encoder changes the
+5-gram grapheme prior and near-identical with and without the image; at positions 0, 1 and
+beyond 39 it falls far below every $n$-gram baseline. Deleting the encoder changes the
 output distribution substantially (mean KL 1.075 nats, argmax flips at 8.2\% of decoding
 steps) but leaves its peak near unity: 96.7\% of the divergence sits at those flipped
 positions while agreeing positions retain a mean confidence of 0.998. Finally, the confidence signal is not globally broken. On
@@ -173,7 +173,7 @@ rather than claiming it.
 
 \section{The Instrument}
 
-A small encoder--decoder vision--language model, approximately 19.5M parameters. A Vision
+A small encoder--decoder vision--language model, approximately 19.6M parameters. A Vision
 Transformer encoder trained from random initialisation, with no pretrained weights, produces
 patch-level visual features. An autoregressive decoder cross-attends to those features and
 emits one grapheme cluster per step. The output vocabulary is defined over grapheme clusters,
@@ -312,6 +312,15 @@ domain shift alone predicts. The measurements that would separate them are Gauss
 patch-scrambled inputs, which test whether the model responds to visual variation of any kind.
 Both are listed in Section~\ref{sec:lim} and neither has been run, so we report the profile
 and do not claim to have excluded domain shift.
+
+We also state the training budget plainly, because it bears on this and a reader will reach it
+in Appendix~\ref{app:config} otherwise: 2{,}538 synthetic line crops, a single font family, no
+augmentation, 5{,}000 steps at a constant learning rate, and the final checkpoint taken without
+validation-based selection. That is a small budget, and a reader is entitled to conclude the
+model may simply never have acquired a visual representation transferable to real scans. We
+regard that as an open alternative rather than a settled one. What it does not explain on its
+own is why confidence is equally high on scripts the model has never seen and on blank pages,
+nor why the position profile is unchanged when the image is removed entirely.
 
 \section{Confidence Under Absent and Unfamiliar Input}
 
@@ -547,21 +556,22 @@ of positions on real input and 90.1\% on blank, with a mean peak probability of 
 model references fitted on the same 2{,}491 training lines (evaluation strings excluded,
 add-$\alpha$ smoothing with $\alpha = 0.01$) and evaluated \emph{within the same position
 buckets}, so model and reference are position-matched. The $n$-gram models never see an image.
-Uniform over $|V|\approx367$ is $-5.91$.}
+Token counts are over the 60 evaluation strings; instrument figures pool the same strings across
+three seeds. Uniform over $|V|\approx367$ is $-5.91$.}
 \label{tab:position}
 \setlength{\tabcolsep}{4pt}
-\begin{tabular}{lrr@{\hskip 14pt}rrrrr}
+\begin{tabular}{lrrr@{\hskip 12pt}rrrrr}
 \toprule
- & \multicolumn{2}{c}{Instrument} & \multicolumn{5}{c}{Position-matched $n$-gram reference} \\
-\cmidrule(r){2-3}\cmidrule(l){4-8}
-Positions & Real & Blank & 1-gram & 2-gram & 3-gram & 4-gram & 5-gram \\
+ & & \multicolumn{2}{c}{Instrument} & \multicolumn{5}{c}{Position-matched $n$-gram reference} \\
+\cmidrule(lr){3-4}\cmidrule(l){5-9}
+Positions & $n$ tok. & Real & Blank & 1-gram & 2-gram & 3-gram & 4-gram & 5-gram \\
 \midrule
-0      & $\mathbf{-24.54}$ & $-23.48$ & $-5.92$ & $-4.73$ & $-4.73$ & $-4.73$ & $-4.73$ \\
-1      & $\mathbf{-8.12}$  & $-8.63$  & $-5.08$ & $-1.38$ & $-1.14$ & $-1.14$ & $-1.14$ \\
-2--9   & $-0.48$ & $-0.41$ & $-4.11$ & $-2.25$ & $-0.88$ & $-0.38$ & $-0.31$ \\
-10--19 & $-0.15$ & $-0.16$ & $-4.18$ & $-2.34$ & $-1.06$ & $-0.45$ & $-0.26$ \\
-20--39 & $-0.27$ & $-0.28$ & $-4.13$ & $-2.24$ & $-0.98$ & $-0.43$ & $-0.20$ \\
-40+    & $\mathbf{-6.12}$  & $-6.28$  & $-4.17$ & $-2.28$ & $-0.99$ & $-0.40$ & $-0.18$ \\
+0      & 60  & $\mathbf{-24.54}$ & $-23.48$ & $-5.92$ & $-4.73$ & $-4.73$ & $-4.73$ & $-4.73$ \\
+1      & 60  & $\mathbf{-8.12}$  & $-8.63$  & $-5.08$ & $-1.38$ & $-1.14$ & $-1.14$ & $-1.14$ \\
+2--9   & 480 & $-0.48$ & $-0.41$ & $-4.11$ & $-2.25$ & $-0.88$ & $-0.38$ & $-0.31$ \\
+10--19 & 598 & $-0.15$ & $-0.16$ & $-4.18$ & $-2.34$ & $-1.06$ & $-0.45$ & $-0.26$ \\
+20--39 & 851 & $-0.27$ & $-0.28$ & $-4.13$ & $-2.24$ & $-0.98$ & $-0.43$ & $-0.20$ \\
+40+    & 348 & $\mathbf{-6.12}$  & $-6.28$  & $-4.17$ & $-2.28$ & $-0.99$ & $-0.40$ & $-0.18$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -570,11 +580,12 @@ Positions & Real & Blank & 1-gram & 2-gram & 3-gram & 4-gram & 5-gram \\
 \centering
 \includegraphics[width=0.84\textwidth]{figures/fig1_position_dissociation.pdf}
 \caption{The dissociation. \textbf{Top:} mean $\log p(\mathrm{GT})$ against generation
-position, real and blank overlaid, with horizontal references at uniform ($-5.91$), trigram
-($-0.99$), 4-gram ($-0.44$) and 5-gram ($-0.26$) grapheme language models.
+position, real and blank overlaid. The horizontal reference lines drawn here are
+\emph{whole-tail} $n$-gram means (trigram $-0.99$, 4-gram $-0.44$, 5-gram $-0.26$) computed
+over all positions $\geq 1$; Table~\ref{tab:position} gives the position-matched references
+that the argument in this section uses, and those differ per bucket. Uniform is $-5.91$.
 The inset zooms positions 2--39 to separate the 4-gram and 5-gram references, and the
-rightmost point aggregates positions 40 and beyond over 1{,}134 steps per condition and is a
-categorical bin rather than a position on the continuous axis. The vertical axis of the top
+rightmost point aggregates positions 40 and beyond and is a categorical bin rather than a position on the continuous axis. The vertical axis of the top
 panel is symmetric-log and therefore non-uniform: the interval from $-25$ to $-10$ occupies
 comparable space to the interval from $-1$ to $0$, which compresses the region containing the
 position-0 collapse. \textbf{Bottom:} self-generated max-softmax confidence at the same
@@ -586,7 +597,7 @@ between real and blank input.}
 
 Five observations, in order of importance.
 
-\paragraph{1. Position 0 is far below chance, not merely uncertain.} The geometric mean
+\paragraph{1. Position 0 is far below a text-only baseline, not merely uncertain.} The geometric mean
 probability assigned to the correct first symbol is $2.2\times10^{-11}$ on real images and
 $6.3\times10^{-11}$ on blank. The model is not undecided at position 0; it is
 near-deterministically committed to a specific wrong symbol, identically whether the image
@@ -622,8 +633,9 @@ only possible information source. Per seed, real: 0.884 / 0.906 / 0.916; blank: 
 / 0.787. The blank column is not stable across seeds and its pooled value should not be quoted
 alone.
 
-\paragraph{3. Position 1 is also below chance.} At $-8.1$ and $-8.6$, the second generated
-symbol remains more than two nats below the uniform reference. The failure is not confined to
+\paragraph{3. Position 1 is also far below the text-only baseline.} At $-8.12$ and $-8.63$ the
+second generated symbol sits 7.0 nats (real) and 7.5 nats (blank) below the best
+position-matched $n$-gram reference for that position ($-1.14$). The failure is not confined to
 a single step; recovery begins at position 2.
 
 \paragraph{4. In the middle of the sequence the model is comparable to a high-order grapheme
@@ -633,6 +645,16 @@ prior.} Against position-matched references (Table~\ref{tab:position}), position
 ($-0.27$) sit between the 4-gram and 5-gram references. So mid-sequence the instrument is in
 the same band as a 4- to 5-gram grapheme prior, occasionally above it, and it gets there
 without reference to the image, since the blank column matches the real column at every bucket.
+
+One property of this reference deserves stating. The training text is drawn from the same
+GlotOCR Hindi string pool that the evaluation strings come from, resampled into synthetic pages,
+and the $n$-gram models are fitted on that pool. A 5-gram grapheme model reaching $-0.18$
+(roughly 0.84 per token) on about 2{,}500 lines implies that contexts recur heavily, which
+resampling produces by construction. The 5-gram reference is therefore closer to a memorisation
+baseline than to a generic language prior. This cuts in the direction of our claim rather than
+against it, since matching a memorising model mid-sequence is a stronger indictment than
+matching a generic one, but the comparison should be read with that in mind. The same
+repetition may also bound the 18.3\% line accuracy reported in Section~\ref{sec:works}.
 
 We stop short of the exclusive claim. Matched mean log-likelihood does not establish that two
 predictive distributions agree, and establishing that the decoder is a high-order $n$-gram
@@ -645,7 +667,7 @@ per step but not the full softmax, so that comparison is not available here.
 position-matched view makes the shape of the failure precise, and it is not the shape a
 low-order-$n$-gram account predicts. At position~0 the instrument is 19.8 nats below the best
 $n$-gram reference; at position~1 it is 7.0 nats below; and beyond position~39 it is 5.9 nats
-below the 5-gram reference, on 1{,}134 steps per condition. The $n$-gram baselines are
+below the 5-gram reference, on 348 evaluation tokens. The $n$-gram baselines are
 essentially flat across buckets (the 5-gram reference moves only from $-0.31$ to $-0.18$), so
 the instrument's profile is not tracking any property of the text. It matches a text-only prior
 in the middle of the sequence and collapses far beneath one at both ends. We place limited
@@ -721,8 +743,8 @@ demonstrated Devanagari reading ability on which the position-0 measurement retu
 answer. Without that contrast the measurement has no established dynamic range, and a reader
 cannot distinguish a working instrument from a broken one on this evidence alone. The control
 is already available and we did not use it: Surya, one of the engines in
-Table~\ref{tab:tier1}, attains 46.8\% exact match on the same real Devanagari scans, is an
-open-weight encoder--decoder architecture in the same family as our instrument, and therefore
+Table~\ref{tab:tier1}, attains 46.8\% exact match on real Indic scans including Devanagari, is
+an open-weight encoder--decoder architecture in the same family as our instrument, and therefore
 admits position-resolved teacher-forced $\log p(\mathrm{GT})$, encoder zeroing and blank-input
 evaluation on exactly the protocol used here. Running the full suite on it is the next
 experiment rather than an optional extension. Broader benchmarks of real-scan Devanagari
@@ -754,12 +776,12 @@ versus real contrast; these are also what would separate visual bypass from the 
 explanation raised in Section~\ref{sec:cer}. A fourth would make Section~\ref{sec:position}'s
 $n$-gram claim exclusive rather than merely consistent: per-position $\mathrm{KL}$ between the
 model and the 5-gram reference, and the rate at which their argmaxes coincide. This requires
-retaining the full per-step softmax, which the committed probe outputs do not. All three, together with the positive control above, are inference-only
-measurements requiring no further training. They were scoped out of the present phase by
+retaining the full per-step softmax, which the committed probe outputs do not. All four, together with the positive control above, are inference-only measurements requiring
+no further training. They were scoped out of the present phase by
 available compute rather than by design, and the probe implementations are released with the
 code.
 
-\paragraph{Scale and generality.} One model of approximately 19.5M parameters, one training
+\paragraph{Scale and generality.} One model of approximately 19.6M parameters, one training
 script for the mechanistic experiments. We make no claim about production OCR systems. A
 separate attempt to use TrOCR-base-printed as an external comparison found mean confidence
 0.42 on its own in-domain English text, far below this instrument's near-ceiling regime; that
@@ -801,13 +823,15 @@ Section~\ref{sec:works} is what keeps this from being a purely negative result.
 
 Three implications follow from the position profile, if it holds under a positive control.
 Visual dependence in autoregressive transcription is concentrated at the start of the
-sequence: positions 2 onward are recoverable from the prefix alone at 62--86\% per-token
-likelihood, above a trigram baseline, and identically so with no image at all. Any confidence
+sequence: positions 2 to 39 are recoverable from the prefix alone at 62--86\% per-token
+likelihood, in the band of a position-matched 4- to 5-gram grapheme prior, and near-identically
+so with no image at all. Any confidence
 score averaged uniformly over the generated sequence therefore averages the one
 vision-dependent position against many that are not, diluting exactly the signal a gating
 system needs; confidence measures for transcription should weight early positions. The
 diagnosis is also cheap: two forward passes and ground-truth text give the position profile,
-with no probe training, no auxiliary labels and no comparison model. Where probe-based
+with no probe training and no auxiliary labels. Interpreting it against a reference model is a
+separate requirement, and one we have not met (Section~\ref{sec:lim}). Where probe-based
 approaches \citep{khanmohammadi2026bicr,yao2025abstain,kogilathota2026halp} detect
 ungroundedness by learning it, the position-0 test asks a structural question with a known
 answer under grounding. And the failure mode is a training pathology that standard monitoring
@@ -817,8 +841,9 @@ reports mean confidence of 0.99.
 We audited a small, fully exposure-controlled document OCR model and found that it does not
 read real document images. We localised the failure to the start of the generated sequence,
 where the ground-truth symbol is never the model's argmax across 180 sequences and receives a
-geometric mean probability of order $10^{-11}$, identically with and without visual content,
-while the model's own selected symbol at that position receives 0.90. We showed that deleting the
+geometric mean probability of order $10^{-11}$, more than eight orders of magnitude below what a
+text-only $n$-gram model fitted on the same corpus assigns it, identically with and without
+visual content, while the model's own selected symbol at that position receives 0.90. We showed that deleting the
 encoder alters the output distribution's shape substantially while leaving its peak near
 unity, so that the quantity read as confidence is close to invariant under precisely the
 intervention that removes visual information. And we showed that the same confidence signal
