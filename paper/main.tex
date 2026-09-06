@@ -35,16 +35,15 @@ should check. We audit that signal in a small ($\approx$19.5M parameter) encoder
 model trained from scratch with no prior exposure to any Indic script, across three
 independently trained seeds. We first establish what the model can do: on held-out real Hindi
 scans its grapheme character error rate is 0.985, and on blank white images it is 0.949. The
-model does not read real document images, and the real--blank difference does not survive a
-seed-clustered paired test ($t = 0.257$, $p = 0.822$). We then localise the
+model does not read real document images, and real and blank input are not distinguishable at
+three seeds ($t = 0.257$, $p = 0.822$, 2 df). We then localise the
 failure. Under teacher forcing the ground-truth token is never the model's argmax at
 generation position~0 (0 of 180 sequences), and the geometric mean probability assigned to the
 correct first symbol is $2.2\times10^{-11}$ on real images and $6.3\times10^{-11}$ on blank,
-roughly eight orders of magnitude below the uniform value of $2.7\times10^{-3}$ over a
-367-symbol vocabulary, while self-generated max-softmax confidence at that same position is
-approximately 0.90. From position~2 onward the model recovers to a mean log-likelihood between
-$-0.15$ and $-0.48$, above a trigram grapheme language model baseline of $-0.99$, and does so
-identically whether the image contains text or nothing. Deleting the encoder changes the
+while self-generated max-softmax confidence at that same position is approximately 0.90. From
+position~2 to~39 the model recovers to a mean log-likelihood between $-0.15$ and $-0.48$,
+matching a 4- to 5-gram grapheme language model, and does so identically whether the image
+contains text or nothing; beyond position~39 it falls below the uniform reference again. Deleting the encoder changes the
 output distribution substantially (mean KL 1.075 nats, argmax flips at 8.2\% of decoding
 steps) but leaves its peak near unity: 96.7\% of the divergence sits at those flipped
 positions while agreeing positions retain a mean confidence of 0.998. Finally, the confidence signal is not globally broken. On
@@ -52,8 +51,10 @@ synthetic in-distribution lines, where the model attains 18.3\% line accuracy, c
 discriminates correct from incorrect transcriptions at AUROC 0.838 while remaining badly
 miscalibrated at a mean of 0.994; on real scans, where accuracy is zero, it carries no usable
 correctness signal. We read this as a model whose certainty tracks the linguistic plausibility
-of what it generates rather than the state of its own perception, and we report the
-position-resolved likelihood profile as a cheap diagnostic for the failure mode.
+of what it generates rather than the state of its own perception. Because visual dependence in
+transcription is concentrated at the start of the sequence, a confidence score averaged
+uniformly over generated tokens dilutes the one position that carries it; confidence measures
+for transcription should weight early positions rather than averaging uniformly.
 \end{abstract}
 
 \section{Introduction}
@@ -66,7 +67,7 @@ That assumption is unreliable for large vision--language models. Recent work est
 \emph{visual ungroundedness}: models produce fluent, confident, sometimes correct output
 driven entirely by language priors, with the image contributing nothing, and existing
 confidence estimators cannot detect this \citep{khanmohammadi2026bicr}. Related work describes
-the same hazard as perception bypass or visual shortcut \citep{videoworldmodels2026}, and
+the same hazard as perception bypass or visual shortcut \citep{xu2026bypass}, and
 multilingual OCR benchmarks report that failure on unfamiliar scripts is not silent: models
 hallucinate fluent text in familiar scripts rather than abstaining
 \citep{kargaran2026glotocr}.
@@ -79,10 +80,15 @@ The question has a structure here that short-answer visual question answering do
 When a decoder transcribes a line token by token, every position after the first can draw on
 two sources: the image, through cross-attention, and the preceding tokens, through the
 language prior over the training script. These are confounded. Position~0 is not. At
-position~0 there is no prefix, so any probability placed on the correct first symbol must have
-come from the image. Position~0 is a single, theoretically motivated test point for visual
-dependence requiring no auxiliary labels beyond the ground-truth text, no trained detector and
-no comparison model.
+position~0 there is no prefix, so the only \emph{input-dependent} source of information is the
+image; whatever the decoder contributes is a fixed marginal over sequence-initial symbols that
+cannot vary with the input. Position~0 therefore isolates visual dependence in a way no later
+position does, provided the comparison is made against the model's own distribution at that
+position rather than against a uniform prior. Measuring it requires only ground-truth text and
+two forward passes: no auxiliary labels, no trained detector, no second model at measurement
+time. \emph{Interpreting} the measurement does require a reference point from a model with
+demonstrated reading ability, and Section~\ref{sec:lim} reports what we can and cannot say
+without one.
 
 We build a small encoder--decoder OCR model from scratch rather than fine-tuning an existing
 checkpoint, so that ``this model has never seen this script'' is a claim we can make rather
@@ -105,9 +111,10 @@ output distribution that visual ablation leaves near ceiling.
 (4)~We identify a regime in which the same confidence signal does discriminate correctness
 (AUROC 0.838 at 18.3\% accuracy) while remaining uncalibrated, giving a within-instrument
 contrast rather than a purely negative result.
-(5)~We show that 16.9--20.4\% of non-exact predictions from off-the-shelf OCR engines on real
-Devanagari scans are Unicode encoding variants rather than misreadings, a precondition for any
-grounding claim measured against exact-match references.
+(5)~We show that \emph{at least} 16.9--20.4\% of non-exact predictions from off-the-shelf OCR
+engines on real Devanagari scans are Unicode encoding variants rather than misreadings, on the
+two engines with adequate sample size and with a large unreviewed remainder, a precondition for
+any grounding claim measured against exact-match references.
 
 \paragraph{What this paper does not claim.} We did not discover that confidence fails to track
 visual grounding; that is prior work \citep{khanmohammadi2026bicr}. We make no claim about
@@ -119,11 +126,23 @@ Section~\ref{sec:lim} states what that costs.
 
 \paragraph{Visual bypass and language priors.} That a multimodal model can answer without
 using the image originates in visual question answering and has been rediscovered repeatedly.
-Contemporary work reports blind-image ablations in which replacing informative frames with
-blank ones leaves accuracy unchanged or improved, and treats this as a documented hazard
-rather than a novel observation \citep{videoworldmodels2026}. A blind language model ignoring
+Contemporary work treats the existence of such perception bypass as a documented hazard rather
+than a novel observation \citep{xu2026bypass}. A blind language model ignoring
 image evidence has been shown to outperform prior art on some image--text retrieval benchmarks
-\citep{lin2024visualgptscore}.
+\citep{lin2024priors}.
+
+\paragraph{Positional structure of visual dependence.} That visual reliance is not uniform
+across generation positions is established. M3ID \citep{favero2024m3id} shows that as more
+tokens are generated the reliance on the visual prompt decreases, names this \emph{conditioning
+dilution}, and builds a decoder around a per-position comparison of the output distribution
+with and without the image. First Logit Boosting \citep{ha2026flb} reports that the first
+generated token carries the strongest visual evidence and reuses its logit as a persistent
+anchor against the same decay. Both operate on large vision--language models that read their
+inputs, and both treat the positional structure as a means to a decoding method. We study the
+boundary case instead: a model with no usable visual representation, where the gradient those
+works describe has an empty source. Our question is not whether visual reliance declines with
+position, which is known, but what the profile looks like when there is no visual reliance to
+decline from, and whether the confidence signal tracks it.
 
 \paragraph{Confidence estimation under ungroundedness.} BICR \citep{khanmohammadi2026bicr} is
 the closest prior work. It establishes that existing confidence estimators cannot separate
@@ -135,7 +154,7 @@ not offer a better estimator; we offer a cheaper diagnosis of a specific structu
 
 \paragraph{Abstention and probing in OCR.} Latent-state and attention probes have been trained
 for OCR-error abstention, including visual-focused probes motivated by the informativeness of
-attention to visual tokens \citep{readingbetweenlines2025}. HALP predicts hallucination risk
+attention to visual tokens \citep{yao2025abstain}. HALP predicts hallucination risk
 before generation from internal representations, reaching up to 0.93 AUROC on several models
 \citep{kogilathota2026halp}. Both require supervision; the diagnostic here does not.
 
@@ -144,7 +163,7 @@ hallucinate fluent text in familiar scripts rather than abstaining, with even th
 transcribing under 8\% of low-resource-tier sentences below 5\% CER
 \citep{kargaran2026glotocr}. A Devanagari stress-test benchmark finds that synthetic renders
 badly overstate quality, that nine of ten evaluated systems collapse on real scans, and that
-English OCR strength does not predict Indic performance \citep{devanagari2026stresstest}.
+English OCR strength does not predict Indic performance \citep{singh2026devanagari}.
 \texttt{grapheme-kit} extends evaluation metrics from Unicode code points to grapheme clusters
 and shows via an OCR case study that grapheme-level metrics evaluate complex scripts more
 faithfully \citep{nisfer2026graphemekit}; Section~\ref{sec:scoring} applies that argument
@@ -267,7 +286,20 @@ fails on real scans of its own training script as thoroughly as on scripts it ha
 The consequence for framing is direct. We cannot claim a dissociation between reading ability
 and confidence, because on real scans there is no reading ability to dissociate from. What we
 can claim, and what follows, is a mechanistic account of how a model in this state produces
-near-ceiling confidence, and a diagnostic that detects the state.
+near-ceiling confidence, and a measurement that localises it.
+
+\paragraph{Bypass or domain shift?} A reader may object that this instrument was trained only
+on synthetic renders, so on real scans it may have no usable visual representation at all. That
+is domain shift rather than bypass, and the two are different failures. Our own evidence cuts
+both ways. Against bypass: zeroing the encoder changes the argmax at 8.2\% of decoding steps
+(Section~\ref{sec:ablation}), so the encoder does contribute something. For bypass: the
+position profile is near-identical on real and blank input at every bucket
+(Section~\ref{sec:position}), and confidence on two scripts the model has never seen is
+indistinguishable from in-distribution confidence (Table~\ref{tab:conf}), neither of which
+domain shift alone predicts. The measurements that would separate them are Gaussian-noise and
+patch-scrambled inputs, which test whether the model responds to visual variation of any kind.
+Both are listed in Section~\ref{sec:lim} and neither has been run, so we report the profile
+and do not claim to have excluded domain shift.
 
 \section{Confidence Under Absent and Unfamiliar Input}
 
@@ -283,10 +315,10 @@ images, not 180 independent images (Section~\ref{sec:variance}).}
 \toprule
 Condition & Seed 0 & Seed 1 & Seed 2 & Pooled \\
 \midrule
-Hindi, real  & 0.982 $\pm$ 0.020 & 0.990 $\pm$ 0.008 & 0.990 $\pm$ 0.012 & 0.9873 \\
-Blank white  & 0.981 $\pm$ 0.012 & 0.993 $\pm$ 0.008 & 0.982 $\pm$ 0.015 & 0.9857 \\
-Ol Chiki     & --- & --- & --- & 0.9857 \\
-Perso-Arabic & --- & --- & --- & 0.9894 \\
+Hindi, real ($n{=}60$)  & 0.9824 $\pm$ 0.0198 & 0.9897 $\pm$ 0.0085 & 0.9899 $\pm$ 0.0119 & 0.9873 \\
+Blank white ($n{=}60$)  & 0.9814 $\pm$ 0.0125 & 0.9933 $\pm$ 0.0084 & 0.9824 $\pm$ 0.0154 & 0.9857 \\
+Ol Chiki ($n{=}100$)    & 0.9848 $\pm$ 0.0139 & 0.9847 $\pm$ 0.0117 & 0.9876 $\pm$ 0.0120 & 0.9857 \\
+Perso-Arabic ($n{=}20$) & 0.9901 $\pm$ 0.0072 & 0.9894 $\pm$ 0.0109 & 0.9887 $\pm$ 0.0083 & 0.9894 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -307,9 +339,10 @@ equivalence test as descriptive and rest no claim on it.
 \centering
 \includegraphics[width=0.76\textwidth]{figures/fig3_confidence_distributions.pdf}
 \caption{Per-image mean confidence by condition, faceted by seed, with the seed mean and
-standard deviation overlaid. The four distributions occupy the same narrow band in every
-seed. Seed-to-seed movement of the band is larger than any between-condition separation
-within a seed.}
+standard deviation overlaid. Note the truncated vertical axis, $[0.92, 1.00]$: the point of the
+figure is the narrowness of the band, not its position. The four distributions occupy the same
+band in every seed, and seed-to-seed movement of the band exceeds any between-condition
+separation within a seed.}
 \label{fig:confdist}
 \end{figure}
 
@@ -369,23 +402,31 @@ $\approx$14\% residual. Which image is presented explains 9\% of confidence vari
 input and none of it on blank, while explaining most of the variance in a quantity that
 genuinely depends on the input. This is independent evidence that the confidence signal is not
 responding to input content, and it means pooled standard errors in Table~\ref{tab:conf}
-should be read as seed-clustered.
+should be read as seed-clustered. Two caveats on these components. Greedy decoding is
+deterministic, so there is one observation per image--seed cell and the interaction is not
+separable from noise; what we label residual \emph{is} the image$\times$seed interaction. And a
+seed component estimated from three levels carries almost no precision. We therefore read the
+9\% versus 0\% contrast as suggestive rather than as an independent test.
 
 \section{Mechanism I: Ablation Moves the Distribution's Shape, Not Its Peak}
 \label{sec:ablation}
 
 We replace the encoder's output with a zero tensor of identical shape immediately before the
 decoder's cross-attention consumes it, and compare against the unmodified model on the same
-real images.
+real images. Divergences are reported as $\mathrm{KL}(p_{\text{full}} \,\|\, p_{\text{zero}})$
+throughout.
 
 \begin{table}[h]
 \small
 \centering
-\caption{Encoder zeroing. Image-level aggregates (left) and a step-level decomposition of the
-KL into positions where the argmax agrees between the full and zeroed model and positions
-where it flips (right). The two flip measures differ by construction: top-1 agreement is a
-per-image mean (12.1\% disagreement pooled), while the flip rate is over all 4{,}990 decoding
-steps (8.2\% pooled).}
+\caption{Encoder zeroing, $\mathrm{KL}(p_{\text{full}}\,\|\,p_{\text{zero}})$ throughout.
+Image-level aggregates (left) and a step-level decomposition of the KL into positions where the
+argmax agrees between the full and zeroed model and positions where it flips (right). The two
+aggregations are not interchangeable and do not reconstruct one another arithmetically: the
+image-level columns average per-image means, weighting short and long sequences equally, while
+the step-level columns average over all 4{,}990 decoding steps. Top-1 agreement is
+correspondingly a per-image mean (12.1\% disagreement pooled) and the flip rate is per step
+(8.2\% pooled).}
 \label{tab:ablation}
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{lrrr@{\hskip 16pt}rrrr}
@@ -431,10 +472,11 @@ confidence at flipped positions (0.89) is meaningfully below the agreeing-positi
 \centering
 \includegraphics[width=0.80\textwidth]{figures/fig2_ablation_kl.pdf}
 \caption{\textbf{Left:} share of total ablation KL contributed by agreeing versus
-argmax-flipping decoding steps, per seed and pooled. Flipped steps are 8.2\% of the total but
-carry 96.7\% of the divergence. \textbf{Right:} mean top-1 confidence at agreeing and flipped
-positions, with the full and zeroed encoder. Agreeing positions are pinned at 0.998 under
-both; flipped positions remain high but not pinned.}
+argmax-flipping decoding steps, per seed and pooled. The bars encode share of KL; the
+percentages in the legend are share of \emph{steps}. Flipped steps are 8.2\% of steps but carry
+96.7\% of the divergence. \textbf{Right:} mean top-1 confidence at agreeing and flipped
+positions, with the full and zeroed encoder. Agreeing positions are pinned at 0.998 under both;
+flipped positions remain high but not pinned.}
 \label{fig:ablation}
 \end{figure}
 
@@ -498,8 +540,12 @@ Positions & Real & Blank & $n$ steps & Reference & Value \\
 position, real and blank overlaid, with horizontal references at uniform ($-5.91$), trigram
 ($-0.99$), 4-gram ($-0.44$) and 5-gram ($-0.26$) grapheme language models.
 The inset zooms positions 2--39 to separate the 4-gram and 5-gram references, and the
-rightmost point aggregates positions 40 and beyond over 1{,}134 steps per condition.
-\textbf{Bottom:} self-generated max-softmax confidence at the same positions. Correctness
+rightmost point aggregates positions 40 and beyond over 1{,}134 steps per condition and is a
+categorical bin rather than a position on the continuous axis. The vertical axis of the top
+panel is symmetric-log and therefore non-uniform: the interval from $-25$ to $-10$ occupies
+comparable space to the interval from $-1$ to $0$, which compresses the region containing the
+position-0 collapse. \textbf{Bottom:} self-generated max-softmax confidence at the same
+positions, axis clipped to $[0.5, 1.0]$. Correctness
 collapses at positions 0--1 while confidence does not, and both curves are near-identical
 between real and blank input.}
 \label{fig:position}
@@ -509,12 +555,23 @@ Five observations, in order of importance.
 
 \paragraph{1. Position 0 is far below chance, not merely uncertain.} The geometric mean
 probability assigned to the correct first symbol is $2.2\times10^{-11}$ on real images and
-$6.3\times10^{-11}$ on blank, against a uniform value of $2.725\times10^{-3}$: roughly eight
-orders of magnitude below chance. The model is not undecided at position 0; it is
+$6.3\times10^{-11}$ on blank. The model is not undecided at position 0; it is
 near-deterministically committed to a specific wrong symbol, identically whether the image
 contains text or nothing. We report the geometric mean because the arithmetic mean of
 $p(\mathrm{GT})$ is dominated by a small number of less-severe cases and is not representative
-of the distribution; Appendix~\ref{app:pos0} gives the per-seed figures.
+of the distribution; Appendix~\ref{app:pos0} gives the per-seed figures and the histogram.
+
+We deliberately do not anchor this on the uniform value of $2.725\times10^{-3}$. Self-generated
+max-softmax at position~0 is 0.902 (next paragraph), so the position-0 distribution is nowhere
+near uniform, and in a distribution that peaked almost any non-argmax symbol will fall orders of
+magnitude below $1/|V|$. A comparison against uniform would therefore partly measure the
+sharpness of the position-0 softmax rather than a disfavouring of the truth specifically. The
+comparisons that would settle this are the probability the model assigns to an arbitrary
+\emph{wrong} symbol at position~0 and the rank of the ground-truth symbol in that distribution;
+both are scale-free with respect to softmax sharpness, and neither has been computed. We list
+them in Section~\ref{sec:lim} and restrict the claim here to what the paired quantities support:
+the correct symbol receives order $10^{-11}$ while the model's own selected symbol receives
+0.90, and this holds identically with and without visual content.
 
 \paragraph{2. Confidence at that position is near ceiling.} Self-generated max-softmax at
 position 0 is 0.902 pooled on real input and 0.895 on blank. Position 0 is therefore the point
@@ -528,15 +585,24 @@ symbol remains more than two nats below the uniform reference. The failure is no
 a single step; recovery begins at position 2.
 
 \paragraph{4. In the middle of the sequence the model behaves as a high-order grapheme
-$n$-gram model, and nothing more.} Fitting $n$-gram grapheme language models on the training
-text with the evaluation strings excluded gives rest-of-sequence means of $-4.17$ (unigram),
-$-2.25$ (bigram), $-0.99$ (trigram), $-0.44$ (4-gram) and $-0.26$ (5-gram). The instrument's
-positions 2--9 ($-0.48$) sit essentially on the 4-gram reference, and positions 20--39
-($-0.27$) essentially on the 5-gram reference. We therefore do \emph{not} claim the decoder
-has learned something beyond local $n$-gram statistics; the honest reading is that its
-mid-sequence behaviour is well approximated by a 4- to 5-gram grapheme prior, achieved
-without reference to the image, since the blank column matches the real column at every
-bucket.
+$n$-gram model, and nothing more.} Fitting $n$-gram grapheme language models on 2{,}491 training lines with all 60 evaluation strings
+excluded (add-$\alpha$ smoothing, $\alpha = 0.01$) gives rest-of-sequence means of $-4.17$
+(unigram), $-2.25$ (bigram), $-0.99$ (trigram), $-0.44$ (4-gram) and $-0.26$ (5-gram). The
+instrument's positions 2--9 ($-0.48$) sit close to the 4-gram reference and positions 20--39
+($-0.27$) close to the 5-gram reference. We therefore do \emph{not} claim the decoder has
+learned something beyond local $n$-gram statistics, and it does whatever it does without
+reference to the image, since the blank column matches the real column at every bucket.
+
+Two limits on how far this comparison can be pushed. The $n$-gram references are whole-tail
+means over all positions $\geq 1$, while the model's figures are bucket means, so the numerical
+agreement at 4-gram and 5-gram is suggestive rather than position-matched; the references
+themselves almost certainly vary across buckets as the model's do. And matched mean
+log-likelihood does not establish that two predictive distributions agree. Establishing that
+the decoder is a high-order $n$-gram model \emph{and nothing more} would require a
+distributional comparison, for instance per-position $\mathrm{KL}$ between the model and the
+5-gram reference together with the rate at which their argmaxes coincide. We have not run
+either, and we state the claim at the strength the evidence carries: mid-sequence likelihood is
+consistent with a 4- to 5-gram grapheme prior and is not evidence of anything sharper.
 
 \paragraph{5. A second collapse past position 40.} Beyond position 39 the mean falls to
 $-6.12$ (real) and $-6.28$ (blank), below the uniform reference, on 1{,}134 steps per
@@ -554,18 +620,22 @@ simply broken. It is not, and the contrast is informative.
 \begin{table}[h]
 \small
 \centering
-\caption{Confidence as a predictor of correctness across evaluation regimes. AUROC is against
-line-level exact correctness except in the final row, which uses a median split on grapheme
-CER because exact accuracy is identically zero.}
+\caption{Confidence as a predictor of correctness across evaluation regimes; $n$ pools 100 or 60
+images over three seeds. AUROC is against line-level exact correctness except in the final row,
+which uses a median split on grapheme CER because exact accuracy is identically zero. On the
+flattened and inverted sets at most one line per seed is exactly correct, so AUROC there is
+computed on one or zero positive cases and carries no information; we mark it uninformative
+rather than reporting the value.}
 \label{tab:auroc}
-\begin{tabular}{lccc}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrccc}
 \toprule
-Evaluation set & Line acc. & AUROC & Spearman (conf, CER) \\
+Evaluation set & $n$ & Line acc. & AUROC & Spearman (conf, CER) \\
 \midrule
-Synthetic, natural exposure        & 0.183 & \textbf{0.838} & $-0.40$ \\
-Synthetic, flattened / inverted    & 0.003 / 0.007 & undefined & $\approx 0$ \\
-Real Hindi scans                   & 0.000 & undefined & $-0.15$ \\
-Real Hindi scans, median CER split & ---   & 0.57 & --- \\
+Synthetic, natural exposure        & 300 & 0.183 & \textbf{0.838} & $-0.40$ \\
+Synthetic, flattened / inverted    & 300 / 300 & 0.003 / 0.007 & uninformative & $\approx 0$ \\
+Real Hindi scans                   & 180 & 0.000 & undefined & $-0.15$ \\
+Real Hindi scans, median CER split & 180 & ---   & 0.57 & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -573,19 +643,22 @@ Real Hindi scans, median CER split & ---   & 0.57 & --- \\
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.78\textwidth]{figures/fig4_regime_contrast.pdf}
-\caption{\textbf{Left:} confidence as a ranker of correctness in two regimes. On synthetic
-in-distribution lines it separates correct from incorrect transcriptions; on real scans it is
-close to chance. \textbf{Right:} reliability diagram on synthetic natural lines, equal-mass
-confidence deciles. Confidence is near unity in every decile while accuracy is not,
-so the model discriminates without being calibrated.}
+\caption{\textbf{Left:} confidence as a ranker of correctness in two regimes. The synthetic
+curve is against line-level exact correctness; the real-scan curve is against a median split on
+grapheme CER, because exact accuracy on real scans is identically zero and the AUROC against it
+is undefined (Table~\ref{tab:auroc}). The two curves therefore answer slightly different
+questions and should not be read as a like-for-like comparison. \textbf{Right:} reliability
+diagram on synthetic natural lines, equal-mass confidence deciles. Confidence is near unity in
+every decile while accuracy is not, so the model discriminates without being calibrated.}
 \label{fig:regime}
 \end{figure}
 
 On synthetic in-distribution lines, where the model reads well enough to get 18.3\% of lines
 exactly right, confidence ranks correct transcriptions above incorrect ones at AUROC 0.838.
-That is a working discrimination signal (per seed 0.763, 0.924, 0.832), and it is nonetheless
-badly calibrated: mean confidence in that regime is 0.994 against 18.3\% accuracy, giving an
-expected calibration error of 0.812 over ten equal-mass bins. Discrimination and calibration
+That is a working discrimination signal (per seed 0.763, 0.924, 0.832; bootstrap 95\% interval
+[0.771, 0.902]), and it is nonetheless badly calibrated: mean confidence in that regime is 0.994
+against 18.3\% accuracy, giving an expected calibration error of 0.811 over ten equal-mass
+bins. Discrimination and calibration
 come apart cleanly here, and only the former survives. On real scans, where accuracy is
 zero, a graded substitute gives 0.57, near chance. Mean confidence across the three synthetic
 exposure conditions also varies substantially, at 0.994 (natural), 0.600 (flattened) and 0.461
@@ -603,14 +676,28 @@ as a demonstrated mechanism.
 \label{sec:lim}
 
 \paragraph{No positive control; this is the central limitation.} We have no model with
-demonstrated Devanagari reading ability on which the position-0 diagnostic returns a different
-answer. Without that contrast the diagnostic has no measured dynamic range, and a reader
-cannot distinguish a working instrument from a broken one on this evidence alone. The natural
-control is a model reported competent on real Devanagari scans
-\citep{devanagari2026stresstest}, a single-author preprint rather than a
-peer-reviewed result, on which position-resolved teacher-forced
-$\log p(\mathrm{GT})$ is directly computable from open weights. We regard this as the next
-experiment rather than an optional extension.
+demonstrated Devanagari reading ability on which the position-0 measurement returns a different
+answer. Without that contrast the measurement has no established dynamic range, and a reader
+cannot distinguish a working instrument from a broken one on this evidence alone. The control
+is already available and we did not use it: Surya, one of the engines in
+Table~\ref{tab:tier1}, attains 46.8\% exact match on the same real Devanagari scans, is an
+open-weight encoder--decoder architecture in the same family as our instrument, and therefore
+admits position-resolved teacher-forced $\log p(\mathrm{GT})$, encoder zeroing and blank-input
+evaluation on exactly the protocol used here. Running the full suite on it is the next
+experiment rather than an optional extension. Broader benchmarks of real-scan Devanagari
+competence \citep{singh2026devanagari} identify stronger candidates, though the top-scoring
+systems there are closed and do not expose per-step likelihoods.
+
+\paragraph{Two measurements the position-0 claim needs.} The comparison in
+Section~\ref{sec:position} is between $p(\mathrm{GT})$ and the model's own selected symbol,
+which is sound, but two scale-free quantities would make it decisive and neither is computed
+here. First, the probability the model assigns at position~0 to an arbitrary non-argmax symbol:
+if that is orders of magnitude above $p(\mathrm{GT})$, the collapse is specific to the correct
+symbol; if it is comparable, the finding reduces to the position-0 softmax being extremely
+peaked with the truth outside the peak, which is a weaker and different statement. Second, the
+rank of the ground-truth symbol among the 367 candidates, which is invariant to softmax
+temperature and directly comparable across models, including against the control above. Both
+are single forward passes over the existing checkpoints.
 
 \paragraph{Three further interventions we consider necessary.} First, \emph{mismatched
 pairing}: teacher-forced $\log p(\mathrm{GT})$ under a derangement of the image pool, so each
@@ -622,11 +709,14 @@ $\|\text{cross-attn out}\|/\|\text{residual}\|$ per decoder layer, which would c
 behavioural claim that the model ignores the encoder into a direct measurement of how much
 signal that pathway carries. Third, \emph{Gaussian-noise and patch-scrambled inputs}, testing
 whether the model responds to visual variation of any kind rather than only to the blank
-versus real contrast.
-All three, together with the positive control above, are inference-only
-measurements requiring no further training. They were scoped out of the present
-phase by available compute rather than by design, and the probe implementations
-are released with the code.
+versus real contrast; these are also what would separate visual bypass from the domain-shift
+explanation raised in Section~\ref{sec:cer}. We would add a fourth: per-position $n$-gram
+references and a distributional comparison against the 5-gram model, which is what
+Section~\ref{sec:position} would need to make its $n$-gram claim exclusive rather than
+consistent. All three, together with the positive control above, are inference-only
+measurements requiring no further training. They were scoped out of the present phase by
+available compute rather than by design, and the probe implementations are released with the
+code.
 
 \paragraph{Scale and generality.} One model of approximately 19.5M parameters, one training
 script for the mechanistic experiments. We make no claim about production OCR systems. A
@@ -634,6 +724,10 @@ separate attempt to use TrOCR-base-printed as an external comparison found mean 
 0.42 on its own in-domain English text, far below this instrument's near-ceiling regime; that
 is an operating-regime mismatch rather than a failed replication, and it does not serve as a
 control.
+
+\paragraph{Code and data.} The instrument, the renderer, all probe implementations and the
+committed probe outputs from which every number in this paper is computed are available at
+\url{https://github.com/Adya6714/vlm-ocr-eval}.
 
 \paragraph{Metric choice.} Line-level exact match is uninformative here and is used only in
 Section~\ref{sec:works}, where the comparison is between regimes rather than between
@@ -644,11 +738,23 @@ abandon distributional-target synthesis in favour of subsampling real, naturally
 sentences to bias exposure, accepting weaker distributional control in exchange for text that
 remains learnable.
 
-\paragraph{Novelty relative to prior work.} That a multimodal model's confidence is insensitive
-to visual ablation is established \citep{khanmohammadi2026bicr}. Our contribution is the
-positional localisation of that insensitivity in sequence transcription, the
-shape-versus-peak decomposition of the ablation, and the within-instrument regime contrast in
-Section~\ref{sec:works}, not the insensitivity itself.
+\paragraph{Novelty relative to prior work.} Two things in this paper are not new and we do not
+present them as such. That a multimodal model's confidence is insensitive to visual ablation is
+established \citep{khanmohammadi2026bicr}. That visual reliance declines across generation
+positions, and that the first generated token carries the most visual evidence, are established
+too \citep{favero2024m3id,ha2026flb}, on models that read their inputs and as the basis for
+decoding methods rather than as objects of study.
+
+What we add is the boundary case and one decomposition. Prior work characterises the
+\emph{gradient} of visual reliance in grounded models; we characterise the profile when there
+is no visual reliance for it to decline from, and find that position~0 is not merely the least
+language-supported position but one where the ground-truth symbol is never the argmax across
+180 sequences, while self-reported confidence there is at its maximum. Separately, the
+shape-versus-peak decomposition in Section~\ref{sec:ablation} is a sharper statement than
+``confidence fails to detect ungroundedness'': ablation moves \emph{which} token holds the
+peak without moving \emph{that} there is a near-unit peak, and the deployed scalar is the
+component it leaves untouched. The within-instrument regime contrast in
+Section~\ref{sec:works} is what keeps this from being a purely negative result.
 
 \section{Discussion and Conclusion}
 
@@ -661,7 +767,7 @@ vision-dependent position against many that are not, diluting exactly the signal
 system needs; confidence measures for transcription should weight early positions. The
 diagnosis is also cheap: two forward passes and ground-truth text give the position profile,
 with no probe training, no auxiliary labels and no comparison model. Where probe-based
-approaches \citep{khanmohammadi2026bicr,readingbetweenlines2025,kogilathota2026halp} detect
+approaches \citep{khanmohammadi2026bicr,yao2025abstain,kogilathota2026halp} detect
 ungroundedness by learning it, the position-0 test asks a structural question with a known
 answer under grounding. And the failure mode is a training pathology that standard monitoring
 would not catch: a model in this state converges, produces fluent in-script output, and
@@ -669,9 +775,9 @@ reports mean confidence of 0.99.
 
 We audited a small, fully exposure-controlled document OCR model and found that it does not
 read real document images. We localised the failure to the start of the generated sequence,
-where the ground-truth symbol is never the model's argmax and receives roughly eight orders of
-magnitude less probability than chance, identically with and without visual content, while
-self-reported confidence at that position is approximately 0.90. We showed that deleting the
+where the ground-truth symbol is never the model's argmax across 180 sequences and receives a
+geometric mean probability of order $10^{-11}$, identically with and without visual content,
+while the model's own selected symbol at that position receives 0.90. We showed that deleting the
 encoder alters the output distribution's shape substantially while leaving its peak near
 unity, so that the quantity read as confidence is close to invariant under precisely the
 intervention that removes visual information. And we showed that the same confidence signal

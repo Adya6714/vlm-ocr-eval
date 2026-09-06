@@ -95,6 +95,27 @@ def test_anova_var_decomp_balanced():
     assert d["pct_image"] > d["pct_seed"]
 
 
+def test_score_bucket_position_zero_only():
+    from analysis.position_matched_ngrams import build_ngram_counts, score_bucket
+
+    train = ["aaa", "aab"]
+    counts, ctx = build_ngram_counts(train, 1)
+    v = 5
+    mean0, n0 = score_bucket(["abc"], counts, ctx, 1, v, 0, 0)
+    mean_rest, n_rest = score_bucket(["abc"], counts, ctx, 1, v, 1, 10)
+    assert n0 == 1 and n_rest == 2
+    assert mean0 != mean_rest
+
+
+def test_bootstrap_shares_shape():
+    from analysis.anova_share_bootstrap import bootstrap_shares
+
+    Y = np.array([[1.0, 1.1, 1.2], [2.0, 2.0, 2.1], [3.0, 2.9, 3.1], [4.0, 4.2, 3.8]])
+    b = bootstrap_shares(Y, n_boot=50, seed=1)
+    assert b["lo"].shape == (3,)
+    assert np.all(b["lo"] <= b["hi"])
+
+
 @pytest.mark.skipif(not _RESULTS.exists(), reason="probe_results not present")
 def test_make_figures_smoke(tmp_path: Path):
     """Smoke test ensuring all 5 figure generators execute without error."""
