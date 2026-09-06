@@ -18,7 +18,7 @@
 \usepackage{xcolor}
 \usepackage{graphicx}
 
-\title{Reading Without Looking: Position-Resolved Evidence of\\Visual Bypass in a Small Document OCR Model}
+\title{Reading Without Looking: A Position-Resolved Profile of\\Confidence and Correctness in a Small Document OCR Model}
 
 \author{%
   Adya Srivastava\\
@@ -33,10 +33,11 @@
 Confidence scores from document OCR models are used to decide which predictions a human
 should check. We audit that signal in a small ($\approx$19.6M parameter) encoder--decoder OCR
 model trained from scratch with no prior exposure to any Indic script, across three
-independently trained seeds. We first establish what the model can do: on held-out real Hindi
-scans its grapheme character error rate is 0.985, and on blank white images it is 0.949. The
-model does not read real document images, and real and blank input are not distinguishable at
-three seeds ($t = 0.257$, $p = 0.822$, 2 df). We then localise the
+independently trained seeds. We first establish what the model can do: on held-out Hindi
+images its grapheme character error rate is 0.985, and on blank white images it is 0.949. The
+model does not read the held-out images, which are drawn from GlotOCR Bench and rendered by an
+independent pipeline, and text-bearing and blank input are not distinguishable at three seeds
+($t = 0.257$, $p = 0.822$, 2 df). We then localise the
 failure. Under teacher forcing the ground-truth token is never the model's argmax at
 generation position~0 (0 of 180 sequences), and the geometric mean probability assigned to the
 correct first symbol is $2.2\times10^{-11}$ on real images and $6.3\times10^{-11}$ on blank:
@@ -51,12 +52,14 @@ steps) but leaves its peak near unity: 96.7\% of the divergence sits at those fl
 positions while agreeing positions retain a mean confidence of 0.998. Finally, the confidence signal is not globally broken. On
 synthetic in-distribution lines, where the model attains 18.3\% line accuracy, confidence
 discriminates correct from incorrect transcriptions at AUROC 0.838 while remaining badly
-miscalibrated at a mean of 0.994; on real scans, where accuracy is zero, it carries no usable
+miscalibrated at a mean of 0.994; on the held-out images, where accuracy is zero, it carries no usable
 correctness signal. We read this as a model whose certainty tracks the linguistic plausibility
 of what it generates rather than the state of its own perception. Because visual dependence in
 transcription is concentrated at the start of the sequence, a confidence score averaged
 uniformly over generated tokens dilutes the one position that carries it; confidence measures
-for transcription should weight early positions rather than averaging uniformly.
+for transcription should weight early positions rather than averaging uniformly. We do not
+exclude the possibility that this instrument never acquired a visual representation that
+transfers to the evaluation renderer, and we state what would separate that from visual bypass.
 \end{abstract}
 
 \section{Introduction}
@@ -114,7 +117,7 @@ output distribution that visual ablation leaves near ceiling.
 (AUROC 0.838 at 18.3\% accuracy) while remaining uncalibrated, giving a within-instrument
 contrast rather than a purely negative result.
 (5)~We show that \emph{at least} 16.9--20.4\% of non-exact predictions from off-the-shelf OCR
-engines on real Indic scans are Unicode encoding variants rather than misreadings, on the two
+engines on Indic document images are Unicode encoding variants rather than misreadings, on the two
 engines with adequate sample size and with a large unreviewed remainder, a precondition for any
 grounding claim measured against exact-match references.
 
@@ -178,11 +181,23 @@ Transformer encoder trained from random initialisation, with no pretrained weigh
 patch-level visual features. An autoregressive decoder cross-attends to those features and
 emits one grapheme cluster per step. The output vocabulary is defined over grapheme clusters,
 the visually atomic units of the script, rather than byte-pair-encoded subwords, so one output
-token corresponds to one decision about what was read. Vocabulary size is $|V| \approx 367$,
-fixing the uniform per-token probability at $2.725\times10^{-3}$ and making the position-0
-results in Section~\ref{sec:position} interpretable against chance. Three seeds were trained
+token corresponds to one decision about what was read. Vocabulary size is $|V| \approx 367$, built from
+the run's own manifest with a minimum grapheme frequency of 5. Three seeds were trained
 independently under identical hyperparameters, a design adopted after a single-seed result
 failed to replicate (Appendix~\ref{app:retraction}).
+
+\paragraph{Where the images come from.} Both training and evaluation text originate in the
+Hindi portion of GlotOCR Bench \citep{kargaran2026glotocr}, but the images do not. Training
+images are produced by our own renderer from GlotOCR Hindi ground-truth strings. Evaluation
+images are GlotOCR Bench's own renders of Hindi sentences, in its two variants: a clean
+rendering on a white canvas and a degraded rendering that applies paper texture, ink wear,
+geometric distortion, downsampling and compression artifacts. \textbf{They are renders, not
+photographs or scans of physical documents}, and we do not describe them as scans anywhere in
+this paper. The distribution shift the instrument faces at evaluation is therefore between two
+rendering pipelines rather than between synthetic and photographed text, which is a smaller gap
+than a scan corpus would present. Throughout, we write \emph{text-bearing} or \emph{real} for
+evaluation images containing rendered text, in contrast to \emph{blank} white images; the
+contrast is with an empty page, not with synthetic data.
 
 The training pipeline includes a renderer with a glyph-frequency dial supporting three target
 distributions (natural, flattened, inverted), achieving total-variation distance $\leq 0.08$
@@ -210,7 +225,7 @@ ISO 15919 rather than a hand-enumerated rule list, validated against 38 hand-con
 diacritics, reading-order breaks, hallucinated or repeated content, assessed by
 grapheme-cluster alignment rather than code-point alignment.
 
-We apply this taxonomy to three off-the-shelf OCR engines on real scanned documents. The scope
+We apply this taxonomy to three off-the-shelf OCR engines on the same image corpus. The scope
 matters and we state it before the numbers: the engine study pools prediction rows across four
 Indic languages (Hindi, Bengali, Santhali, Kashmiri) and both plain and degraded image
 variants, and it scores full strings rather than the grapheme-level alignment used for the
@@ -249,7 +264,7 @@ machinery because it was validated and applied, and its null result is itself in
 about which kinds of orthographic ambiguity actually arise in Indic OCR output. All
 model-side results below use Tier-1-normalised references and grapheme-cluster alignment.
 
-\section{The Instrument Does Not Read Real Scans}
+\section{The Instrument Does Not Read Its Held-Out Images}
 \label{sec:cer}
 
 We report this before any confidence result, because it scopes everything that follows.
@@ -265,7 +280,7 @@ prediction sharing nothing with the reference.}
 \toprule
 Condition & Seed 0 & Seed 1 & Seed 2 & Pooled \\
 \midrule
-Hindi, real scans ($n=60$/seed)    & 1.009 & 0.984 & 0.963 & \textbf{0.985} \\
+Hindi, held-out ($n=60$/seed)    & 1.009 & 0.984 & 0.963 & \textbf{0.985} \\
 Blank white ($n=60$/seed)          & 0.830 & 0.896 & 1.122 & \textbf{0.949} \\
 Ol Chiki, unseen ($n=100$/seed)    & 0.974 & 0.906 & 1.029 & 0.970 \\
 Perso-Arabic, unseen ($n=20$/seed) & 0.958 & 0.906 & 1.110 & 0.991 \\
@@ -293,16 +308,20 @@ indistinguishable}, which is sufficient for everything that follows.
 
 Third, \textbf{the unseen-script conditions are not a distinct regime}. Ol Chiki (0.970) and
 Perso-Arabic (0.991) sit inside the same band as in-distribution Hindi (0.985). The model
-fails on real scans of its own training script as thoroughly as on scripts it has never seen.
+fails on held-out images of its own training script as thoroughly as on scripts it has never seen.
 
 The consequence for framing is direct. We cannot claim a dissociation between reading ability
-and confidence, because on real scans there is no reading ability to dissociate from. What we
+and confidence, because on these images there is no reading ability to dissociate from. What we
 can claim, and what follows, is a mechanistic account of how a model in this state produces
 near-ceiling confidence, and a measurement that localises it.
 
-\paragraph{Bypass or domain shift?} A reader may object that this instrument was trained only
-on synthetic renders, so on real scans it may have no usable visual representation at all. That
-is domain shift rather than bypass, and the two are different failures. Our own evidence cuts
+\paragraph{Bypass or domain shift?} A reader may object that this instrument was trained on
+images from our own renderer and evaluated on images from GlotOCR Bench's, so it may have no
+usable visual representation for the evaluation distribution at all. That is domain shift
+rather than bypass, and the two are different failures. We note that the gap is narrower than
+the objection usually assumes: both sides are rendered text from the same source corpus, in the
+same script, at the same canonical line height, differing in rendering stack, font and
+degradation pipeline rather than in medium. Our own evidence cuts
 both ways. Against bypass: zeroing the encoder changes the argmax at 8.2\% of decoding steps
 (Section~\ref{sec:ablation}), so the encoder does contribute something. For bypass: the
 position profile is near-identical on real and blank input at every bucket
@@ -317,7 +336,8 @@ We also state the training budget plainly, because it bears on this and a reader
 in Appendix~\ref{app:config} otherwise: 2{,}538 synthetic line crops, a single font family, no
 augmentation, 5{,}000 steps at a constant learning rate, and the final checkpoint taken without
 validation-based selection. That is a small budget, and a reader is entitled to conclude the
-model may simply never have acquired a visual representation transferable to real scans. We
+model may simply never have acquired a visual representation that transfers across renderers.
+We
 regard that as an open alternative rather than a settled one. What it does not explain on its
 own is why confidence is equally high on scripts the model has never seen and on blank pages,
 nor why the position profile is unchanged when the image is removed entirely.
@@ -653,8 +673,10 @@ and the $n$-gram models are fitted on that pool. A 5-gram grapheme model reachin
 resampling produces by construction. The 5-gram reference is therefore closer to a memorisation
 baseline than to a generic language prior. This cuts in the direction of our claim rather than
 against it, since matching a memorising model mid-sequence is a stronger indictment than
-matching a generic one, but the comparison should be read with that in mind. The same
-repetition may also bound the 18.3\% line accuracy reported in Section~\ref{sec:works}.
+matching a generic one, but the comparison should be read with that in mind. It also means the
+18.3\% synthetic line accuracy in Section~\ref{sec:works} likely \emph{overstates} genuine
+reading ability, since the evaluation text is drawn from the same resampled pool as the training
+text; we report it as a regime marker rather than as a capability estimate.
 
 We stop short of the exclusive claim. Matched mean log-likelihood does not establish that two
 predictive distributions agree, and establishing that the decoder is a high-order $n$-gram
@@ -697,8 +719,8 @@ Evaluation set & $n$ & Line acc. & AUROC & Spearman (conf, CER) \\
 \midrule
 Synthetic, natural exposure        & 300 & 0.183 & \textbf{0.838} & $-0.40$ \\
 Synthetic, flattened / inverted    & 300 / 300 & 0.003 / 0.007 & uninformative & $\approx 0$ \\
-Real Hindi scans                   & 180 & 0.000 & undefined & $-0.15$ \\
-Real Hindi scans, median CER split & 180 & ---   & 0.57 & --- \\
+Held-out Hindi images              & 180 & 0.000 & undefined & $-0.15$ \\
+Held-out Hindi, median CER split   & 180 & ---   & 0.57 & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -707,8 +729,8 @@ Real Hindi scans, median CER split & 180 & ---   & 0.57 & --- \\
 \centering
 \includegraphics[width=0.78\textwidth]{figures/fig4_regime_contrast.pdf}
 \caption{\textbf{Left:} confidence as a ranker of correctness in two regimes. The synthetic
-curve is against line-level exact correctness; the real-scan curve is against a median split on
-grapheme CER, because exact accuracy on real scans is identically zero and the AUROC against it
+curve is against line-level exact correctness; the held-out curve is against a median split on
+grapheme CER, because exact accuracy there is identically zero and the AUROC against it
 is undefined (Table~\ref{tab:auroc}). The two curves therefore answer slightly different
 questions and should not be read as a like-for-like comparison. \textbf{Right:} reliability
 diagram on synthetic natural lines, equal-mass confidence deciles. Confidence is near unity in
@@ -722,7 +744,7 @@ That is a working discrimination signal (per seed 0.763, 0.924, 0.832; bootstrap
 [0.771, 0.902]), and it is nonetheless badly calibrated: mean confidence in that regime is 0.994
 against 18.3\% accuracy, giving an expected calibration error of 0.811 over ten equal-mass
 bins. Discrimination and calibration
-come apart cleanly here, and only the former survives. On real scans, where accuracy is
+come apart cleanly here, and only the former survives. On the held-out images, where accuracy is
 zero, a graded substitute gives 0.57, near chance. Mean confidence across the three synthetic
 exposure conditions also varies substantially, at 0.994 (natural), 0.600 (flattened) and 0.461
 (inverted), tracking the accuracy drop in those conditions.
@@ -743,7 +765,7 @@ demonstrated Devanagari reading ability on which the position-0 measurement retu
 answer. Without that contrast the measurement has no established dynamic range, and a reader
 cannot distinguish a working instrument from a broken one on this evidence alone. The control
 is already available and we did not use it: Surya, one of the engines in
-Table~\ref{tab:tier1}, attains 46.8\% exact match on real Indic scans including Devanagari, is
+Table~\ref{tab:tier1}, attains 46.8\% exact match on Indic images including Devanagari, is
 an open-weight encoder--decoder architecture in the same family as our instrument, and therefore
 admits position-resolved teacher-forced $\log p(\mathrm{GT})$, encoder zeroing and blank-input
 evaluation on exactly the protocol used here. Running the full suite on it is the next
@@ -916,7 +938,7 @@ grapheme CER 0.9855 [0.9406, 1.0347] real and 0.9491 [0.9053, 0.9911] blank; mea
 0.9873 [0.9852, 0.9892] real, 0.9857 [0.9838, 0.9874] blank, 0.9857 [0.9843, 0.9871] Ol Chiki
 and 0.9894 [0.9871, 0.9916] Perso-Arabic; position-0 geometric mean $p(\mathrm{GT})$
 $2.20\times10^{-11}$ [$1.04\times10^{-11}$, $5.29\times10^{-11}$] real; AUROC 0.838
-[0.771, 0.902] on synthetic natural and 0.570 [0.491, 0.650] on real scans.
+[0.771, 0.902] on synthetic natural and 0.570 [0.491, 0.650] on the held-out images.
 
 \section{Training and Evaluation Configuration}
 \label{app:config}
@@ -942,8 +964,11 @@ batch size 32, 5{,}000 steps, fp16 mixed precision. The checkpoint used througho
 step of the run; there is no validation-loss selection. Three seeds were trained under
 identical settings. Wall-clock was not recorded.
 
-\paragraph{Evaluation data.} Real evaluation images are resized to height 70 preserving aspect
-ratio (Lanczos); their native resolution and scanning conditions were not recorded. The
+\paragraph{Evaluation data.} Evaluation images are GlotOCR Bench renders, not scans, in that
+benchmark's clean and degraded variants; the degraded variant simulates an aged document
+through paper texture, ink wear, geometric distortion, downsampling and compression artifacts.
+They are resized to height 70 preserving aspect
+ratio (Lanczos). The
 model-side evaluation uses 60 real Hindi rows in plain and degraded variants, 100 Ol Chiki rows
 and 20 Perso-Arabic rows, each under three seeds. Grapheme-cluster segmentation for every CER
 in this paper uses the \texttt{regex} library's \texttt{{\textbackslash}X} operator.
@@ -953,10 +978,23 @@ pooled over three engines, four languages (Hindi, Bengali, Santhali, Kashmiri) a
 variants, scored on full strings. They are not the same evaluation set as the model-side
 results and the overlap between the two was not recorded.
 
+\paragraph{Train/evaluation overlap.} \texttt{train.py} does not hold out the 60 evaluation
+strings. \texttt{LineDataset} appends every JSONL row of the supplied manifest, the vocabulary
+is built from every \texttt{text} field of that same file, and the documented Hindi run passes
+\texttt{data/manifests/hindi\_natural.jsonl} (2{,}538 lines) with no filter. The $n$-gram
+references in Section~\ref{sec:position} are the only fit that drops evaluation-matching lines:
+a manifest row is kept unless its \texttt{text} equals one of the 60 evaluation ground-truth
+strings, which leaves 2{,}491 lines. That is not $2{,}538-60=2{,}478$. Only 19 of the 60
+evaluation strings occur as a manifest line, and those 19 occupy 47 rows because some strings
+repeat; $2{,}538-47=2{,}491$. The other 41 evaluation strings have no exact line match, so they
+are not among the dropped rows.
+
 \section{Sequence Lengths}
 \label{app:lengths}
 
-Mean and median generated grapheme lengths are 27.96 / 28.0 (real Hindi), 31.39 / 29.0
+Reference transcriptions average roughly 40 graphemes (2{,}397 tokens over 60 strings, from
+Table~\ref{tab:position}), so the instrument under-generates by about 30\% in both conditions.
+Mean and median generated grapheme lengths are 27.96 / 28.0 (text-bearing Hindi), 31.39 / 29.0
 (blank), 28.28 / 29.0 (Ol Chiki) and 33.40 / 35.0 (Perso-Arabic), $n$ as in
 Table~\ref{tab:cer}. Blank generations are not shorter than real ones, which rules out
 truncation as the explanation for the CER ordering in Section~\ref{sec:cer} and leaves

@@ -1719,4 +1719,23 @@ the citation.
 **Why:** the reference is not peer-reviewed; it is the sole justification
 for the control choice.
 
+---
+
+### 73. Record that instrument training has no eval-string holdout
+
+**Decision:** State in Appendix~\texttt{app:config} that `train.py`
+trains on the full 2,538-line `hindi_natural.jsonl`. The n-gram 2,491
+count is exact-string exclusion of 47 manifest rows (19 of 60 eval
+strings, with repeats), not `2538-60`. Do not rewrite §§8--9 until that
+sentence is in the appendix.
+
+**Alternatives considered:** (a) silently treat the 60 eval pages as
+held-out for the model because the n-gram fit excludes matching lines;
+(b) rewrite the position-profile, contamination, and AUROC claims in
+the same pass.
+
+**Why:** `LineDataset` has no filter; Colab passes the full manifest.
+(a) is false. (b) changes the meaning of three sections and is a
+separate edit once the fact is on the page.
+
 
