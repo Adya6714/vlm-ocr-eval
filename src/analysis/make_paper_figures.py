@@ -349,11 +349,11 @@ def make_fig1_position_dissociation(
     ax1.plot(
         xs, tf_curves["real"]["mean"],
         color=COLOR_REAL, linestyle="-", marker="o", markersize=2.5, markevery=3,
-        linewidth=1.3, label="real"
+        linewidth=1.3, label="text-bearing"
     )
     ax1.fill_between(
         xs, tf_curves["real"]["min"], tf_curves["real"]["max"],
-        color=COLOR_REAL, alpha=0.18, label="seed range (real)"
+        color=COLOR_REAL, alpha=0.18, label="seed range (text-bearing)"
     )
     ax1.plot(
         xs, tf_curves["blank"]["mean"],
@@ -390,7 +390,7 @@ def make_fig1_position_dissociation(
     real_geom = math.exp(tf_curves["real"]["mean"][0])
     blank_geom = math.exp(tf_curves["blank"]["mean"][0])
     ax1.annotate(
-        f"Pos 0 geom mean:\nReal: ${real_geom:.1e}$\nBlank: ${blank_geom:.1e}$",
+        f"Pos 0 geom mean:\nText-bearing: ${real_geom:.1e}$\nBlank: ${blank_geom:.1e}$",
         xy=(0, tf_curves["real"]["mean"][0]),
         xytext=(4.2, -22.5),
         arrowprops=dict(arrowstyle="->", color="black", lw=0.7),
@@ -423,7 +423,7 @@ def make_fig1_position_dissociation(
     ax2.plot(
         xs, sg_curves["real"]["mean"],
         color=COLOR_REAL, linestyle="-", marker="o", markersize=2.5, markevery=3,
-        linewidth=1.3, label="real (self-gen.)"
+        linewidth=1.3, label="text-bearing (self-gen.)"
     )
     ax2.fill_between(
         xs, sg_curves["real"]["min"], sg_curves["real"]["max"],
@@ -680,8 +680,8 @@ def make_fig3_confidence_distributions(
     around 0.985–0.990 across all three random seeds.
     """
     cond_order = [
-        ("hindi", "Hindi (real)", COLOR_REAL, "o"),
-        ("blank", "Blank control", COLOR_BLANK, "s"),
+        ("hindi", "Hindi (text-bearing)", COLOR_REAL, "o"),
+        ("blank", "Blank white", COLOR_BLANK, "s"),
         ("santhali", "Ol Chiki", COLOR_SANTHALI, "^"),
         ("kashmiri", "Perso-Arabic", COLOR_KASHMIRI, "D"),
     ]
@@ -838,7 +838,7 @@ def make_fig4_regime_contrast(
     ax1.plot(
         fpr_real, tpr_real, color="#b2182b", linestyle="--", marker="s", markersize=2.5,
         markevery=max(1, len(fpr_real) // 10), linewidth=1.3,
-        label=f"Real scans (AUROC = {auroc_real:.3f})"
+        label=f"Held-out Hindi (AUROC = {auroc_real:.3f})"
     )
     ax1.plot([0, 1], [0, 1], color="0.5", linestyle=":", linewidth=1.0, label="Chance (AUROC = 0.50)")
 

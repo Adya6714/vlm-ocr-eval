@@ -1738,4 +1738,20 @@ the same pass.
 (a) is false. (b) changes the meaning of three sections and is a
 separate edit once the fact is on the page.
 
+---
+
+### 74. Figure labels: never “real” for our evaluation images
+
+**Decision:** Relabel publication figures 1, 3 and 4 so baked-in
+legend/tick/annotation text matches `paper/main.tex` §3: “text-bearing”
+vs “blank”, “held-out” for our eval set. Do not use “real” for our
+images. Data keys and probe jsonl `condition` fields stay `real` /
+`hindi`.
+
+**Alternatives considered:** (a) leave figure strings and rely on
+captions; (b) rename jsonl condition fields.
+
+**Why:** (a) is visible to a reviewer who just read the terminology
+sentence. (b) is not a plotting-only change.
+
 
