@@ -40,7 +40,7 @@ independent pipeline, and text-bearing and blank input are not distinguishable a
 ($t = 0.257$, $p = 0.822$, 2 df). We then localise the
 failure. Under teacher forcing the ground-truth token is never the model's argmax at
 generation position~0 (0 of 180 sequences), and the geometric mean probability assigned to the
-correct first symbol is $2.2\times10^{-11}$ on real images and $6.3\times10^{-11}$ on blank:
+correct first symbol is $2.2\times10^{-11}$ on text-bearing images and $6.3\times10^{-11}$ on blank:
 more than eight orders of magnitude below what a text-only $n$-gram model fitted on the same
 training corpus, which never sees an image, assigns to that same symbol. Self-generated
 max-softmax confidence at that position is nonetheless approximately 0.90. From position~2
@@ -102,8 +102,8 @@ output deletion, blank and unfamiliar-script input, teacher-forced ground-truth 
 and a positional decomposition of that likelihood.
 
 \paragraph{Contributions.}
-(1)~We establish by direct measurement that the instrument does not read real document images
-(grapheme CER 0.985 real against 0.949 blank, a difference that does not survive seed
+(1)~We establish by direct measurement that the instrument does not read its held-out images
+(grapheme CER 0.985 text-bearing against 0.949 blank, a difference that does not survive seed
 clustering), and treat this as a finding to be explained rather than a caveat to be buried;
 every subsequent claim is scoped by it.
 (2)~We give a position-resolved grounding diagnostic for autoregressive transcription,
@@ -195,9 +195,9 @@ geometric distortion, downsampling and compression artifacts. \textbf{They are r
 photographs or scans of physical documents}, and we do not describe them as scans anywhere in
 this paper. The distribution shift the instrument faces at evaluation is therefore between two
 rendering pipelines rather than between synthetic and photographed text, which is a smaller gap
-than a scan corpus would present. Throughout, we write \emph{text-bearing} or \emph{real} for
-evaluation images containing rendered text, in contrast to \emph{blank} white images; the
-contrast is with an empty page, not with synthetic data.
+than a scan corpus would present. Throughout, we write \emph{text-bearing} for evaluation images containing rendered text, in
+contrast to \emph{blank} white images. We avoid the word ``real'' for our own data entirely,
+since none of it is photographed.
 
 The training pipeline includes a renderer with a glyph-frequency dial supporting three target
 distributions (natural, flattened, inverted), achieving total-variation distance $\leq 0.08$
@@ -288,10 +288,9 @@ Perso-Arabic, unseen ($n=20$/seed) & 0.958 & 0.906 & 1.110 & 0.991 \\
 \end{tabular}
 \end{table}
 
-An independent probe on a separate real-image set reproduces the ordering: 0.986 on real plain
-images against 0.942 on blank, $n=180$ each. Three things follow.
+Three things follow.
 
-First, \textbf{the model does not read real document images}. A CER near 1.0 is not partial
+First, \textbf{the model does not read its held-out images}. A CER near 1.0 is not partial
 reading; it is a transcription sharing almost nothing with the reference.
 
 Second, \textbf{the nominal blank advantage is not robust and we do not build on it}. The
@@ -300,10 +299,10 @@ and higher at seed 2 ($-0.159$). A Wilcoxon signed-rank test on the 60 paired im
 significant unclustered ($p = 0.025$) but not once clustered by seed
 ($t = 0.257$, $p = 0.822$). Generated length explains 23--24\% of CER variance in both
 conditions, and on exact length-matched pairs ($n = 54$) the gap is $+0.039$ with
-$p = 0.197$. Note that blank outputs are not shorter than real ones (mean grapheme length
+$p = 0.197$. Note that blank outputs are not shorter than text-bearing ones (mean grapheme length
 31.4 against 28.0), so the mechanism is repetition rather than truncation:
 Section~\ref{sec:degeneracy} shows blank generations collapsing onto a handful of repeated
-strings. \textbf{The defensible claim is that real and blank CER are statistically
+strings. \textbf{The defensible claim is that text-bearing and blank CER are statistically
 indistinguishable}, which is sufficient for everything that follows.
 
 Third, \textbf{the unseen-script conditions are not a distinct regime}. Ol Chiki (0.970) and
@@ -324,7 +323,7 @@ same script, at the same canonical line height, differing in rendering stack, fo
 degradation pipeline rather than in medium. Our own evidence cuts
 both ways. Against bypass: zeroing the encoder changes the argmax at 8.2\% of decoding steps
 (Section~\ref{sec:ablation}), so the encoder does contribute something. For bypass: the
-position profile is near-identical on real and blank input at every bucket
+position profile is near-identical on text-bearing and blank input at every bucket
 (Section~\ref{sec:position}), and confidence on two scripts the model has never seen is
 indistinguishable from in-distribution confidence (Table~\ref{tab:conf}), neither of which
 domain shift alone predicts. The measurements that would separate them are Gaussian-noise and
@@ -333,7 +332,7 @@ Both are listed in Section~\ref{sec:lim} and neither has been run, so we report 
 and do not claim to have excluded domain shift.
 
 We also state the training budget plainly, because it bears on this and a reader will reach it
-in Appendix~\ref{app:config} otherwise: 2{,}538 synthetic line crops, a single font family, no
+in Appendix~\ref{app:config} otherwise: 2{,}538 rendered line crops, a single unrecorded font, no
 augmentation, 5{,}000 steps at a constant learning rate, and the final checkpoint taken without
 validation-based selection. That is a small budget, and a reader is entitled to conclude the
 model may simply never have acquired a visual representation that transfers across renderers.
@@ -356,7 +355,7 @@ images, not 180 independent images (Section~\ref{sec:variance}).}
 \toprule
 Condition & Seed 0 & Seed 1 & Seed 2 & Pooled \\
 \midrule
-Hindi, real ($n{=}60$)  & 0.9824 $\pm$ 0.0198 & 0.9897 $\pm$ 0.0085 & 0.9899 $\pm$ 0.0119 & 0.9873 \\
+Hindi, text-bearing ($n{=}60$) & 0.9824 $\pm$ 0.0198 & 0.9897 $\pm$ 0.0085 & 0.9899 $\pm$ 0.0119 & 0.9873 \\
 Blank white ($n{=}60$)  & 0.9814 $\pm$ 0.0125 & 0.9933 $\pm$ 0.0084 & 0.9824 $\pm$ 0.0154 & 0.9857 \\
 Ol Chiki ($n{=}100$)    & 0.9848 $\pm$ 0.0139 & 0.9847 $\pm$ 0.0117 & 0.9876 $\pm$ 0.0120 & 0.9857 \\
 Perso-Arabic ($n{=}20$) & 0.9901 $\pm$ 0.0072 & 0.9894 $\pm$ 0.0109 & 0.9887 $\pm$ 0.0083 & 0.9894 \\
@@ -366,7 +365,7 @@ Perso-Arabic ($n{=}20$) & 0.9901 $\pm$ 0.0072 & 0.9894 $\pm$ 0.0109 & 0.9887 $\p
 
 All four conditions sit between 0.985 and 0.990. The spread across condition means (0.0037) is
 smaller than the seed-to-seed spread of those means. Which seed trained the model accounts for
-more variation in reported confidence than whether the input is a real document, an unfamiliar
+more variation in reported confidence than whether the input carries text, an unfamiliar
 script, or a blank page.
 
 We note a statistical caution rather than leaving it to a reader. An equivalence test at a
@@ -423,13 +422,13 @@ Blank, seed 2 & 8  & 26.7 & 27\% \\
 
 First-token identity shows the same pattern. On blank input at seed 0 the decoder begins every
 one of 60 generations with the same grapheme; at seed 1, two distinct first graphemes cover
-all 60, one accounting for 86.7\%. On real Hindi the corresponding counts are 10, 9 and 10
+all 60, one accounting for 86.7\%. On text-bearing Hindi the corresponding counts are 10, 9 and 10
 distinct first graphemes, with modal frequencies between 40\% and 72\%.
 
 We draw the honest conclusion: part of the ``confidence is unchanged on blank input'' result
 is that the decoder emits a near-constant, highly probable string on blank input. That is a
 real property of the model and consistent with the paper's thesis, but it is a weaker
-mechanism than fluent varied hallucination and we do not describe it as the latter. Real input
+mechanism than fluent varied hallucination and we do not describe it as the latter. Text-bearing input
 is also far from diverse: 22 to 30 unique outputs across 60 distinct images.
 
 \subsection{Variance structure}
@@ -437,21 +436,21 @@ is also far from diverse: 22 to 30 unique outputs across 60 distinct images.
 
 Because the 180 observations per condition are 60 images under three seeds, pooled standard
 deviations mix image variance, seed variance and their interaction. Decomposed, confidence on
-real Hindi is 9\% image / 7\% seed / 84\% residual, and on blank 0\% / 18\% / 82\%.
+text-bearing Hindi is 9\% image / 7\% seed / 84\% residual, and on blank 0\% / 18\% / 82\%.
 Ground-truth likelihood behaves oppositely at 84--85\% image / $\approx$2\% seed /
-$\approx$14\% residual. Which image is presented explains 9\% of confidence variance on real
+$\approx$14\% residual. Which image is presented explains 9\% of confidence variance on text-bearing
 input and none of it on blank, while explaining most of the variance in a quantity that
 genuinely depends on the input. This is independent evidence that the confidence signal is not
 responding to input content, and it means pooled standard errors in Table~\ref{tab:conf}
 should be read as seed-clustered. Seed-clustered bootstrap intervals over 2{,}000 resamples
-give, for confidence on real Hindi, image 9.1\% [0.0, 22.4], seed 7.1\% [0.2, 17.7] and
+give, for confidence on text-bearing Hindi, image 9.1\% [0.0, 22.4], seed 7.1\% [0.2, 17.7] and
 residual 83.9\% [67.9, 96.6]; on blank, image 0.0\% [0.0, 0.0], seed 18.0\% [11.0, 27.7] and
 residual 82.0\% [72.3, 89.0]. For ground-truth likelihood the image share is 84.1\%
-[69.7, 91.1] on real and 85.0\% [70.8, 90.9] on blank.
+[69.7, 91.1] on text-bearing and 85.0\% [70.8, 90.9] on blank.
 
 Two caveats. Greedy decoding is deterministic, so there is one observation per image--seed cell
 and the interaction is not separable from noise; what we label residual \emph{is} the
-image$\times$seed interaction. And the image share for confidence on real input has an interval
+image$\times$seed interaction. And the image share for confidence on text-bearing input has an interval
 that includes zero, so the 9\% versus 0\% contrast is suggestive and not a test. What the
 intervals do support is the difference in kind between the two quantities: the image share for
 ground-truth likelihood is bounded well away from zero, and for confidence it is not.
@@ -461,7 +460,7 @@ ground-truth likelihood is bounded well away from zero, and for confidence it is
 
 We replace the encoder's output with a zero tensor of identical shape immediately before the
 decoder's cross-attention consumes it, and compare against the unmodified model on the same
-real images. Divergences are reported as $\mathrm{KL}(p_{\text{full}} \,\|\, p_{\text{zero}})$
+text-bearing images. Divergences are reported as $\mathrm{KL}(p_{\text{full}} \,\|\, p_{\text{zero}})$
 throughout.
 
 Two generation procedures are involved and we separate them, because the distinction decides
@@ -551,7 +550,7 @@ Max-softmax over a model's own greedily generated tokens is upward-biased by con
 therefore also compute teacher-forced log-likelihood of the ground-truth sequence,
 conditioning on true preceding tokens and recording the probability assigned to the true next
 token regardless of whether the model would have chosen it. Whole-sequence means are $-1.783$
-(SD 1.274, $n=180$) on real input and $-1.751$ (SD 1.280, $n=180$) on blank, with mean
+(SD 1.274, $n=180$) on text-bearing input and $-1.751$ (SD 1.280, $n=180$) on blank, with mean
 predictive entropy 0.0207 and 0.0251 respectively.
 
 \paragraph{The two measures disagree in sign, and we spin neither.} Ground-truth likelihood is
@@ -559,22 +558,23 @@ marginally higher on blank, contrary to what grounded confidence predicts. Predi
 is also higher on blank, meaning slightly less certain, which is exactly what grounded
 confidence predicts. Both differences are negligible against their dispersions: 0.032 against
 SDs near 1.27, and 0.004 against SDs near 0.017. Neither measure detects a difference between
-real and blank, and the nominal signs should not be interpreted. The two estimators are also
+text-bearing and blank, and the nominal signs should not be interpreted. The two estimators are also
 not independent: both derive from the same softmax, differing in whether the conditioning
 prefix is self-generated or ground truth.
 
 \paragraph{Where the ground truth wins.} The ground-truth token is the model's argmax at 90.4\%
-of positions on real input and 90.1\% on blank, with a mean peak probability of 0.9983 and
+of positions on text-bearing input and 90.1\% on blank, with a mean peak probability of 0.9983 and
 0.9982 at those positions, consistent with the reported entropy. Broken out by position:
-\textbf{0\% at position 0}, on 0 of 180 sequences, under both conditions; 92.6\% (real) versus
+\textbf{0\% at position 0}, on 0 of 180 sequences, under both conditions; 92.6\% (text-bearing) versus
 92.3\% (blank) thereafter. That split is the shape of the whole result.
 
 \begin{table}[h]
 \small
 \centering
 \caption{Mean $\log p(\mathrm{GT})$ by generation position, against $n$-gram grapheme language
-model references fitted on the same 2{,}491 training lines (evaluation strings excluded,
-add-$\alpha$ smoothing with $\alpha = 0.01$) and evaluated \emph{within the same position
+model references fitted on 2{,}491 of the 2{,}538 training lines (rows matching an evaluation
+string removed, add-$\alpha$ smoothing with $\alpha = 0.01$; note that the instrument itself was
+\emph{not} held out this way, see Appendix~\ref{app:config}) and evaluated \emph{within the same position
 buckets}, so model and reference are position-matched. The $n$-gram models never see an image.
 Token counts are over the 60 evaluation strings; instrument figures pool the same strings across
 three seeds. Uniform over $|V|\approx367$ is $-5.91$.}
@@ -584,7 +584,7 @@ three seeds. Uniform over $|V|\approx367$ is $-5.91$.}
 \toprule
  & & \multicolumn{2}{c}{Instrument} & \multicolumn{5}{c}{Position-matched $n$-gram reference} \\
 \cmidrule(lr){3-4}\cmidrule(l){5-9}
-Positions & $n$ tok. & Real & Blank & 1-gram & 2-gram & 3-gram & 4-gram & 5-gram \\
+Positions & $n$ tok. & Text-bearing & Blank & 1-gram & 2-gram & 3-gram & 4-gram & 5-gram \\
 \midrule
 0      & 60  & $\mathbf{-24.54}$ & $-23.48$ & $-5.92$ & $-4.73$ & $-4.73$ & $-4.73$ & $-4.73$ \\
 1      & 60  & $\mathbf{-8.12}$  & $-8.63$  & $-5.08$ & $-1.38$ & $-1.14$ & $-1.14$ & $-1.14$ \\
@@ -600,7 +600,7 @@ Positions & $n$ tok. & Real & Blank & 1-gram & 2-gram & 3-gram & 4-gram & 5-gram
 \centering
 \includegraphics[width=0.84\textwidth]{figures/fig1_position_dissociation.pdf}
 \caption{The dissociation. \textbf{Top:} mean $\log p(\mathrm{GT})$ against generation
-position, real and blank overlaid. The horizontal reference lines drawn here are
+position, text-bearing and blank overlaid. The horizontal reference lines drawn here are
 \emph{whole-tail} $n$-gram means (trigram $-0.99$, 4-gram $-0.44$, 5-gram $-0.26$) computed
 over all positions $\geq 1$; Table~\ref{tab:position} gives the position-matched references
 that the argument in this section uses, and those differ per bucket. Uniform is $-5.91$.
@@ -611,14 +611,14 @@ comparable space to the interval from $-1$ to $0$, which compresses the region c
 position-0 collapse. \textbf{Bottom:} self-generated max-softmax confidence at the same
 positions, axis clipped to $[0.5, 1.0]$. Correctness
 collapses at positions 0--1 while confidence does not, and both curves are near-identical
-between real and blank input.}
+between text-bearing and blank input.}
 \label{fig:position}
 \end{figure}
 
 Five observations, in order of importance.
 
 \paragraph{1. Position 0 is far below a text-only baseline, not merely uncertain.} The geometric mean
-probability assigned to the correct first symbol is $2.2\times10^{-11}$ on real images and
+probability assigned to the correct first symbol is $2.2\times10^{-11}$ on text-bearing images and
 $6.3\times10^{-11}$ on blank. The model is not undecided at position 0; it is
 near-deterministically committed to a specific wrong symbol, identically whether the image
 contains text or nothing. We report the geometric mean because the arithmetic mean of
@@ -642,19 +642,31 @@ at position~0; it is placing the correct first symbol far lower than a model tha
 seen text. We regard this, rather than the comparison against uniform, as the defensible form
 of the claim.
 
-Two scale-free quantities would sharpen it further and neither is computed here: the
+One further fact makes this harder to explain away rather than easier. The instrument was
+trained on the full manifest with no held-out split, and 19 of the 60 evaluation strings appear
+verbatim as training lines (Appendix~\ref{app:config}), while the $n$-gram references were
+fitted with the exactly-matching rows removed. The asymmetry is real but modest, and we state it
+at its true size: the reference is deduplicated rather than held out, since the other 41
+evaluation strings are resampled from the same pool and their contexts remain in the fit, and
+dropping 47 of 2{,}538 rows moves a position-0 marginal by under two percent. What survives is
+the direction: the comparison at position~0 favours the instrument, and a model that has seen a
+third of these strings verbatim during training still never places the correct first symbol at
+the argmax and still assigns it roughly 20 nats less probability than the reference.
+
+Two scale-free quantities would sharpen the claim further and neither is computed here: the
 probability the model assigns at position~0 to an arbitrary \emph{wrong} symbol, and the rank
-of the ground-truth symbol in that distribution. Both are listed in Section~\ref{sec:lim}.
+of the ground-truth symbol in that distribution. Both are listed in Section~\ref{sec:lim},
+alongside the memorisation split for Section~\ref{sec:works}.
 
 \paragraph{2. Confidence at that position is near ceiling.} Self-generated max-softmax at
-position 0 is 0.902 pooled on real input and 0.895 on blank. Position 0 is therefore the point
+position 0 is 0.902 pooled on text-bearing input and 0.895 on blank. Position 0 is therefore the point
 of maximal confidence and minimal correctness, at the one generation step where vision is the
-only possible information source. Per seed, real: 0.884 / 0.906 / 0.916; blank: 0.9999 / 0.898
+only possible information source. Per seed, text-bearing: 0.884 / 0.906 / 0.916; blank: 0.9999 / 0.898
 / 0.787. The blank column is not stable across seeds and its pooled value should not be quoted
 alone.
 
 \paragraph{3. Position 1 is also far below the text-only baseline.} At $-8.12$ and $-8.63$ the
-second generated symbol sits 7.0 nats (real) and 7.5 nats (blank) below the best
+second generated symbol sits 7.0 nats (text-bearing) and 7.5 nats (blank) below the best
 position-matched $n$-gram reference for that position ($-1.14$). The failure is not confined to
 a single step; recovery begins at position 2.
 
@@ -664,9 +676,19 @@ prior.} Against position-matched references (Table~\ref{tab:position}), position
 ($-0.15$) are slightly \emph{better} than the 5-gram reference ($-0.26$); positions 20--39
 ($-0.27$) sit between the 4-gram and 5-gram references. So mid-sequence the instrument is in
 the same band as a 4- to 5-gram grapheme prior, occasionally above it, and it gets there
-without reference to the image, since the blank column matches the real column at every bucket.
+without reference to the image, since the blank column matches the text-bearing column at every bucket.
 
-One property of this reference deserves stating. The training text is drawn from the same
+Two properties of this comparison make the mid-sequence agreement weaker evidence than it
+looks, and we would rather state them than have them found. First, the two sides are not held
+out symmetrically: the $n$-gram references drop every manifest row matching an evaluation
+string, while the instrument was trained on the full manifest, so at positions where the
+instrument matches or exceeds the 5-gram reference it is doing so with an advantage the
+reference does not have. The $-0.15$ at positions 10--19, the one bucket where the instrument
+beats the 5-gram model, is exactly where that advantage would show. We therefore do not claim
+the instrument outperforms a high-order grapheme prior; we claim only that its mid-sequence
+likelihood sits in that band under a comparison it wins by construction.
+
+Second, the training text is drawn from the same
 GlotOCR Hindi string pool that the evaluation strings come from, resampled into synthetic pages,
 and the $n$-gram models are fitted on that pool. A 5-gram grapheme model reaching $-0.18$
 (roughly 0.84 per token) on about 2{,}500 lines implies that contexts recur heavily, which
@@ -738,8 +760,28 @@ every decile while accuracy is not, so the model discriminates without being cal
 \label{fig:regime}
 \end{figure}
 
-On synthetic in-distribution lines, where the model reads well enough to get 18.3\% of lines
-exactly right, confidence ranks correct transcriptions above incorrect ones at AUROC 0.838.
+Before the numbers, a scoping note that governs all of them. The instrument was trained on the
+full rendered manifest with no held-out split (Appendix~\ref{app:config}), so the synthetic
+evaluation lines in this section are drawn from the same rendered pool the model was trained on
+and are not a held-out generalisation set. The 18.3\% line accuracy is therefore an
+in-training-distribution figure, plausibly an in-training-set one for part of the sample, and it
+overstates whatever reading ability the model would show on unseen text. We use it here only as
+a \emph{regime marker}: it identifies a setting in which the model produces some correct output,
+so that the behaviour of the confidence signal in that setting can be compared against the
+setting where it produces none.
+
+We flag a specific alternative that this design cannot exclude, because it concerns what the
+AUROC measures rather than how large it is. If the lines the model transcribes exactly are
+disproportionately the ones whose text it saw during training, then a confidence signal that
+ranks them highly is tracking memorisation rather than correctness, and the two hypotheses
+produce the same AUROC. Contamination raising accuracy makes that alternative more likely, not
+less. Separating them requires splitting the synthetic evaluation lines by whether their text
+has an exact manifest match and reporting accuracy and AUROC on each subset; we have not run
+that split, and until it is run the 0.838 should be read as confidence tracking \emph{something}
+that distinguishes the model's successes from its failures, without a commitment to which.
+
+On these synthetic lines, where the model gets 18.3\% of lines exactly right, confidence ranks
+correct transcriptions above incorrect ones at AUROC 0.838.
 That is a working discrimination signal (per seed 0.763, 0.924, 0.832; bootstrap 95\% interval
 [0.771, 0.902]), and it is nonetheless badly calibrated: mean confidence in that regime is 0.994
 against 18.3\% accuracy, giving an expected calibration error of 0.811 over ten equal-mass
@@ -786,22 +828,44 @@ are single forward passes over the existing checkpoints.
 
 \paragraph{Three further interventions we consider necessary.} First, \emph{mismatched
 pairing}: teacher-forced $\log p(\mathrm{GT})$ under a derangement of the image pool, so each
-ground-truth string is scored against a different real image. A blank page is a degenerate
-input, so ``blank equals real'' is weaker evidence than ``wrong real image equals right real
+ground-truth string is scored against a different text-bearing image. A blank page is a degenerate
+input, so ``blank equals text-bearing'' is weaker evidence than ``wrong image equals right
 image'' would be, and the latter would remove the degeneracy confound of
 Section~\ref{sec:degeneracy} entirely. Second, \emph{cross-attention contribution norms},
 $\|\text{cross-attn out}\|/\|\text{residual}\|$ per decoder layer, which would convert the
 behavioural claim that the model ignores the encoder into a direct measurement of how much
 signal that pathway carries. Third, \emph{Gaussian-noise and patch-scrambled inputs}, testing
 whether the model responds to visual variation of any kind rather than only to the blank
-versus real contrast; these are also what would separate visual bypass from the domain-shift
+versus text-bearing contrast; these are also what would separate visual bypass from the domain-shift
 explanation raised in Section~\ref{sec:cer}. A fourth would make Section~\ref{sec:position}'s
 $n$-gram claim exclusive rather than merely consistent: per-position $\mathrm{KL}$ between the
 model and the 5-gram reference, and the rate at which their argmaxes coincide. This requires
-retaining the full per-step softmax, which the committed probe outputs do not. All four, together with the positive control above, are inference-only measurements requiring
+retaining the full per-step softmax, which the committed probe outputs do not. A fifth is
+cheaper than any of these and settles a question raised in Section~\ref{sec:works}: split the
+synthetic evaluation lines by whether their text appears verbatim in the training manifest, and
+report line accuracy and AUROC on each subset. If the AUROC holds on the non-matching subset,
+the confidence signal is tracking correctness; if it collapses, it is tracking memorisation.
+This needs no model at all, only the committed predictions and the manifest. All four, together with the positive control above, are inference-only measurements requiring
 no further training. They were scoped out of the present phase by
 available compute rather than by design, and the probe implementations are released with the
 code.
+
+\paragraph{No held-out training split.} The instrument was trained on the entire rendered
+manifest, with no evaluation strings withheld; 19 of the 60 strings used for the teacher-forced
+analyses appear verbatim as training lines, and the remainder are resampled from the same source
+pool. This is a design fault rather than an analysis choice, and a redesign should hold out the
+evaluation strings before training rather than after. Its consequences are not uniform across
+the paper and we have tried to mark each one where it falls. It inflates the synthetic line accuracy in
+Section~\ref{sec:works}, which we therefore use only as a regime marker, and it leaves open
+whether the AUROC reported there measures confidence tracking correctness or confidence tracking
+memorisation; splitting those evaluation lines by exact manifest match would settle it and is
+listed among the measurements below. It biases the mid-sequence comparison in Section~\ref{sec:position} in the instrument's
+favour, since the $n$-gram references were held out and the instrument was not, so we do not
+claim the instrument beats a high-order prior. It does not weaken the position-0 and position-1
+results, which are the paper's central measurements: contamination can only have helped the
+instrument there, and it still fails at floor. And it is orthogonal to the encoder-ablation
+results in Section~\ref{sec:ablation}, which compare the same model against itself on the same
+images.
 
 \paragraph{Scale and generality.} One model of approximately 19.6M parameters, one training
 script for the mechanistic experiments. We make no claim about production OCR systems. A
@@ -861,7 +925,7 @@ would not catch: a model in this state converges, produces fluent in-script outp
 reports mean confidence of 0.99.
 
 We audited a small, fully exposure-controlled document OCR model and found that it does not
-read real document images. We localised the failure to the start of the generated sequence,
+read its held-out images. We localised the failure to the start of the generated sequence,
 where the ground-truth symbol is never the model's argmax across 180 sequences and receives a
 geometric mean probability of order $10^{-11}$, more than eight orders of magnitude below what a
 text-only $n$-gram model fitted on the same corpus assigns it, identically with and without
@@ -890,16 +954,16 @@ mode that motivated the three-seed design.
 \label{app:pos0}
 
 Per-seed geometric means of $p(\mathrm{GT})$ at position 0 are $2.05\times10^{-10}$ /
-$1.35\times10^{-11}$ / $3.88\times10^{-12}$ (real) and $9.32\times10^{-10}$ /
+$1.35\times10^{-11}$ / $3.88\times10^{-12}$ (text-bearing) and $9.32\times10^{-10}$ /
 $3.13\times10^{-11}$ / $8.70\times10^{-12}$ (blank). The effect is present independently at
 every seed and spans two orders of magnitude across seeds, so per-seed values rather than the
 pooled geometric mean should be used when comparing against another model.
 
 A geometric mean can be driven by a minority of extreme cases, so we report the distribution.
 Pooled over 180 sequences, the median $p(\mathrm{GT})$ at position 0 is $9.5\times10^{-15}$
-(real) and $3.7\times10^{-13}$ (blank); the arithmetic means are $2.67\times10^{-3}$ and
+(text-bearing) and $3.7\times10^{-13}$ (blank); the arithmetic means are $2.67\times10^{-3}$ and
 $1.51\times10^{-3}$, close to uniform, but they are set by a handful of sequences. Only
-2.8\% of real sequences (5 of 180) and 3.3\% of blank sequences (6 of 180) assign the correct
+2.8\% of text-bearing sequences (5 of 180) and 3.3\% of blank sequences (6 of 180) assign the correct
 first symbol more probability than uniform.
 
 \begin{table}[h]
@@ -908,7 +972,7 @@ first symbol more probability than uniform.
 \caption{Histogram of $\log p(\mathrm{GT})$ at position 0, pooled over three seeds.}
 \begin{tabular}{lrrrr}
 \toprule
-Bin ($\log p$) & Real count & Real \% & Blank count & Blank \% \\
+Bin ($\log p$) & Text-bear. count & \% & Blank count & \% \\
 \midrule
 $< -25$        & 126 & 70.0\% & 115 & 63.9\% \\
 $[-25, -20)$   & 24  & 13.3\% & 25  & 13.9\% \\
@@ -920,24 +984,24 @@ $[-5, 0]$      & 2   & 1.1\%  & 4   & 2.2\%  \\
 \end{tabular}
 \end{table}
 
-Seventy percent of real sequences place $\log p(\mathrm{GT}) < -25$ at position 0. The
+Seventy percent of text-bearing sequences place $\log p(\mathrm{GT}) < -25$ at position 0. The
 collapse is a property of the distribution, not of its summary.
 
 \section{Paired Tests and Bootstrap Intervals}
 \label{app:stats}
 
 Because the same 60 image identifiers appear under every condition, we use paired rather than
-unpaired tests. Per-seed Wilcoxon signed-rank on grapheme CER (real minus blank) gives
+unpaired tests. Per-seed Wilcoxon signed-rank on grapheme CER (text-bearing minus blank) gives
 $+0.180$ ($p = 1.4\times10^{-6}$), $+0.088$ ($p = 0.106$) and $-0.159$ ($p = 0.015$) at seeds
 0, 1 and 2. The sign reverses at seed 2. Pooled unclustered the difference is $+0.036$
 ($p = 0.025$); clustered by seed it is not significant ($t = 0.257$, $p = 0.822$). For mean
 confidence the pooled difference is $+0.0016$ ($t = 0.505$, $p = 0.664$).
 
 Seed-clustered bootstrap intervals (2{,}000 replicates, images resampled within seed):
-grapheme CER 0.9855 [0.9406, 1.0347] real and 0.9491 [0.9053, 0.9911] blank; mean confidence
-0.9873 [0.9852, 0.9892] real, 0.9857 [0.9838, 0.9874] blank, 0.9857 [0.9843, 0.9871] Ol Chiki
+grapheme CER 0.9855 [0.9406, 1.0347] text-bearing and 0.9491 [0.9053, 0.9911] blank; mean confidence
+0.9873 [0.9852, 0.9892] text-bearing, 0.9857 [0.9838, 0.9874] blank, 0.9857 [0.9843, 0.9871] Ol Chiki
 and 0.9894 [0.9871, 0.9916] Perso-Arabic; position-0 geometric mean $p(\mathrm{GT})$
-$2.20\times10^{-11}$ [$1.04\times10^{-11}$, $5.29\times10^{-11}$] real; AUROC 0.838
+$2.20\times10^{-11}$ [$1.04\times10^{-11}$, $5.29\times10^{-11}$] text-bearing; AUROC 0.838
 [0.771, 0.902] on synthetic natural and 0.570 [0.491, 0.650] on the held-out images.
 
 \section{Training and Evaluation Configuration}
@@ -965,11 +1029,12 @@ step of the run; there is no validation-loss selection. Three seeds were trained
 identical settings. Wall-clock was not recorded.
 
 \paragraph{Evaluation data.} Evaluation images are GlotOCR Bench renders, not scans, in that
-benchmark's clean and degraded variants; the degraded variant simulates an aged document
-through paper texture, ink wear, geometric distortion, downsampling and compression artifacts.
+benchmark's two released rendering profiles, \textsc{plain} and \textsc{old\_document}; the
+latter simulates an aged document through paper texture, ink wear, geometric distortion,
+downsampling and compression artifacts.
 They are resized to height 70 preserving aspect
 ratio (Lanczos). The
-model-side evaluation uses 60 real Hindi rows in plain and degraded variants, 100 Ol Chiki rows
+model-side evaluation uses 60 Hindi rows in both rendering variants, 100 Ol Chiki rows
 and 20 Perso-Arabic rows, each under three seeds. Grapheme-cluster segmentation for every CER
 in this paper uses the \texttt{regex} library's \texttt{{\textbackslash}X} operator.
 
@@ -996,7 +1061,7 @@ Reference transcriptions average roughly 40 graphemes (2{,}397 tokens over 60 st
 Table~\ref{tab:position}), so the instrument under-generates by about 30\% in both conditions.
 Mean and median generated grapheme lengths are 27.96 / 28.0 (text-bearing Hindi), 31.39 / 29.0
 (blank), 28.28 / 29.0 (Ol Chiki) and 33.40 / 35.0 (Perso-Arabic), $n$ as in
-Table~\ref{tab:cer}. Blank generations are not shorter than real ones, which rules out
+Table~\ref{tab:cer}. Blank generations are not shorter than text-bearing ones, which rules out
 truncation as the explanation for the CER ordering in Section~\ref{sec:cer} and leaves
 repetition, documented in Section~\ref{sec:degeneracy}, as the operative mechanism.
 
