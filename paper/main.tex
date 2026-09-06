@@ -39,11 +39,13 @@ model does not read real document images, and real and blank input are not disti
 three seeds ($t = 0.257$, $p = 0.822$, 2 df). We then localise the
 failure. Under teacher forcing the ground-truth token is never the model's argmax at
 generation position~0 (0 of 180 sequences), and the geometric mean probability assigned to the
-correct first symbol is $2.2\times10^{-11}$ on real images and $6.3\times10^{-11}$ on blank,
-while self-generated max-softmax confidence at that same position is approximately 0.90. From
-position~2 to~39 the model recovers to a mean log-likelihood between $-0.15$ and $-0.48$,
-matching a 4- to 5-gram grapheme language model, and does so identically whether the image
-contains text or nothing; beyond position~39 it falls below the uniform reference again. Deleting the encoder changes the
+correct first symbol is $2.2\times10^{-11}$ on real images and $6.3\times10^{-11}$ on blank:
+more than eight orders of magnitude below what a text-only $n$-gram model fitted on the same
+training corpus, which never sees an image, assigns to that same symbol. Self-generated
+max-softmax confidence at that position is nonetheless approximately 0.90. From position~2
+to~39 the model recovers to between $-0.15$ and $-0.48$, comparable to a position-matched 4- to
+5-gram grapheme prior and identical with and without the image; at positions 0, 1 and beyond 39
+it falls far below every $n$-gram baseline. Deleting the encoder changes the
 output distribution substantially (mean KL 1.075 nats, argmax flips at 8.2\% of decoding
 steps) but leaves its peak near unity: 96.7\% of the divergence sits at those flipped
 positions while agreeing positions retain a mean confidence of 0.998. Finally, the confidence signal is not globally broken. On
@@ -112,9 +114,9 @@ output distribution that visual ablation leaves near ceiling.
 (AUROC 0.838 at 18.3\% accuracy) while remaining uncalibrated, giving a within-instrument
 contrast rather than a purely negative result.
 (5)~We show that \emph{at least} 16.9--20.4\% of non-exact predictions from off-the-shelf OCR
-engines on real Devanagari scans are Unicode encoding variants rather than misreadings, on the
-two engines with adequate sample size and with a large unreviewed remainder, a precondition for
-any grounding claim measured against exact-match references.
+engines on real Indic scans are Unicode encoding variants rather than misreadings, on the two
+engines with adequate sample size and with a large unreviewed remainder, a precondition for any
+grounding claim measured against exact-match references.
 
 \paragraph{What this paper does not claim.} We did not discover that confidence fails to track
 visual grounding; that is prior work \citep{khanmohammadi2026bicr}. We make no claim about
@@ -208,12 +210,22 @@ ISO 15919 rather than a hand-enumerated rule list, validated against 38 hand-con
 diacritics, reading-order breaks, hallucinated or repeated content, assessed by
 grapheme-cluster alignment rather than code-point alignment.
 
+We apply this taxonomy to three off-the-shelf OCR engines on real scanned documents. The scope
+matters and we state it before the numbers: the engine study pools prediction rows across four
+Indic languages (Hindi, Bengali, Santhali, Kashmiri) and both plain and degraded image
+variants, and it scores full strings rather than the grapheme-level alignment used for the
+model in Section~\ref{sec:cer}. It establishes that exact-match scoring misrepresents Indic OCR
+error rates in general. It is not a Devanagari-specific measurement and it is not on the same
+footing as the model-side results.
+
 \begin{table}[h]
 \small
 \centering
 \caption{Tier 1 encoding variants among predictions that do not exactly match the reference,
-on real scanned Devanagari. The final column is the quantity of interest. PaddleOCR is shown
-for completeness only; $n=10$ cannot support an engine-level claim.}
+pooled over four Indic languages and both image variants; $n$ counts prediction rows, not
+documents. The final column is the quantity of interest and is a lower bound, since a large
+share of non-exact predictions is unreviewed. PaddleOCR is shown for completeness only;
+$n=10$ cannot support an engine-level claim.}
 \label{tab:tier1}
 \begin{tabular}{lrrrr}
 \toprule
@@ -234,7 +246,7 @@ the encoding-artifact rate rather than final estimates. Second, Tier 2 resolves 
 additional cases on all three engines: once Tier 1 normalisation is applied, phonetic
 spelling variation contributes nothing measurable on this corpus. We report the Tier 2
 machinery because it was validated and applied, and its null result is itself informative
-about which kinds of orthographic ambiguity actually arise in Devanagari OCR output. All
+about which kinds of orthographic ambiguity actually arise in Indic OCR output. All
 model-side results below use Tier-1-normalised references and grapheme-cluster alignment.
 
 \section{The Instrument Does Not Read Real Scans}
@@ -402,11 +414,18 @@ $\approx$14\% residual. Which image is presented explains 9\% of confidence vari
 input and none of it on blank, while explaining most of the variance in a quantity that
 genuinely depends on the input. This is independent evidence that the confidence signal is not
 responding to input content, and it means pooled standard errors in Table~\ref{tab:conf}
-should be read as seed-clustered. Two caveats on these components. Greedy decoding is
-deterministic, so there is one observation per image--seed cell and the interaction is not
-separable from noise; what we label residual \emph{is} the image$\times$seed interaction. And a
-seed component estimated from three levels carries almost no precision. We therefore read the
-9\% versus 0\% contrast as suggestive rather than as an independent test.
+should be read as seed-clustered. Seed-clustered bootstrap intervals over 2{,}000 resamples
+give, for confidence on real Hindi, image 9.1\% [0.0, 22.4], seed 7.1\% [0.2, 17.7] and
+residual 83.9\% [67.9, 96.6]; on blank, image 0.0\% [0.0, 0.0], seed 18.0\% [11.0, 27.7] and
+residual 82.0\% [72.3, 89.0]. For ground-truth likelihood the image share is 84.1\%
+[69.7, 91.1] on real and 85.0\% [70.8, 90.9] on blank.
+
+Two caveats. Greedy decoding is deterministic, so there is one observation per image--seed cell
+and the interaction is not separable from noise; what we label residual \emph{is} the
+image$\times$seed interaction. And the image share for confidence on real input has an interval
+that includes zero, so the 9\% versus 0\% contrast is suggestive and not a test. What the
+intervals do support is the difference in kind between the two quantities: the image share for
+ground-truth likelihood is bounded well away from zero, and for confidence it is not.
 
 \section{Mechanism I: Ablation Moves the Distribution's Shape, Not Its Peak}
 \label{sec:ablation}
@@ -415,6 +434,16 @@ We replace the encoder's output with a zero tensor of identical shape immediatel
 decoder's cross-attention consumes it, and compare against the unmodified model on the same
 real images. Divergences are reported as $\mathrm{KL}(p_{\text{full}} \,\|\, p_{\text{zero}})$
 throughout.
+
+Two generation procedures are involved and we separate them, because the distinction decides
+what the decomposition means. For the per-step divergence, top-1 agreement and their
+agree-versus-flip split, the zeroed model is \emph{teacher-forced on the full model's greedy
+token prefix} at every step, so both distributions are conditioned on an identical context and
+sequence divergence cannot confound the comparison. The context is therefore the full model's
+own generation rather than the reference transcription. The confidence delta in the first
+column is different: it compares the full model's greedy run against an \emph{independent}
+zeroed greedy run, which is the quantity a deployed system would report. The two columns are
+not measurements of the same procedure and should not be read as such.
 
 \begin{table}[h]
 \small
@@ -514,21 +543,25 @@ of positions on real input and 90.1\% on blank, with a mean peak probability of 
 \begin{table}[h]
 \small
 \centering
-\caption{Mean $\log p(\mathrm{GT})$ by generation position, with $n$-gram grapheme language
-model references fitted on 2{,}491 held-out-excluded training lines and evaluated from the
-second grapheme onward. Uniform over $|V|\approx367$ is $-5.91$. Positions 2--39 track the
-4-gram and 5-gram references closely; position 40+ falls back below uniform.}
+\caption{Mean $\log p(\mathrm{GT})$ by generation position, against $n$-gram grapheme language
+model references fitted on the same 2{,}491 training lines (evaluation strings excluded,
+add-$\alpha$ smoothing with $\alpha = 0.01$) and evaluated \emph{within the same position
+buckets}, so model and reference are position-matched. The $n$-gram models never see an image.
+Uniform over $|V|\approx367$ is $-5.91$.}
 \label{tab:position}
-\begin{tabular}{lrrr@{\hskip 22pt}lr}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrr@{\hskip 14pt}rrrrr}
 \toprule
-Positions & Real & Blank & $n$ steps & Reference & Value \\
+ & \multicolumn{2}{c}{Instrument} & \multicolumn{5}{c}{Position-matched $n$-gram reference} \\
+\cmidrule(r){2-3}\cmidrule(l){4-8}
+Positions & Real & Blank & 1-gram & 2-gram & 3-gram & 4-gram & 5-gram \\
 \midrule
-0      & $-24.5$ & $-23.5$ & 180  & Uniform ($1/|V|$) & $-5.91$ \\
-1      & $-8.1$  & $-8.6$  & 180  & Trigram LM        & $-0.99$ \\
-2--9   & $-0.48$ & $-0.41$ & 1440 & 4-gram LM         & $-0.44$ \\
-10--19 & $-0.15$ & $-0.16$ & 1800 & 5-gram LM         & $-0.26$ \\
-20--39 & $-0.27$ & $-0.28$ & 2637 & & \\
-40+    & $-6.12$ & $-6.28$ & 1134 & & \\
+0      & $\mathbf{-24.54}$ & $-23.48$ & $-5.92$ & $-4.73$ & $-4.73$ & $-4.73$ & $-4.73$ \\
+1      & $\mathbf{-8.12}$  & $-8.63$  & $-5.08$ & $-1.38$ & $-1.14$ & $-1.14$ & $-1.14$ \\
+2--9   & $-0.48$ & $-0.41$ & $-4.11$ & $-2.25$ & $-0.88$ & $-0.38$ & $-0.31$ \\
+10--19 & $-0.15$ & $-0.16$ & $-4.18$ & $-2.34$ & $-1.06$ & $-0.45$ & $-0.26$ \\
+20--39 & $-0.27$ & $-0.28$ & $-4.13$ & $-2.24$ & $-0.98$ & $-0.43$ & $-0.20$ \\
+40+    & $\mathbf{-6.12}$  & $-6.28$  & $-4.17$ & $-2.28$ & $-0.99$ & $-0.40$ & $-0.18$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -563,15 +596,24 @@ of the distribution; Appendix~\ref{app:pos0} gives the per-seed figures and the 
 
 We deliberately do not anchor this on the uniform value of $2.725\times10^{-3}$. Self-generated
 max-softmax at position~0 is 0.902 (next paragraph), so the position-0 distribution is nowhere
-near uniform, and in a distribution that peaked almost any non-argmax symbol will fall orders of
+near uniform, and in a distribution that peaked almost any non-argmax symbol falls orders of
 magnitude below $1/|V|$. A comparison against uniform would therefore partly measure the
-sharpness of the position-0 softmax rather than a disfavouring of the truth specifically. The
-comparisons that would settle this are the probability the model assigns to an arbitrary
-\emph{wrong} symbol at position~0 and the rank of the ground-truth symbol in that distribution;
-both are scale-free with respect to softmax sharpness, and neither has been computed. We list
-them in Section~\ref{sec:lim} and restrict the claim here to what the paired quantities support:
-the correct symbol receives order $10^{-11}$ while the model's own selected symbol receives
-0.90, and this holds identically with and without visual content.
+sharpness of the softmax rather than a disfavouring of the truth specifically.
+
+The position-matched $n$-gram references in Table~\ref{tab:position} supply a null that is not
+subject to this objection, because both sides of the comparison are $p(\mathrm{GT})$. A
+grapheme $n$-gram model fitted on the same training corpus, which never sees an image, assigns
+the correct first symbol $-4.73$ nats at position~0 (identical for orders two through five,
+since with no prefix they all reduce to the marginal over sequence-initial symbols). The
+instrument assigns it $-24.54$. That is a gap of 19.8 nats, or more than eight orders of
+magnitude, \emph{below a text-only baseline}. The model is not merely failing to use the image
+at position~0; it is placing the correct first symbol far lower than a model that has only ever
+seen text. We regard this, rather than the comparison against uniform, as the defensible form
+of the claim.
+
+Two scale-free quantities would sharpen it further and neither is computed here: the
+probability the model assigns at position~0 to an arbitrary \emph{wrong} symbol, and the rank
+of the ground-truth symbol in that distribution. Both are listed in Section~\ref{sec:lim}.
 
 \paragraph{2. Confidence at that position is near ceiling.} Self-generated max-softmax at
 position 0 is 0.902 pooled on real input and 0.895 on blank. Position 0 is therefore the point
@@ -584,32 +626,31 @@ alone.
 symbol remains more than two nats below the uniform reference. The failure is not confined to
 a single step; recovery begins at position 2.
 
-\paragraph{4. In the middle of the sequence the model behaves as a high-order grapheme
-$n$-gram model, and nothing more.} Fitting $n$-gram grapheme language models on 2{,}491 training lines with all 60 evaluation strings
-excluded (add-$\alpha$ smoothing, $\alpha = 0.01$) gives rest-of-sequence means of $-4.17$
-(unigram), $-2.25$ (bigram), $-0.99$ (trigram), $-0.44$ (4-gram) and $-0.26$ (5-gram). The
-instrument's positions 2--9 ($-0.48$) sit close to the 4-gram reference and positions 20--39
-($-0.27$) close to the 5-gram reference. We therefore do \emph{not} claim the decoder has
-learned something beyond local $n$-gram statistics, and it does whatever it does without
-reference to the image, since the blank column matches the real column at every bucket.
+\paragraph{4. In the middle of the sequence the model is comparable to a high-order grapheme
+prior.} Against position-matched references (Table~\ref{tab:position}), positions 2--9
+($-0.48$) sit between the trigram ($-0.88$) and 4-gram ($-0.38$) references; positions 10--19
+($-0.15$) are slightly \emph{better} than the 5-gram reference ($-0.26$); positions 20--39
+($-0.27$) sit between the 4-gram and 5-gram references. So mid-sequence the instrument is in
+the same band as a 4- to 5-gram grapheme prior, occasionally above it, and it gets there
+without reference to the image, since the blank column matches the real column at every bucket.
 
-Two limits on how far this comparison can be pushed. The $n$-gram references are whole-tail
-means over all positions $\geq 1$, while the model's figures are bucket means, so the numerical
-agreement at 4-gram and 5-gram is suggestive rather than position-matched; the references
-themselves almost certainly vary across buckets as the model's do. And matched mean
-log-likelihood does not establish that two predictive distributions agree. Establishing that
-the decoder is a high-order $n$-gram model \emph{and nothing more} would require a
-distributional comparison, for instance per-position $\mathrm{KL}$ between the model and the
-5-gram reference together with the rate at which their argmaxes coincide. We have not run
-either, and we state the claim at the strength the evidence carries: mid-sequence likelihood is
-consistent with a 4- to 5-gram grapheme prior and is not evidence of anything sharper.
+We stop short of the exclusive claim. Matched mean log-likelihood does not establish that two
+predictive distributions agree, and establishing that the decoder is a high-order $n$-gram
+model \emph{and nothing more} would require a distributional comparison, for instance
+per-position $\mathrm{KL}$ between the model and the 5-gram reference together with the rate at
+which their argmaxes coincide. The committed probe outputs record $p(\mathrm{GT})$ and entropy
+per step but not the full softmax, so that comparison is not available here.
 
-\paragraph{5. A second collapse past position 40.} Beyond position 39 the mean falls to
-$-6.12$ (real) and $-6.28$ (blank), below the uniform reference, on 1{,}134 steps per
-condition. Long sequences are those on which the model has drifted furthest from any prefix
-the training distribution supports, and there the $n$-gram prior stops helping. This bucket
-is reported for completeness; we place no weight on it, since sequences reaching position 40
-are a length-selected minority.
+\paragraph{5. Outside that band the model is far worse than a text-only baseline.} The
+position-matched view makes the shape of the failure precise, and it is not the shape a
+low-order-$n$-gram account predicts. At position~0 the instrument is 19.8 nats below the best
+$n$-gram reference; at position~1 it is 7.0 nats below; and beyond position~39 it is 5.9 nats
+below the 5-gram reference, on 1{,}134 steps per condition. The $n$-gram baselines are
+essentially flat across buckets (the 5-gram reference moves only from $-0.31$ to $-0.18$), so
+the instrument's profile is not tracking any property of the text. It matches a text-only prior
+in the middle of the sequence and collapses far beneath one at both ends. We place limited
+weight on the 40+ bucket, since sequences reaching that length are a selected minority, but the
+position-0 and position-1 gaps rest on all 180 sequences.
 
 \section{When the Confidence Signal Does Work}
 \label{sec:works}
@@ -710,10 +751,10 @@ behavioural claim that the model ignores the encoder into a direct measurement o
 signal that pathway carries. Third, \emph{Gaussian-noise and patch-scrambled inputs}, testing
 whether the model responds to visual variation of any kind rather than only to the blank
 versus real contrast; these are also what would separate visual bypass from the domain-shift
-explanation raised in Section~\ref{sec:cer}. We would add a fourth: per-position $n$-gram
-references and a distributional comparison against the 5-gram model, which is what
-Section~\ref{sec:position} would need to make its $n$-gram claim exclusive rather than
-consistent. All three, together with the positive control above, are inference-only
+explanation raised in Section~\ref{sec:cer}. A fourth would make Section~\ref{sec:position}'s
+$n$-gram claim exclusive rather than merely consistent: per-position $\mathrm{KL}$ between the
+model and the 5-gram reference, and the rate at which their argmaxes coincide. This requires
+retaining the full per-step softmax, which the committed probe outputs do not. All three, together with the positive control above, are inference-only
 measurements requiring no further training. They were scoped out of the present phase by
 available compute rather than by design, and the probe implementations are released with the
 code.
@@ -851,6 +892,41 @@ grapheme CER 0.9855 [0.9406, 1.0347] real and 0.9491 [0.9053, 0.9911] blank; mea
 and 0.9894 [0.9871, 0.9916] Perso-Arabic; position-0 geometric mean $p(\mathrm{GT})$
 $2.20\times10^{-11}$ [$1.04\times10^{-11}$, $5.29\times10^{-11}$] real; AUROC 0.838
 [0.771, 0.902] on synthetic natural and 0.570 [0.491, 0.650] on real scans.
+
+\section{Training and Evaluation Configuration}
+\label{app:config}
+
+\paragraph{Architecture.} Vision Transformer encoder, 6 layers, $d_{\text{model}} = 320$, 5
+heads, MLP ratio 4, dropout 0.1, sinusoidal position encodings, single grayscale input channel.
+Autoregressive decoder, 5 layers, $d_{\text{model}} = 384$, 6 heads, MLP ratio 4, dropout 0.1,
+learned position encodings, embedding and output head tied. Patch size 14. Total parameters
+19{,}607{,}104 at $|V| = 367$. The vocabulary is built from the run's own manifest with a
+minimum grapheme frequency of 5.
+
+\paragraph{Training data.} Rendered Hindi line crops in the \texttt{natural} glyph-frequency
+mode, 2{,}538 lines; the flattened and inverted modes contain 2{,}707 and 2{,}872 lines. Source
+text is ground-truth strings from GlotOCR Hindi \citep{kargaran2026glotocr}, resampled into
+synthetic pages. Fonts are selected as the first available among Kohinoor, Sangam, ITF or Noto
+Sans Devanagari; the specific font file used for the training run was not recorded. No
+augmentation is applied at training time: crops are loaded grayscale, divided by 255 and
+white-padded. Line crops are rendered at height 70 px (five patches) with variable width padded
+per batch to a multiple of the patch size.
+
+\paragraph{Optimisation.} AdamW, learning rate $3\times10^{-4}$ held constant with no schedule,
+batch size 32, 5{,}000 steps, fp16 mixed precision. The checkpoint used throughout is the final
+step of the run; there is no validation-loss selection. Three seeds were trained under
+identical settings. Wall-clock was not recorded.
+
+\paragraph{Evaluation data.} Real evaluation images are resized to height 70 preserving aspect
+ratio (Lanczos); their native resolution and scanning conditions were not recorded. The
+model-side evaluation uses 60 real Hindi rows in plain and degraded variants, 100 Ol Chiki rows
+and 20 Perso-Arabic rows, each under three seeds. Grapheme-cluster segmentation for every CER
+in this paper uses the \texttt{regex} library's \texttt{{\textbackslash}X} operator.
+
+\paragraph{Scope of the engine study.} The counts in Table~\ref{tab:tier1} are prediction rows
+pooled over three engines, four languages (Hindi, Bengali, Santhali, Kashmiri) and two image
+variants, scored on full strings. They are not the same evaluation set as the model-side
+results and the overlap between the two was not recorded.
 
 \section{Sequence Lengths}
 \label{app:lengths}
