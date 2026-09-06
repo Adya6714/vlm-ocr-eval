@@ -4,7 +4,7 @@ A **from-scratch Indic OCR instrument** and a **probe suite**, not a shipping OC
 
 Autoregressive readers emit a token and a confidence at every step. Production systems use that confidence to decide what a human should check. This repo asks whether that number tracks *whether the image supports the text*, or only *whether the generated string looks like the training language*.
 
-The paper is [**Reading Without Looking**](paper/main.pdf) (`paper/main.tex`). The instrument is a ~19.5M-parameter encoder–decoder trained with **no Indic pretraining**. On held-out real Hindi scans it does **not** read (grapheme CER near 1 on both real pages and blank white). Decoder confidence stays near ceiling anyway. Position 0 is the informative test: there is no prefix, so any probability on the correct first symbol has to come from the image. It does not.
+The paper is [**Reading Without Looking**](paper/main.pdf) (`paper/main.tex`). The instrument is a ~19.6M-parameter encoder–decoder trained with **no Indic pretraining**. On held-out Hindi **renders** (not photographs) it does **not** read (grapheme CER near 1 on both text-bearing pages and blank white). Decoder confidence stays near ceiling anyway. Position 0 is the informative test: there is no prefix, so any probability on the correct first symbol has to come from the image. It does not — and that gap is vs a text-only n-gram, not vs uniform.
 
 Numbers in this README stay qualitative on purpose. Trace every figure to jsonl and code in [`docs/RESULTS.md`](docs/RESULTS.md) and [`docs/paper_defensibility_stats.md`](docs/paper_defensibility_stats.md). Do not copy tables from chat.
 

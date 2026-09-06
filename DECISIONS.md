@@ -1754,4 +1754,19 @@ captions; (b) rename jsonl condition fields.
 **Why:** (a) is visible to a reviewer who just read the terminology
 sentence. (b) is not a plotting-only change.
 
+---
+
+### 75. Preprint tab must match tex terminology and holdout facts
+
+**Decision:** GitHub Pages Preprint copy follows `SITE_SYNC_PROMPT.md`:
+no “real scans” for our images; position-0 vs n-gram not uniform;
+disclose full-manifest training (19/60 verbatim). Parameter count
+19.6M.
+
+**Alternatives considered:** (a) leave Pages until the paper is frozen;
+(b) Extract tab only.
+
+**Why:** a technical send that links the site will be read against the
+PDF.
+
 
