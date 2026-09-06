@@ -32,9 +32,9 @@ PYTHONPATH=src python src/probes/probe_pos0_null.py --seed 0 --device cpu \
 
 ## Step 2 — E1
 
-Code: `src/probes/probe_pos0_null.py`. Results:
-`docs/pos0_null_control.md` (placeholder until jsonl exists).
-**Not computed.**
+Code: `src/probes/probe_pos0_null.py`. **Not computed** until
+`checkpoint_hindi_natural_seed{0,1,2}.pt` are available.
+`src/analysis/analyze_pos0_null.py` writes a short report when jsonl exists.
 
 ## Step 3 — existing probes
 

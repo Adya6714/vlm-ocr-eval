@@ -1,7 +1,6 @@
 # Where the numbers live
 
-This is the index for anyone who wants to trace a headline figure back
-to the file that produced it. Do not recompute from chat history.
+Index of headline figures: jsonl, analysis markdown, and producer scripts.
 
 **Raw probe outputs (committed):** `data/probe_results/`  
 **Claim-facing write-ups:** this `docs/` folder  
@@ -31,7 +30,7 @@ Design choices: [`DECISIONS.md`](../DECISIONS.md).
 | Attention ablation | full 0.9861 vs zero 0.9891; Δ −0.0030; prior suff. 0.8827 | `attention_ablation_hindi_natural_seed{0,1,2}.jsonl` | [`attention_ablation_analysis.md`](attention_ablation_analysis.md) | `src/probes/probe_attention_ablation.py` |
 | GT-likelihood (teacher-forced) | log p(GT) real −1.783 / blank −1.751; first-token ~1e-10–1e-12 both | `probe_gt_likelihood_hindi_natural_seed{0,1,2}.jsonl` | [`gt_likelihood_analysis.md`](gt_likelihood_analysis.md) | `src/probes/probe_gt_likelihood.py` |
 | Probe 6 Tier C | conf 0.9861 / 0.9768 / 0.9799; acc 0.0; 0 leakage | `probe6_synthetic_real_hindi_seed{0,1,2}.jsonl` | [`probe6_synthetic_real_analysis.md`](probe6_synthetic_real_analysis.md) | `src/probes/probe6_synthetic_real_gap.py` |
-| Stage 5a transfer | published gap 39.98 pp vs conf Δ 0.0027 | `sarvam_transfer_probe.jsonl` | [`sarvam_transfer_analysis.md`](sarvam_transfer_analysis.md) | `src/probes/sarvam_transfer_probe.py` |
+| Stage 5a Extract vs published bench | 39.98 pp accuracy vs conf Δ 0.0027 | `sarvam_transfer_probe.jsonl` | [`sarvam_vision_confidence.md`](sarvam_vision_confidence.md) | `src/probes/sarvam_transfer_probe.py` |
 
 Kashmiri Bonferroni “significance” on Probe 5b seed 0 is **retracted** (`statistical_repair.md`, DECISIONS.md #53).
 

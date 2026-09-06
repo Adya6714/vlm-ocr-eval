@@ -10,7 +10,7 @@ Production systems use per-token or per-page confidence to decide what a human s
 | Project page | [adya6714.github.io/vlm-ocr-eval](https://adya6714.github.io/vlm-ocr-eval/) |
 | Measurements | [`docs/RESULTS.md`](docs/RESULTS.md) · [`docs/paper_defensibility_stats.md`](docs/paper_defensibility_stats.md) |
 | Training setup | [`docs/training_config.md`](docs/training_config.md) |
-| Document-API confidence | [`docs/indic_document_ai_confidence.md`](docs/indic_document_ai_confidence.md) |
+| Sarvam Vision / Extract | [`docs/sarvam_vision_confidence.md`](docs/sarvam_vision_confidence.md) |
 
 The instrument is a ~19.6M-parameter encoder–decoder trained **from scratch** (no Indic pretraining) on rendered Hindi line crops. It is a measurement device, not a deployed OCR engine.
 
@@ -89,9 +89,7 @@ Implementations: `src/probes/`. Per-probe write-ups: `docs/`. Interactive figure
 
 ## Production OCR confidence
 
-A companion note evaluates a live Indic document-extraction API against that vendor’s **published** language-wise accuracies, and explains how the from-scratch probes make a flat confidence curve interpretable. It is not part of the preprint.
-
-See [`docs/indic_document_ai_confidence.md`](docs/indic_document_ai_confidence.md).
+How this work relates to **Sarvam Vision** and Doc-AI Extract (published language accuracies vs Extract confidence, and why the from-scratch probes exist): [`docs/sarvam_vision_confidence.md`](docs/sarvam_vision_confidence.md). That evaluation is not part of the preprint.
 
 ---
 

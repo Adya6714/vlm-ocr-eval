@@ -429,7 +429,7 @@ docs.sarvam.ai, Sept 2026).  Allocate up front, do not spend ad hoc.**
       drawn with `Random(0)`. Budget used: **₹17.50** (35 pages × ₹0.5).
       Results cached in `data/cache/sarvam/` (35 JSON files).
       Output: `data/probe_results/sarvam_transfer_probe.jsonl`.
-      Analysis: `docs/sarvam_transfer_analysis.md`.
+      Analysis: `docs/sarvam_vision_confidence.md`.
 
       **Headline finding:** Sarvam's confidence does NOT track its own
       published accuracy gap. Hindi → Kashmiri accuracy gap: **39.98 pp**

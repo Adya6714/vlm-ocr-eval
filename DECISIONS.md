@@ -1784,4 +1784,22 @@ Extract framing and DECISIONS cites; (b) map-only README.
 **Why:** (a) reads as internal. (b) hid the scientific and product
 questions.
 
+---
+
+### 77. One Sarvam-facing note; drop duplicate API docs
+
+**Decision:** Public Sarvam evaluation and motivation live in
+`docs/sarvam_vision_confidence.md`. Delete
+`docs/indic_document_ai_confidence.md` and
+`docs/sarvam_transfer_analysis.md`. Drop the empty
+`docs/pos0_null_control.md` placeholder (E1 stays in
+`remaining_measurements.md` until jsonl exists).
+
+**Alternatives considered:** (a) keep a vendor-free README note plus a
+separate measurement log; (b) leave all probe `*_analysis.md` files
+merged into one.
+
+**Why:** (a) duplicated the Extract table. (b) would smash generated
+per-probe reports that analysis scripts overwrite.
+
 

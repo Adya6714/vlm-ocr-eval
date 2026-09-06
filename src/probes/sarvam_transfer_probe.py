@@ -41,7 +41,7 @@ before they run it.
 Outputs
 -------
   data/probe_results/sarvam_transfer_probe.jsonl   — one record per image
-  docs/sarvam_transfer_analysis.md                 — written by analyze step
+  docs/sarvam_vision_confidence.md                  — protocol and write-up
 
 Run command (user runs this, not the agent):
   export SARVAM_API_KEY=<your_key>
