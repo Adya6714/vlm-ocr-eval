@@ -1769,4 +1769,19 @@ disclose full-manifest training (19/60 verbatim). Parameter count
 **Why:** a technical send that links the site will be read against the
 PDF.
 
+---
+
+### 76. README is a dual-audience map, not a second paper
+
+**Decision:** Root `README.md` is public-facing: paper, method, probes,
+production-API evaluation, and follow-up experiments. No internal
+decision numbers, no chat/process notes, no “the paper does not name
+vendor X.”
+
+**Alternatives considered:** (a) dual-audience README with workshop vs
+Extract framing and DECISIONS cites; (b) map-only README.
+
+**Why:** (a) reads as internal. (b) hid the scientific and product
+questions.
+
 
