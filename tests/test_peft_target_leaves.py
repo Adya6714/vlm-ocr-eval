@@ -4,12 +4,13 @@ import sys
 import unittest
 from pathlib import Path
 
+import torch
 import torch.nn as nn
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src" / "models" / "demo"))
 
-from benchmark_base_models import collect_peft_target_leaves  # noqa: E402
+from benchmark_base_models import collect_peft_target_leaves, dummy_vision_batch  # noqa: E402
 
 
 class FakeAttn(nn.Module):
@@ -41,6 +42,32 @@ class PeftLeafTests(unittest.TestCase):
         self.assertFalse(any(p.rsplit(".", 1)[-1] in {
             "self_attn", "modality_projection", "multi_modal_projector",
         } for p in dotted))
+
+
+class DummyVisionBatchTests(unittest.TestCase):
+    def test_idefics3_is_five_dim(self):
+        pix, kw = dummy_vision_batch(
+            "idefics3", batch_size=2, image_size=32, device=torch.device("cpu"), dtype=torch.float32
+        )
+        self.assertEqual(tuple(pix.shape), (2, 1, 3, 32, 32))
+        self.assertEqual(kw, {})
+
+    def test_mistral3_passes_image_sizes_hw(self):
+        pix, kw = dummy_vision_batch(
+            "mistral3", batch_size=2, image_size=28, device=torch.device("cpu"), dtype=torch.float32
+        )
+        self.assertEqual(tuple(pix.shape), (2, 3, 28, 28))
+        sizes = kw["image_sizes"]
+        self.assertEqual(tuple(sizes.shape), (2, 2))
+        self.assertEqual(sizes.dtype, torch.long)
+        self.assertEqual(sizes.tolist(), [[28, 28], [28, 28]])
+
+    def test_unknown_family_exits(self):
+        with self.assertRaises(SystemExit) as ctx:
+            dummy_vision_batch(
+                "not_a_family", batch_size=1, image_size=16, device=torch.device("cpu"), dtype=torch.float32
+            )
+        self.assertIn("unrecognized model_type", str(ctx.exception))
 
 
 if __name__ == "__main__":

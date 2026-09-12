@@ -145,6 +145,54 @@ def inspect_modules(model_id: str) -> dict:
     return rec
 
 
+def dummy_vision_batch(
+    family: str | None,
+    *,
+    batch_size: int,
+    image_size: int,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> tuple[torch.Tensor, dict]:
+    """
+    Family-specific dummy vision tensors for one LoRA train step.
+
+    Shapes are taken from this checkout's transformers sources, not from
+    a generic (B, 3, H, W) guess:
+
+    - idefics3 (`modeling_idefics3.py` get_image_features): unpacks
+      `pixel_values` as (batch, num_images, C, H, W). `pixel_attention_mask`
+      is optional; when None the same function builds an all-ones mask of
+      shape (N, H, W).
+    - mistral3 (`modeling_mistral3.py` Mistral3PatchMerger): iterates
+      `image_sizes` as (H, W) pairs (a (B, 2) tensor works) and requires
+      it whenever pixel_values is set.
+
+    Unrecognized model_type must fail loudly so a fifth candidate cannot
+    silently reuse a wrong shape.
+    """
+    if family == "idefics3":
+        pixel_values = torch.randn(
+            batch_size, 1, 3, image_size, image_size, dtype=dtype, device=device
+        )
+        return pixel_values, {}
+    if family == "mistral3":
+        pixel_values = torch.randn(
+            batch_size, 3, image_size, image_size, dtype=dtype, device=device
+        )
+        # (batch, 2) long tensor of pixel (H, W); PatchMerger does
+        # image_size[0] // patch_size for each row.
+        image_sizes = torch.tensor(
+            [[image_size, image_size]] * batch_size,
+            dtype=torch.long,
+            device=device,
+        )
+        return pixel_values, {"image_sizes": image_sizes}
+    raise SystemExit(
+        f"[benchmark] unrecognized model_type {family!r} "
+        "-- add explicit handling rather than guessing a default shape"
+    )
+
+
 def benchmark(model_id: str, target_modules: list[str], lora_rank: int,
               batch_size: int, image_size: int, seq_len: int, steps: int,
               device_str: str = "cuda") -> dict:
@@ -167,18 +215,40 @@ def benchmark(model_id: str, target_modules: list[str], lora_rank: int,
     model = get_peft_model(model, lora_config)
     model.print_trainable_parameters()
 
+    family = getattr(model.config, "model_type", None)
+    print(f"[benchmark] model_type = {family!r}")
+    vision_cfg = getattr(model.config, "vision_config", None)
+    patch = getattr(vision_cfg, "patch_size", None) if vision_cfg is not None else None
+    dummy_hw = image_size
+    if isinstance(patch, int) and patch > 0 and dummy_hw % patch != 0:
+        dummy_hw = ((dummy_hw + patch - 1) // patch) * patch
+        print(
+            f"[benchmark] dummy H=W {image_size} -> {dummy_hw} "
+            f"(multiple of vision patch_size={patch})"
+        )
+
     torch.cuda.reset_peak_memory_stats(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
 
-    dummy_pixel_values = torch.randn(batch_size, 3, image_size, image_size,
-                                       dtype=torch.float16, device=device)
+    dummy_pixel_values, forward_kwargs = dummy_vision_batch(
+        family,
+        batch_size=batch_size,
+        image_size=dummy_hw,
+        device=device,
+        dtype=torch.float16,
+    )
     dummy_input_ids = torch.randint(0, 1000, (batch_size, seq_len), device=device)
     dummy_labels = dummy_input_ids.clone()
 
     print(f"[benchmark] running {steps} dummy train steps, batch_size={batch_size} ...")
     for step in range(steps):
         optimizer.zero_grad()
-        out = model(pixel_values=dummy_pixel_values, input_ids=dummy_input_ids, labels=dummy_labels)
+        out = model(
+            pixel_values=dummy_pixel_values,
+            input_ids=dummy_input_ids,
+            labels=dummy_labels,
+            **forward_kwargs,
+        )
         out.loss.backward()
         optimizer.step()
         peak_gb = torch.cuda.max_memory_allocated(device) / 1e9
@@ -194,6 +264,8 @@ def benchmark(model_id: str, target_modules: list[str], lora_rank: int,
         "batch_size": batch_size,
         "lora_rank": lora_rank,
         "target_modules": list(target_modules),
+        "model_type": family,
+        "dummy_image_hw": dummy_hw,
         "fits_t4_14gb_headroom": fits,
         "t4_gb": 16,
         "headroom_gb": 16.0 - peak_gb,
