@@ -15,6 +15,7 @@ holds the extracted numbers, not the checkpoints.
 | GT-likelihood (teacher-forced) | Colab | `probe_gt_likelihood_hindi_natural_seed{0,1,2}.jsonl` |
 | Stage 5a Extract (35 pages) | this laptop | `sarvam_transfer_probe.jsonl` + `data/cache/sarvam/` |
 | Stage 0 baselines | Colab / local | `data/predictions/` (gitignored) |
+| PaddleOCR full corpus fill | this laptop (2026-09-12) | `data/predictions/paddleocr/*.jsonl`; report `docs/tier0e_paddleocr.md` |
 | Bengali 3×3 checkpoints | Colab | `_local_archives/Bengali Experiment Final.zip` only — **no Bengali probe jsonl** |
 | Manifest export (100 pages/mode) | Colab | `data/manifests/{hindi,bengali}_*.jsonl` |
 

@@ -18,13 +18,12 @@ project — protect time for those first if something has to give.
 
 - [ ] Get ~200 real Devanagari + Bengali document images (scanned books,
   government PDFs, anything real — not rendered text yet)
-- [~] Install and run Tesseract, Surya, PaddleOCR over all of them
+- [x] Install and run Tesseract, Surya, PaddleOCR over all of them
       (`run_baselines.py` is resumable: append+skip + per-image
       progress; also has per-image hard timeouts so one stuck image
       can't block the batch; DECISIONS.md #31 / #33 / #34 / #42).
-      Tesseract + Surya complete. PaddleOCR API fixed (no `show_log`;
-      MKLDNN off); strip failed paddleocr jsonl rows then resume
-      `--engine paddleocr` only.
+      Tesseract + Surya complete. PaddleOCR full corpus filled
+      2026-09-12 (`docs/tier0e_paddleocr.md`; DECISIONS.md #78).
 - [ ] Read the diffs by hand for at least an hour before writing any
   taxonomy code — this step is the actual point, don't skip to
   automation
@@ -80,32 +79,33 @@ project — protect time for those first if something has to give.
   `export_line_manifest.py` + `export_manifest_scaled.py`
   (DECISIONS.md #41 / #43 / #44). Full-scale Hindi + Bengali
   `--pages-per-mode 100` lands under `data/manifests/`.
-- Stage 3 (demo metrics) remains blocked on Stage 1 layout-bank gaps
-  (form / table-embedded / india.gov).
-- [ ] Demo: benchmark SmolDocling-256M vs LightOnOCR-1B for T4 memory
-  fit, decide, log in DECISIONS.md
-- [ ] Demo: LoRA config, SFT run on Tier A/B renderer output
-- [ ] Demo: layout module
-- [ ] Demo: reading-order module
+- Stage 3 metrics **code** exists; the demo-model curve is still blocked
+  on Stage 1 layout-bank gaps (form / table-embedded / india.gov) and
+  on a trained demo.
+- [ ] Demo: T4 LoRA VRAM for SmolDocling-256M vs LightOnOCR-1B (and
+  successors if time); close DECISIONS.md #3. Still open (#79).
+- [x] Demo: LoRA config + SFT **script** (corpus choice #80). SFT
+  **run** still TODO on T4.
+- [x] Demo: layout module as PageGT oracle (not a trained detector)
+- [x] Demo: pairwise reading-order module (geometry; unit tests)
 
 ## Stage 3 — Structure metrics (days 17–21)
 
-- [ ] Kendall tau metric, per layout-complexity bucket
-- [ ] Table header-cell binding accuracy metric
+- [x] Kendall tau metric, per layout-complexity bucket (tests +
+      geometric baseline on `bank.json`)
+- [x] Table header-cell binding accuracy metric (fixture tests)
 - [ ] Run both on the demo model's output
 
-**Blocked on:** Stage 1's real layout bank (`bank.json` exists but is
-PARTIAL: missing `form` / `table-embedded`; india.gov fetch flaky).
-Tau-vs-complexity needs those buckets populated from real layouts,
-not invented templates.
+**Blocked on (acceptance):** demo adapter + table/form cell GT.
+Region-level order on the PARTIAL bank is already scorable
+(`docs/tier2_stage3_reading_order.md`).
 
 ## Stage 4 — SFT then RLVR (days 22–25)
 
-- [ ] RLVR reward function (accuracy + TEDS + rank correlation −
-  coverage)
+- [x] RLVR reward function (accuracy + TEDS + tau − coverage); tests
 - [ ] Full RLVR training run
-- [ ] Coverage-term-removed ablation, confirm and quantify the omission
-  failure mode
+- [ ] Coverage-term-removed ablation **on a trained policy** (not
+      attempted; no SFT). `docs/tier2_rlvr_ablation.md`
 
 ## Stage 5 — The probe suite (days 26–33)
 
@@ -177,8 +177,9 @@ not invented templates.
 
 ## Ongoing, throughout
 
-- [x] `BOOK.md` teaching book written (rebuild narrative + App. E
-  reproduce commands); keep current as new verified results land
+- [x] `BOOK.md` is the project reference (research Q&A, pipeline,
+  findings, decision summaries, implementation status, plus teaching
+  chapters); keep current as new verified results land
 - [ ] Methodology upgrades (DECISIONS.md #46 / BOOK after Conclusion):
   equal-frequency Probe 5 bins + ECE/Brier; Probe 3 attention-weight
   introspection still open; **encoder-memory ablation built**
@@ -187,7 +188,7 @@ not invented templates.
   mixed-effects Probe 1; kappa on a hand-review subsample; bootstrap
   CIs — not this phase
 - [ ] Keep `DECISIONS.md` current — append, don't rewrite
-      (latest: \#68 `paper/` as the single Overleaf/compile/figure root)
+      (latest: \#78 in-process PaddleOCR corpus fill)
 - [x] Heavy scripts (OCR batches, training) written for Colab: one
   `--data-root`, no local-only paths, export into the IMPLEMENTATION.md
   output path (`run_baselines.py` + AGENTS.md; DECISIONS.md #32)

@@ -33,7 +33,7 @@ the phony target is currently `smoke-test`).
 building anything. Produces the labeled taxonomy that later stages report
 against, and produces the encoding-equivalence tables used in Probe 4.
 
-- [~] `src/eval/run_baselines.py` — run Tesseract, Surya, and PaddleOCR
+- [x] BUILT — VERIFIED `src/eval/run_baselines.py` — run Tesseract, Surya, and PaddleOCR
       over a seed set of ~200 real Devanagari + Bengali document images.
       Input: image directory. Output: one JSON per engine per image, with
       raw predicted text and (where the engine exposes it) confidence.
@@ -45,9 +45,11 @@ against, and produces the encoding-equivalence tables used in Probe 4.
       Hindi+Bengali `--limit 2` via `--pred-root` → 4/4 non-null.
       Resumable append+skip + per-image progress (DECISIONS.md #31).
       Colab-facing: `--data-root` / `--export-zip` (DECISIONS.md #32).
-      Tesseract+Surya jsonl OK; paddleocr jsonl still mostly null
-      `show_log`/OneDNN rows — strip failed paddleocr lines then
-      resume `--engine paddleocr` only (do not delete the files).
+      Tesseract+Surya jsonl OK. PaddleOCR full corpus filled 2026-09-12
+      after stripping OneDNN `skipped_reason` rows and in-process
+      resume (DECISIONS.md #78): 420/420 images, 0 skip flags;
+      taxonomy n=420 EXACT 11 / TIER1 17 / TIER2 0
+      (`docs/tier0e_paddleocr.md`). Do not delete the jsonl files.
 - [x] BUILT — VERIFIED `src/eval/error_taxonomy.py` — align each
       prediction to ground truth at the grapheme-cluster level (not
       code-point level — see `DECISIONS.md` #7) and bucket every diff
@@ -220,25 +222,22 @@ GlotOCR slice after #28.
 
 ### 2b. The demo (LoRA on a real small VLM)
 
-- [ ] `src/models/demo/base_model.py` — loads SmolDocling-256M or
-      LightOnOCR-1B (decide per `DECISIONS.md` #3 once both are
-      benchmarked for T4 memory fit).
-- [ ] `src/models/demo/lora_config.py` — LoRA adapter config.
-- [ ] `src/models/demo/layout_module.py` — separate small detector for
-      block-level layout, trained on renderer ground truth.
-- [ ] `src/models/demo/reading_order_module.py` — separate module,
-      pointer-network or pairwise-relation style, scored with Kendall tau
-      (not accuracy — ordering is a permutation problem).
-- [ ] `src/models/demo/sft.py` — supervised fine-tune on Tier A/B
-      renderer output with exact ground truth.
-- [ ] `src/models/demo/rlvr.py` — reward = character accuracy +
-      structure match (TEDS) + reading-order rank correlation − a
-      coverage term (penalizes omitting text, so the model can't game
-      accuracy by saying less).
-  - [ ] Coverage-term ablation: retrain with the coverage term removed,
-        confirm and quantify the model learning to omit text. This is a
-        two-hour experiment and a specific, checkable claim — keep it as
-        the _only_ RLVR ablation (see `DECISIONS.md` #11 on scope).
+- [x] BUILT — NOT RUN `src/models/demo/base_model.py` — loader for
+      SmolDocling / granite-docling / LightOnOCR ids. Decision #3
+      **still open** (no T4 LoRA VRAM; DECISIONS.md #79).
+- [x] BUILT — NOT RUN `src/models/demo/lora_config.py` — PEFT config;
+      refuses to guess `target_modules` until inspect json exists.
+- [x] BUILT — PARTIAL `src/models/demo/layout_module.py` — PageGT-line
+      oracle boxes, **not** a trained detector (bank still PARTIAL).
+- [x] BUILT — VERIFIED `src/models/demo/reading_order_module.py` —
+      pairwise count-and-sort; unit tests. Not a pointer network.
+- [x] BUILT — NOT RUN `src/models/demo/sft.py` — Hindi natural line-crop
+      corpus chosen (#80). `--run` requires CUDA; collate unwired.
+      Report: `docs/tier2_stage2b_demo.md`.
+- [x] BUILT — VERIFIED `src/models/demo/rlvr.py` — reward terms + tests.
+  - [ ] Coverage-term ablation **training**: not attempted (no SFT
+        adapter). Reward-shape tests only. `docs/tier2_rlvr_ablation.md`.
+        Still the _only_ RLVR ablation (DECISIONS.md #11, #82).
 
 **Acceptance:** the instrument trains three times (Stage 5, Probe 1)
 without manual intervention and produces per-glyph-class accuracy and
@@ -250,19 +249,17 @@ output.
 
 ## Stage 3 — Structure metrics
 
-- [ ] `src/eval/reading_order_metric.py` — Kendall tau between
-      predicted and ground-truth block order, computed per layout-
-      complexity bucket (single-column → two-column → marginalia →
-      table-embedded), so degradation-vs-complexity is a curve, not one
-      number.
-- [ ] `src/eval/table_binding.py` — the scoped-down table-to-prose idea
-      (see `DECISIONS.md` #12): after OCR, can each cell still be bound to
-      its correct column header? One number per table, clean ground truth
-      from the renderer. Not full prose generation.
+- [x] BUILT — VERIFIED `src/eval/reading_order_metric.py` — Kendall tau
+      per complexity bucket; geometric baseline on the live layout bank
+      (28 templates). Empty `form` / `table-embedded` stay `mean_tau=None`
+      (DECISIONS.md #81). Tests + `docs/tier2_stage3_reading_order.md`.
+- [x] BUILT — VERIFIED `src/eval/table_binding.py` — header–cell binding
+      via max x-overlap (Decision #12). Tests on fixtures only; renderer
+      has no cell GT.
 
-**Acceptance:** a tau-vs-complexity curve for the demo model, and a
-binding-accuracy number comparable against Sarvam's Extract endpoint
-(which returns per-field confidence — see `DECISIONS.md` #13).
+**Acceptance (still open):** a tau-vs-complexity curve for the **demo
+model**, and a binding-accuracy number comparable against Sarvam's Extract
+endpoint (Decision #13). Geometric bank baseline is not that curve.
 
 ---
 

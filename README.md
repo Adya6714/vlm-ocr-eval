@@ -145,7 +145,7 @@ python src/models/instrument/train.py \
   --output-root checkpoints
 ```
 
-Further documentation: [`BOOK.md`](BOOK.md) (concepts), [`IMPLEMENTATION.md`](IMPLEMENTATION.md) (module status), [`docs/training_config.md`](docs/training_config.md) (hyperparameters).
+Further documentation: [`BOOK.md`](BOOK.md) (full project reference: questions, pipeline, findings, decisions, status), [`IMPLEMENTATION.md`](IMPLEMENTATION.md) (module checkboxes), [`docs/training_config.md`](docs/training_config.md) (hyperparameters).
 
 ---
 

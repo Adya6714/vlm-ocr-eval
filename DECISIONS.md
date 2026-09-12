@@ -1802,4 +1802,108 @@ merged into one.
 **Why:** (a) duplicated the Extract table. (b) would smash generated
 per-probe reports that analysis scripts overwrite.
 
+---
+
+### 78. PaddleOCR corpus fill: strip skip-rows, resume in-process
+
+**Decision:** To finish Stage 0 PaddleOCR on the same 420 images
+Tesseract/Surya already cover, strip jsonl lines with `skipped_reason`
+(OneDNN crash rows), then call `run_engine_over_language` with
+`per_image_timeout_seconds=None` so one `PaddleOCR` object is reused.
+
+**Alternatives considered:** (a) CLI `run_baselines.py --engine paddleocr`
+with the default 60s spawn timeout; (b) delete the jsonl files and
+rerun from empty.
+
+**Why not (a):** spawn isolation reloads det+rec every image (~14s) and
+was the path that originally recorded OneDNN errors as skip rows.
+MKLDNN is already off in-process (#42). **Why not (b):** IMPLEMENTATION
+says do not delete the files; 10 Hindi successes were keepable.
+
+**Why:** same `run_paddleocr` schema and `error_taxonomy.py` scorer;
+report in `docs/tier0e_paddleocr.md`. Default CLI timeout behaviour is
+unchanged for future Colab batches.
+
+**Date:** 2026-09-12
+
+---
+
+### 79. Do not close Decision #3 without T4 LoRA VRAM
+
+**Decision:** Decision #3 remains open. `DEFAULT_MODEL_ID =
+ds4sd/SmolDocling-256M-preview` is a development default for wiring
+loaders and SFT, not a hardware choice. Dummy-train peak memory is
+CUDA-only; MPS/CPU RAM must not be reported as T4 fit. LoRA
+`target_modules` stay empty until `--inspect` writes
+`docs/demo_lora_inspect.json`.
+
+**Alternatives considered:** (a) pick SmolDocling because 256M “should”
+fit a T4; (b) pick LightOnOCR-2-1B as the newest card; (c) guess
+`q_proj`/`v_proj` from Llama.
+
+**Why:** (a) and (b) are the exact guess #3 forbade — headroom for
+layout + reading-order modules is the missing number. (c) silently
+attaches adapters to nothing on architectures that use different leaf
+names. This session: no CUDA; SmolDocling inspect download stalled at
+402 MB incomplete.
+
+**Date:** 2026-09-12
+
+---
+
+### 80. Demo SFT corpus: Hindi natural line crops, not GlotOCR pages
+
+**Decision:** When Stage 2b SFT actually runs, the first corpus is
+`data/manifests/hindi_natural.jsonl` (exact GT line crops). Optional
+concat with `bengali_natural.jsonl`. Not Probe 1 exposure control
+(Decision #1). Not full GlotOCR pages.
+
+**Alternatives considered:** (a) page-level renderer images so one
+sequence includes layout; (b) raw GlotOCR scans for “natural”
+production data; (c) all three Hindi frequency conditions.
+
+**Why:** (a) still has no table/form cell GT in `render.py`. (b) has no
+layout tags and mixed scripts. (c) would mix the instrument’s causal
+dial into a demo that is allowed pretrained Indic knowledge. Line crops
+are already Colab-portable. Flag: this SFT will not teach reading
+order.
+
+**Date:** 2026-09-12
+
+---
+
+### 81. Stage 3 scores the live bank’s region order; no invented tables
+
+**Decision:** Kendall tau runs on `bank.json` region `reading_order`
+plus a geometric y-then-x baseline. Table binding is implemented and
+tested on fixtures only. Do not synthesize a `table-embedded`/`form`
+bank just to fill empty buckets.
+
+**Alternatives considered:** (a) wait until india.gov tables exist
+before writing any metric; (b) draw fake grids in the renderer and
+report them as the complexity curve.
+
+**Why:** (a) blocked a permutation metric that the bank can already
+support for 25+2+1 templates. (b) would look easy and not test the
+case Decision #12 scoped. Empty buckets stay `mean_tau=None`.
+
+**Date:** 2026-09-12
+
+---
+
+### 82. RLVR: implement the reward; do not train without SFT
+
+**Decision:** Ship `compute_reward` with λ_coverage=0 as the only
+ablation hook. Do not start PPO/GRPO (or a truncated train) until an
+SFT adapter exists.
+
+**Alternatives considered:** (a) one dummy RL step on CPU so the
+checkbox moves; (b) a multi-term sweep.
+
+**Why:** (a) is the padded complete the prompt forbade. (b) is
+Decision #11. Tests cover the omission *shape* of the scalar, not a
+policy.
+
+**Date:** 2026-09-12
+
 

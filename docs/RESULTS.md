@@ -20,6 +20,7 @@ Design choices: [`DECISIONS.md`](../DECISIONS.md).
 | Claim | Number (in-tree) | Output file(s) | Analysis | Producer |
 |---|---|---|---|---|
 | Stage 0 Tier 1 among Tesseract non-exact | 20.4% (provisional) | `data/predictions/error_taxonomy.csv` (local) | [`adjudication_analysis.md`](adjudication_analysis.md), [`tier2_validation.md`](tier2_validation.md) | `src/eval/error_taxonomy.py` |
+| Stage 0 PaddleOCR full corpus | n=420; exact 11 (2.6%); T1 among non-exact 4.2% (17/409) | `data/predictions/paddleocr/*.jsonl` | [`tier0e_paddleocr.md`](tier0e_paddleocr.md) | `run_paddleocr` + `error_taxonomy.py` |
 | Stage 1 glyph-frequency TV | natural 0 / flat ≈0.047 / inv ≈0.005 | manifests under `data/manifests/hindi_*.jsonl` | IMPLEMENTATION Stage 1 | `src/renderer/glyph_frequency.py` |
 | Probe 1 exposure β | **withheld** (flat/inv line acc ~0%) | Probe 5 jsonl + manifests | [`probe1_fixed_effects.md`](probe1_fixed_effects.md) | `src/analysis/probe1_fixed_effects.py` |
 | Probe 2 confusion | EOS/space weight 0.0891; mixed top pairs | `probe2_hindi_natural_seed{0,1,2}.jsonl` | [`probe2_confusion_analysis.md`](probe2_confusion_analysis.md) | `src/probes/probe2_confusion_graph.py` |

@@ -183,11 +183,15 @@ export is how the checkpoint gets back here.
 
 ## Writing BOOK.md
 
-`BOOK.md` is not a changelog and not a second copy of `IMPLEMENTATION.md`.
-It's a standalone explanation of the computer vision (and, where
-relevant, reinforcement learning) underneath whatever was just built,
-written so a beginner who has never seen this repo could read one
-chapter and understand both the concept and why this project needed it.
+`BOOK.md` is the **project reference a person can open for every kind
+of information**: research questions and answers, how results were
+built, what they mean, implementation status, and decision summaries.
+It is also a teaching walkthrough (Chapters 0–9). It is not a
+replacement for the append-only log in `DECISIONS.md` or the checkbox
+spec in `IMPLEMENTATION.md` — those stay canonical for agents doing
+the next unit of work. Tables of numbers stay in
+`docs/paper_defensibility_stats.md` / `docs/RESULTS.md`; BOOK cites
+them rather than becoming a second copy that can drift.
 
 When you finish a stage or a probe:
 
@@ -209,9 +213,13 @@ When you finish a stage or a probe:
 5. Match the tone and depth of the existing chapters — read at least
    the two most recent chapters before writing a new one, so the book
    doesn't shift register halfway through.
+6. Update the front-matter sections (**Research questions**, **How the
+   results were built**, **Implementation status**, **Decision catalog**)
+   when the new work changes a Q&A, a pipeline step, a checkbox, or a
+   numbered decision.
 
-Chapter 0 in `BOOK.md` is already written as the template for this. Read
-it before writing Chapter 1.
+Chapter 0 in `BOOK.md` is the template for teaching chapters. The
+front-matter sections are the template for status and findings.
 
 ## When something in this conversation contradicts the docs
 

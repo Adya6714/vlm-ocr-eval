@@ -21,35 +21,89 @@ that's a decision for DECISIONS.md #3, not this script.
 from __future__ import annotations
 
 import argparse
+import json
 import time
+from pathlib import Path
 
 import torch
 
+_REPO = Path(__file__).resolve().parents[3]
+INSPECT_JSON = _REPO / "docs" / "demo_lora_inspect.json"
 
-def load_model_and_processor(model_id: str):
+CANDIDATE_IDS = [
+    "ds4sd/SmolDocling-256M-preview",
+    "ibm-granite/granite-docling-258M",
+    "lightonai/LightOnOCR-1B-1025",
+    "lightonai/LightOnOCR-2-1B",
+    "lightonai/LightOnOCR-2-1B-base",
+]
+
+
+def load_model_and_processor(model_id: str, torch_dtype=None):
+    if torch_dtype is None:
+        torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
     if "lightonai" in model_id:
-        from transformers import LightOnOcrForConditionalGeneration, LightOnOcrProcessor
-        processor = LightOnOcrProcessor.from_pretrained(model_id)
-        model = LightOnOcrForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16)
-    else:
-        from transformers import AutoModelForVision2Seq, AutoProcessor
-        processor = AutoProcessor.from_pretrained(model_id)
-        model = AutoModelForVision2Seq.from_pretrained(model_id, torch_dtype=torch.float16)
+        try:
+            from transformers import LightOnOcrForConditionalGeneration, LightOnOcrProcessor
+            processor = LightOnOcrProcessor.from_pretrained(model_id)
+            model = LightOnOcrForConditionalGeneration.from_pretrained(
+                model_id, torch_dtype=torch_dtype
+            )
+            return model, processor
+        except ImportError:
+            pass
+    from transformers import AutoProcessor
+    processor = AutoProcessor.from_pretrained(model_id)
+    try:
+        from transformers import AutoModelForImageTextToText as _AutoVLM
+    except ImportError:
+        from transformers import AutoModelForVision2Seq as _AutoVLM
+    model = _AutoVLM.from_pretrained(model_id, torch_dtype=torch_dtype)
     return model, processor
 
 
-def inspect_modules(model_id: str) -> None:
+def inspect_modules(model_id: str) -> dict:
+    # Names only. A CPU/MPS load is not a T4 VRAM measurement.
     model, _ = load_model_and_processor(model_id)
     print(f"[inspect] attention/projection module names in {model_id}:")
+    dotted = []
+    leaves = set()
     for name, _ in model.named_modules():
         if "proj" in name or "attn" in name.lower():
             print(f"  {name}")
-    print("[inspect] pick the real q_proj/v_proj-equivalent names above for --target-modules")
+            dotted.append(name)
+            leaf = name.rsplit(".", 1)[-1]
+            low = leaf.lower()
+            if "proj" in low or "attn" in low:
+                leaves.add(leaf)
+    print("[inspect] leaf names for PEFT target_modules:")
+    for leaf in sorted(leaves):
+        print(f"  {leaf}")
+    rec = {
+        "model_id": model_id,
+        "n_parameters": int(sum(p.numel() for p in model.parameters())),
+        "type": type(model).__name__,
+        "dotted_attn_or_proj": dotted,
+        "target_modules": sorted(leaves),
+    }
+    payload = {}
+    if INSPECT_JSON.exists():
+        payload = json.loads(INSPECT_JSON.read_text(encoding="utf-8"))
+    payload[model_id] = rec
+    INSPECT_JSON.parent.mkdir(parents=True, exist_ok=True)
+    INSPECT_JSON.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print(f"[inspect] wrote {INSPECT_JSON}")
+    return rec
 
 
 def benchmark(model_id: str, target_modules: list[str], lora_rank: int,
               batch_size: int, image_size: int, seq_len: int, steps: int,
               device_str: str = "cuda") -> None:
+    if device_str == "cuda" and not torch.cuda.is_available():
+        raise SystemExit(
+            "CUDA required for T4 VRAM numbers. Refusing to report MPS/CPU "
+            "as if it closed Decision #3."
+        )
     from peft import LoraConfig, get_peft_model
 
     device = torch.device(device_str)
