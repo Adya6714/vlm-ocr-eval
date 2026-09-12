@@ -78,26 +78,84 @@ def train(args) -> None:
     model, processor = load_model_and_processor(args.model_id)
     lora = build_lora_config(args.model_id, r=args.lora_rank)
     model = get_peft_model(model, lora)
+    if hasattr(model, "gradient_checkpointing_enable"):
+        model.gradient_checkpointing_enable()
     model.to(args.device)
     model.train()
     ds = LineCropDataset(Path(args.manifest), Path(args.data_root))
-    # Real collate depends on the processor chat template; left as a
-    # follow-up once inspect+T4 exist. --run currently stops after
-    # wrapping LoRA so we never silently train with dummy tensors.
-    print(
-        f"[sft] wrapped LoRA on {args.model_id} n_lines={len(ds)} "
-        f"device={args.device}. Full forward/backward loop not started "
-        f"(processor collate TBD after inspect). wrote marker only."
-    )
-    marker = output_root / "sft_not_trained.json"
-    marker.write_text(
-        json.dumps({
-            "model_id": args.model_id,
-            "n_lines": len(ds),
-            "reason": "no_t4_or_collate_not_wired",
-        }, indent=2),
-        encoding="utf-8",
-    )
+    if len(ds) == 0:
+        raise SystemExit(f"empty manifest {args.manifest}")
+    opt = torch.optim.AdamW(model.parameters(), lr=args.lr)
+    meta = {
+        "model_id": args.model_id,
+        "n_lines": len(ds),
+        "max_steps": args.max_steps,
+        "lora_rank": args.lora_rank,
+    }
+    (output_root / "sft_meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    start = 0
+    state_path = output_root / "sft_state.json"
+    if state_path.exists():
+        start = int(json.loads(state_path.read_text())["step"])
+        print(f"[sft] resuming from step {start}")
+    print(f"[sft] n_lines={len(ds)} max_steps={args.max_steps} device={args.device}")
+    for step in range(start, args.max_steps):
+        item = ds[step % len(ds)]
+        try:
+            batch = _encode_example(processor, item, args.device)
+        except Exception as e:
+            marker = {
+                "model_id": args.model_id,
+                "step": step,
+                "reason": "processor_collate_failed",
+                "error": f"{type(e).__name__}: {e}",
+            }
+            (output_root / "sft_not_trained.json").write_text(
+                json.dumps(marker, indent=2), encoding="utf-8"
+            )
+            print(f"[sft] collate failed at step {step}: {marker['error']}")
+            print("[sft] stopping. Partial: LoRA wrap only, no adapter save.")
+            return
+        opt.zero_grad()
+        out = model(**batch)
+        loss = out.loss
+        loss.backward()
+        opt.step()
+        print(f"[sft] step {step+1}/{args.max_steps} loss={float(loss.item()):.4f}")
+        if (step + 1) % args.ckpt_every == 0 or step + 1 == args.max_steps:
+            ckpt_dir = output_root / f"step_{step+1}"
+            model.save_pretrained(ckpt_dir)
+            model.save_pretrained(output_root)
+            state_path.write_text(json.dumps({"step": step + 1}), encoding="utf-8")
+            print(f"[sft] checkpoint {ckpt_dir}")
+    print(f"[sft] finished {args.max_steps} steps; adapter in {output_root}")
+
+
+def _encode_example(processor, item: dict, device: str) -> dict:
+    """
+    Best-effort image+text collate. Chat-template models differ; if this
+    raises, sft.py stops rather than training on dummy tensors.
+    """
+    image = item["image"]
+    text = item["text"]
+    if hasattr(processor, "apply_chat_template"):
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image"},
+                    {"type": "text", "text": "Transcribe the text in this image."},
+                ],
+            },
+            {"role": "assistant", "content": [{"type": "text", "text": text}]},
+        ]
+        prompt = processor.apply_chat_template(messages, add_generation_prompt=False)
+        enc = processor(text=prompt, images=image, return_tensors="pt", padding=True)
+    else:
+        enc = processor(images=image, text=text, return_tensors="pt", padding=True)
+    if "labels" not in enc:
+        enc["labels"] = enc.get("input_ids")
+    return {k: v.to(device) if hasattr(v, "to") else v for k, v in enc.items()}
 
 
 def main() -> None:
@@ -111,6 +169,9 @@ def main() -> None:
     ap.add_argument("--data-root", default=os.environ.get("OCR_DATA_ROOT", "data"))
     ap.add_argument("--output-root", default="checkpoints/demo")
     ap.add_argument("--lora-rank", type=int, default=16)
+    ap.add_argument("--lr", type=float, default=1e-4)
+    ap.add_argument("--max-steps", type=int, default=100)
+    ap.add_argument("--ckpt-every", type=int, default=20)
     ap.add_argument("--device", default="cuda")
     ap.add_argument(
         "--run",

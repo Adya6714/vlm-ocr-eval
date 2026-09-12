@@ -98,7 +98,7 @@ def inspect_modules(model_id: str) -> dict:
 
 def benchmark(model_id: str, target_modules: list[str], lora_rank: int,
               batch_size: int, image_size: int, seq_len: int, steps: int,
-              device_str: str = "cuda") -> None:
+              device_str: str = "cuda") -> dict:
     if device_str == "cuda" and not torch.cuda.is_available():
         raise SystemExit(
             "CUDA required for T4 VRAM numbers. Refusing to report MPS/CPU "
@@ -136,8 +136,19 @@ def benchmark(model_id: str, target_modules: list[str], lora_rank: int,
         print(f"[benchmark] step {step+1}/{steps} loss={out.loss.item():.3f} peak_mem={peak_gb:.2f}GB")
 
     peak_gb = torch.cuda.max_memory_allocated(device) / 1e9
+    fits = peak_gb < 14
     print(f"[benchmark] === {model_id} === peak VRAM: {peak_gb:.2f}GB at batch_size={batch_size}")
-    print(f"[benchmark] T4 has 16GB -- {'FITS' if peak_gb < 14 else 'TOO TIGHT / OOM RISK'} (14GB threshold leaves headroom)")
+    print(f"[benchmark] T4 has 16GB -- {'FITS' if fits else 'TOO TIGHT / OOM RISK'} (14GB threshold leaves headroom)")
+    return {
+        "model_id": model_id,
+        "peak_gb": peak_gb,
+        "batch_size": batch_size,
+        "lora_rank": lora_rank,
+        "target_modules": list(target_modules),
+        "fits_t4_14gb_headroom": fits,
+        "t4_gb": 16,
+        "headroom_gb": 16.0 - peak_gb,
+    }
 
 
 def main() -> None:
@@ -153,6 +164,11 @@ def main() -> None:
     ap.add_argument("--seq-len", type=int, default=256)
     ap.add_argument("--steps", type=int, default=5)
     ap.add_argument("--device", default="cuda")
+    ap.add_argument(
+        "--json-out",
+        default=None,
+        help="Write peak-VRAM dict here (Decision #3 evidence)",
+    )
     args = ap.parse_args()
 
     if args.inspect:
@@ -160,8 +176,17 @@ def main() -> None:
         return
     if not args.target_modules:
         raise SystemExit("--target-modules required unless --inspect (run --inspect first)")
-    benchmark(args.model_id, args.target_modules, args.lora_rank, args.batch_size,
+    rec = benchmark(args.model_id, args.target_modules, args.lora_rank, args.batch_size,
               args.image_size, args.seq_len, args.steps, args.device)
+    if args.json_out:
+        p = Path(args.json_out)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        payload = {}
+        if p.exists():
+            payload = json.loads(p.read_text(encoding="utf-8"))
+        payload[args.model_id] = rec
+        p.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        print(f"[benchmark] wrote {p}")
 
 
 if __name__ == "__main__":
