@@ -89,9 +89,37 @@ import os, subprocess, sys
 
 REPO_URL = "https://github.com/Adya6714/vlm-ocr-eval.git"
 REPO = Path("/content/vlm-ocr-eval")
+
+
+def _git(args, cwd=None):
+    """Print git stdout/stderr so a 128 is never a silent CalledProcessError."""
+    r = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True)
+    print("[git]", " ".join(args), "exit", r.returncode)
+    if r.stdout:
+        print(r.stdout)
+    if r.stderr:
+        print(r.stderr)
+    return r
+
+
 if (REPO / ".git").exists():
-    print(f"[git] already cloned at {REPO}; fetching")
-    subprocess.check_call(["git", "-C", str(REPO), "pull", "--ff-only"])
+    print(f"[git] already cloned at {REPO}; syncing origin/main")
+    # Cell 12 may have rewritten origin to a one-shot token URL; that 128s
+    # once the token is gone. Public https clone/fetch does not need it.
+    _git(["remote", "set-url", "origin", REPO_URL], cwd=REPO)
+    _git(["status", "--porcelain"], cwd=REPO)
+    _git(["log", "-1", "--oneline"], cwd=REPO)
+    fetched = _git(["fetch", "origin"], cwd=REPO)
+    if fetched.returncode != 0:
+        raise RuntimeError("git fetch origin failed; stderr is above")
+    pulled = _git(["pull", "--ff-only", "origin", "main"], cwd=REPO)
+    if pulled.returncode != 0:
+        print("[git] ff-only failed (dirty tree or Colab-local commits). "
+              "Resetting this VM clone to origin/main.")
+        reset = _git(["reset", "--hard", "origin/main"], cwd=REPO)
+        if reset.returncode != 0:
+            raise RuntimeError("git reset --hard origin/main failed; stderr is above")
+    _git(["log", "-1", "--oneline"], cwd=REPO)
 else:
     subprocess.check_call(["git", "clone", REPO_URL, str(REPO)])
 
