@@ -236,4 +236,5 @@ remotely vs locally.
 | Script                                      | Purpose                                           | Output location                        | Status      |
 | ------------------------------------------- | ------------------------------------------------- | -------------------------------------- | ----------- |
 | src/eval/run_baselines.py                   | Surya/PaddleOCR completion for Santhali/Kashmiri  | data/predictions/ (confirm exact path) | in progress |
-| notebooks/colab_run.ipynb | T4: Tier 0a–d, Surya control, demo LoRA/SFT/RLVR | docs/ + data/probe_results/ | not run (hand off) |
+| src/data_pipeline/export_manifest_scaled.py | Real Hindi/Bengali line manifests, 100 pages/mode | data/manifests/                        | in progress |
+| notebooks/colab_run.ipynb                   | T4: Tier 0a–d, Surya control, demo LoRA/SFT/RLVR  | docs/ + data/probe_results/            | not run (hand off) |

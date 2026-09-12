@@ -269,15 +269,35 @@ def choose_demo_backbone(vram: dict) -> dict:
     Among those, pick the smallest peak. If none fit, say so — do not pick.
     """
     scored = []
-    for mid, rec in vram.items():
-        if not isinstance(rec, dict) or "peak_gb" not in rec:
+    for rec in vram.values() if isinstance(vram, dict) else []:
+        if not isinstance(rec, dict):
+            continue
+        peak = rec.get("peak_gb")
+        if not isinstance(peak, (int, float)):
             continue
         scored.append(rec)
-    fits = [r for r in scored if r.get("fits_t4_14gb_headroom")]
-    if not fits:
+    if not scored:
+        n = len(vram) if isinstance(vram, dict) else 0
         return {
             "selected": None,
-            "reason": "no candidate stayed under 14 GB peak on this T4 LoRA dummy run",
+            "reason": (
+                f"no candidate could be measured — all {n} VRAM dummy runs "
+                "crashed before producing a peak figure; see stderr above "
+                "for the actual errors."
+            ),
+            "candidates": [],
+        }
+    fits = [r for r in scored if r.get("fits_t4_14gb_headroom")]
+    if not fits:
+        peaks = ", ".join(
+            f"{r.get('model_id', '?')}={r['peak_gb']:.2f}GB" for r in scored
+        )
+        return {
+            "selected": None,
+            "reason": (
+                "measured but exceeded 14 GB peak (2 GB headroom reserved): "
+                + peaks
+            ),
             "candidates": scored,
         }
     best = min(fits, key=lambda r: r["peak_gb"])
