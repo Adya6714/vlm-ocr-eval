@@ -1906,4 +1906,28 @@ policy.
 
 **Date:** 2026-09-12
 
+---
+
+### 83. Mistral3 dummy `input_ids` must contain `image_token_id` × merged patches
+
+**Decision:** For `model_type == mistral3` only, dummy `input_ids` is
+filled with `(H / (patch_size * spatial_merge_size)) ** 2` copies of
+`config.image_token_id` per example (prefix of the sequence; count
+matters, not layout). Sequence length grows if that count plus one
+filler token exceeds `--seq-len`. Idefics3 still uses `torch.randint`.
+The Colab run still has to print the live `image_token_id` and peak
+VRAM; this laptop cannot close Decision #3 for LightOnOCR.
+
+**Alternatives considered:** (a) leave random ids and skip LightOn;
+(b) insert `n_image_features` (shape[0]*shape[1] = 200704) placeholders
+because that is the number in the ValueError string.
+
+**Why:** `get_placeholder_mask` masks `input_ids == config.image_token_id`
+and requires `n_image_tokens * hidden == image_features.numel()`. For
+2-D features `(tokens, hidden)`, that is `tokens` placeholders, not
+`tokens * hidden`. The error's `features:` field is `shape[0]*shape[1]`.
+(a) is already the SmolDocling path. (b) would over-insert by `hidden`.
+
+**Date:** 2026-09-13
+
 

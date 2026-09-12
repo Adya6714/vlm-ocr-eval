@@ -10,7 +10,11 @@ import torch.nn as nn
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src" / "models" / "demo"))
 
-from benchmark_base_models import collect_peft_target_leaves, dummy_vision_batch  # noqa: E402
+from benchmark_base_models import (  # noqa: E402
+    collect_peft_target_leaves,
+    dummy_mistral3_input_ids,
+    dummy_vision_batch,
+)
 
 
 class FakeAttn(nn.Module):
@@ -68,6 +72,20 @@ class DummyVisionBatchTests(unittest.TestCase):
                 "not_a_family", batch_size=1, image_size=16, device=torch.device("cpu"), dtype=torch.float32
             )
         self.assertIn("unrecognized model_type", str(ctx.exception))
+
+
+class Mistral3PlaceholderIdsTests(unittest.TestCase):
+    def test_count_matches_and_grows_seq(self):
+        ids = dummy_mistral3_input_ids(
+            batch_size=2,
+            seq_len=8,
+            n_image_tokens_per_example=20,
+            image_token_id=151655,
+            device=torch.device("cpu"),
+        )
+        self.assertEqual(ids.shape[1], 21)
+        self.assertEqual(int((ids == 151655).sum()), 40)
+        self.assertTrue(torch.all(ids[:, 20] != 151655))
 
 
 if __name__ == "__main__":

@@ -193,6 +193,33 @@ def dummy_vision_batch(
     )
 
 
+def dummy_mistral3_input_ids(
+    *,
+    batch_size: int,
+    seq_len: int,
+    n_image_tokens_per_example: int,
+    image_token_id: int,
+    device: torch.device,
+) -> torch.Tensor:
+    """
+    input_ids whose image-placeholder *count* matches vision features.
+
+    modeling_mistral3.py get_placeholder_mask: mask is
+    `input_ids == config.image_token_id`; the check is
+    `n_image_tokens * hidden == image_features.numel()`, i.e. the batch
+    total of those ids must equal the number of image feature rows.
+    Position in the sequence is not used beyond the boolean mask, so we
+    put them at the front of each example.
+    """
+    if n_image_tokens_per_example < 1:
+        raise ValueError(f"need ≥1 image token per example, got {n_image_tokens_per_example}")
+    seq_len = max(seq_len, n_image_tokens_per_example + 1)
+    filler = 0 if image_token_id != 0 else 1
+    ids = torch.full((batch_size, seq_len), filler, dtype=torch.long, device=device)
+    ids[:, :n_image_tokens_per_example] = int(image_token_id)
+    return ids
+
+
 def benchmark(model_id: str, target_modules: list[str], lora_rank: int,
               batch_size: int, image_size: int, seq_len: int, steps: int,
               device_str: str = "cuda") -> dict:
@@ -237,7 +264,45 @@ def benchmark(model_id: str, target_modules: list[str], lora_rank: int,
         device=device,
         dtype=torch.float16,
     )
-    dummy_input_ids = torch.randint(0, 1000, (batch_size, seq_len), device=device)
+    if family == "mistral3":
+        image_token_id = getattr(model.config, "image_token_id", None)
+        image_token_index = getattr(model.config, "image_token_index", None)
+        print(
+            f"[benchmark] image_token_id={image_token_id!r} "
+            f"image_token_index={image_token_index!r} "
+            "(mask uses config.image_token_id; Mistral3Config maps that "
+            "name onto image_token_index)"
+        )
+        if image_token_id is None:
+            raise SystemExit("[benchmark] config.image_token_id is missing")
+        merge = int(getattr(model.config, "spatial_merge_size", 1) or 1)
+        if not isinstance(patch, int) or patch < 1:
+            raise SystemExit("[benchmark] vision_config.patch_size required for mistral3 dummy ids")
+        down = patch * merge
+        if dummy_hw % down != 0:
+            dummy_hw = ((dummy_hw + down - 1) // down) * down
+            print(f"[benchmark] dummy H=W retargeted to {dummy_hw} (multiple of patch*merge={down})")
+            dummy_pixel_values, forward_kwargs = dummy_vision_batch(
+                family,
+                batch_size=batch_size,
+                image_size=dummy_hw,
+                device=device,
+                dtype=torch.float16,
+            )
+        n_per = (dummy_hw // down) ** 2
+        dummy_input_ids = dummy_mistral3_input_ids(
+            batch_size=batch_size,
+            seq_len=seq_len,
+            n_image_tokens_per_example=n_per,
+            image_token_id=int(image_token_id),
+            device=device,
+        )
+        print(
+            f"[benchmark] mistral3 placeholders: {n_per} × image_token_id "
+            f"per example, seq_len={dummy_input_ids.shape[1]}"
+        )
+    else:
+        dummy_input_ids = torch.randint(0, 1000, (batch_size, seq_len), device=device)
     dummy_labels = dummy_input_ids.clone()
 
     print(f"[benchmark] running {steps} dummy train steps, batch_size={batch_size} ...")
