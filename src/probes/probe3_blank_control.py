@@ -27,7 +27,9 @@ def make_blank(image: Image.Image) -> Image.Image:
 
 
 def make_matched_noise(image: Image.Image, rng: np.random.Generator) -> Image.Image:
-    arr = np.array(image, dtype="float32")
+    # Always 2-D grayscale. RGB line crops are (H, W, 3); fromarray(..., "L")
+    # then raises "Too many dimensions: 3 > 2".
+    arr = np.array(image.convert("L"), dtype="float32")
     mean, std = arr.mean(), arr.std()
     noise = rng.normal(loc=mean, scale=max(std, 1.0), size=arr.shape)
     noise = np.clip(noise, 0, 255).astype("uint8")

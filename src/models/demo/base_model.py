@@ -15,6 +15,7 @@ Called from: lora_config.py / sft.py / benchmark_base_models.py.
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
 import torch
 
@@ -64,20 +65,20 @@ def load_model_and_processor(model_id: str, torch_dtype=None):
 
 def inspect_leaf_attn_names(model) -> list[str]:
     """
-    Unique last path segments that look like attention projections.
+    Unique last path segments of PEFT-wrappable layers (Linear etc.).
 
-    LoRA target_modules in PEFT match these leaf names (e.g. q_proj),
-    not the full dotted path. Guessing them from another architecture
-    is how adapters silently attach to nothing.
+    Not container names such as self_attn: PEFT matches by substring and
+    can only wrap Linear/Embedding/Conv/MultiheadAttention.
     """
-    leaves: set[str] = set()
-    for name, _ in model.named_modules():
-        leaf = name.rsplit(".", 1)[-1]
-        low = leaf.lower()
-        if any(tok in low for tok in ("proj", "q_lin", "k_lin", "v_lin", "query", "key", "value")):
-            if "attn" in name.lower() or "attention" in name.lower() or low.endswith("proj"):
-                leaves.add(leaf)
-    return sorted(leaves)
+    import sys
+
+    here = str(Path(__file__).resolve().parent)
+    if here not in sys.path:
+        sys.path.insert(0, here)
+    from benchmark_base_models import collect_peft_target_leaves
+
+    leaves, _ = collect_peft_target_leaves(model)
+    return leaves
 
 
 def main() -> None:

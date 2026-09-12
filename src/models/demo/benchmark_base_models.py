@@ -26,6 +26,7 @@ import time
 from pathlib import Path
 
 import torch
+import torch.nn as nn
 
 _REPO = Path(__file__).resolve().parents[3]
 INSPECT_JSON = _REPO / "docs" / "demo_lora_inspect.json"
@@ -62,29 +63,77 @@ def load_model_and_processor(model_id: str, torch_dtype=None):
     return model, processor
 
 
+def peft_supported_types() -> tuple[type, ...]:
+    """
+    Classes PEFT will actually wrap. Container modules (self_attn,
+    modality_projection, …) are not in this set even when their name
+    contains 'attn' or 'proj' — PEFT substring-matches leaf names, so
+    listing a container crashes with 'Target module is not supported'.
+    """
+    types: list[type] = [
+        nn.Linear,
+        nn.Embedding,
+        nn.Conv1d,
+        nn.Conv2d,
+        nn.Conv3d,
+        nn.MultiheadAttention,
+    ]
+    try:
+        from transformers.pytorch_utils import Conv1D
+
+        types.append(Conv1D)
+    except ImportError:
+        pass
+    return tuple(types)
+
+
+def collect_peft_target_leaves(model) -> tuple[list[str], list[str]]:
+    """
+    Unique last-path-segment names of PEFT-wrappable modules.
+
+    Returns (sorted leaf names, dotted paths of those modules) so inspect
+    json records what was actually wrap-safe, not container names.
+    """
+    supported = peft_supported_types()
+    leaves: set[str] = set()
+    dotted: list[str] = []
+    for name, module in model.named_modules():
+        if not name:
+            continue
+        if isinstance(module, supported):
+            leaf = name.rsplit(".", 1)[-1]
+            leaves.add(leaf)
+            dotted.append(name)
+    # Sanity: every emitted leaf must correspond only to supported types
+    # (same leaf name on a container would still break PEFT).
+    for name, module in model.named_modules():
+        if not name:
+            continue
+        leaf = name.rsplit(".", 1)[-1]
+        if leaf in leaves and not isinstance(module, supported):
+            raise RuntimeError(
+                f"leaf {leaf!r} also names unsupported {type(module).__name__} "
+                f"at {name}; PEFT substring match would wrap the container"
+            )
+    return sorted(leaves), dotted
+
+
 def inspect_modules(model_id: str) -> dict:
     # Names only. A CPU/MPS load is not a T4 VRAM measurement.
     model, _ = load_model_and_processor(model_id)
-    print(f"[inspect] attention/projection module names in {model_id}:")
-    dotted = []
-    leaves = set()
-    for name, _ in model.named_modules():
-        if "proj" in name or "attn" in name.lower():
-            print(f"  {name}")
-            dotted.append(name)
-            leaf = name.rsplit(".", 1)[-1]
-            low = leaf.lower()
-            if "proj" in low or "attn" in low:
-                leaves.add(leaf)
+    print(f"[inspect] PEFT-wrappable modules in {model_id}:")
+    leaves, dotted = collect_peft_target_leaves(model)
+    for name in dotted:
+        print(f"  {name}")
     print("[inspect] leaf names for PEFT target_modules:")
-    for leaf in sorted(leaves):
+    for leaf in leaves:
         print(f"  {leaf}")
     rec = {
         "model_id": model_id,
         "n_parameters": int(sum(p.numel() for p in model.parameters())),
         "type": type(model).__name__,
-        "dotted_attn_or_proj": dotted,
-        "target_modules": sorted(leaves),
+        "dotted_peft_supported": dotted,
+        "target_modules": leaves,
     }
     payload = {}
     if INSPECT_JSON.exists():
