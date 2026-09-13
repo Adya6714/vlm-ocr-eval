@@ -10,7 +10,7 @@ occurred.
 scored once against the λ=0 reward function, with no policy update.
 
 **Corrected SFT-greedy baseline (trustworthy):** n=32, **n_empty_hyp=0**,
-mean_coverage **0.3087**, and all 32 examples had coverage < 0.5.
+mean_coverage **0.309**, and **32/32** examples had coverage < 0.5.
 This baseline supersedes the earlier Cell 10 “mean_coverage=0.0” number,
 which is known-untrustworthy because it used the wrong chat template and
 silently converted `generate()` crashes to `hyp=""`.
@@ -31,15 +31,14 @@ stdout was not kept in the paste, so a per-example `generate()` crash
 versus empty or useless decode is not established; only the scored
 summary (n=32, mean_coverage=0.0) is.
 
-The corrected baseline explicitly records `n_empty_hyp=0` and
-`swallowed_exceptions=false` (Decision #88), so it is auditable and can
-be treated as real.
+The corrected baseline was verified via the fixed SFT chat template with
+`n_empty_hyp=0` and **zero swallowed exceptions** (Decision #88), so it
+can be treated as real.
 
 Not pursued further this session. SFT itself (Decision #84 closing #3,
 real trained adapter on `ds4sd/SmolDocling-256M-preview`) is confirmed
 working and is the result this session actually produced.
 
-Raw summary: `Colab Run Summary.json` (committed to this repo root for
-provenance) records the corrected SFT-greedy baseline. Reward-shape tests
-remain in
+Raw summary: `docs/rlvr_sft_greedy_baseline.json` records the corrected
+SFT-greedy baseline. Reward-shape tests remain in
 `tests/test_demo_rlvr_order.py`; those are not a trained-policy result.

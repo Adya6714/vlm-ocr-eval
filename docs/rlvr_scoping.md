@@ -392,14 +392,14 @@ were used (Decision #88).
 
 **Corrected SFT-greedy baseline (trustworthy, executed):**
 
-From `Colab Run Summary.json` (committed alongside this doc for provenance):
+From `docs/rlvr_sft_greedy_baseline.json` (committed for provenance):
 
 - n = **32**
 - n_empty_hyp = **0**  ✅ (real continuations; not crash→empty)
-- mean_coverage = **0.3087**
-- n_coverage_lt_0.5 = **32**
+- mean_coverage = **0.309**
+- n_coverage_lt_0.5 = **32** (32/32 below 0.5)
 - chat_template = `sft_user_turn + add_generation_prompt=True`
-- swallowed_exceptions = **false**
+- swallowed_exceptions = **false** ✅ (zero swallowed exceptions)
 
 This is still **not** a retrained policy (no RL loop). It is the
 baseline Phase 2b (λ=0 retrain) should be compared against.
