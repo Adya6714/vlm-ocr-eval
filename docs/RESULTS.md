@@ -31,7 +31,9 @@ Design choices: [`DECISIONS.md`](../DECISIONS.md).
 | Attention ablation | full 0.9861 vs zero 0.9891; Δ −0.0030; prior suff. 0.8827 | `attention_ablation_hindi_natural_seed{0,1,2}.jsonl` | [`attention_ablation_analysis.md`](attention_ablation_analysis.md) | `src/probes/probe_attention_ablation.py` |
 | GT-likelihood (teacher-forced) | log p(GT) real −1.783 / blank −1.751; first-token ~1e-10–1e-12 both | `probe_gt_likelihood_hindi_natural_seed{0,1,2}.jsonl` | [`gt_likelihood_analysis.md`](gt_likelihood_analysis.md) | `src/probes/probe_gt_likelihood.py` |
 | Probe 6 Tier C | conf 0.9861 / 0.9768 / 0.9799; acc 0.0; 0 leakage | `probe6_synthetic_real_hindi_seed{0,1,2}.jsonl` | [`probe6_synthetic_real_analysis.md`](probe6_synthetic_real_analysis.md) | `src/probes/probe6_synthetic_real_gap.py` |
-| Stage 5a Extract vs published bench | 39.98 pp accuracy vs conf Δ 0.0027 | `sarvam_transfer_probe.jsonl` | [`sarvam_vision_confidence.md`](sarvam_vision_confidence.md) | `src/probes/sarvam_transfer_probe.py` |
+| Probe 5 AUROC vs training overlap | non-match n=0; AUROC cannot be split | `probe5_hindi_natural_seed{0,1,2}.jsonl` + `hindi_natural.jsonl` | [`memorisation_vs_correctness.md`](memorisation_vs_correctness.md) | `src/analysis/memorisation_vs_correctness.py` |
+| Step 4b KL(model ‖ 5-gram) | **not computed** | (needs `probe_ngram_kl_*.jsonl`) | [`ngram_kl_argmax.md`](ngram_kl_argmax.md) | `src/probes/probe_ngram_kl.py` |
+| PaddleOCR same-protocol control | **not viable** (CTC/SVTR) | — | [`paddleocr_positive_control.md`](paddleocr_positive_control.md) | feasibility only |
 
 Kashmiri Bonferroni “significance” on Probe 5b seed 0 is **retracted** (`statistical_repair.md`, DECISIONS.md #53).
 

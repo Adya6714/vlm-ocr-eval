@@ -162,7 +162,7 @@ These are **inference-only** (no retraining). They require the Hindi/natural che
 | Full-softmax vs 5-gram | Whether the decoder *is* a grapheme LM |
 | Surya, same protocol | Positive control: a system that reads Devanagari |
 
-Status and commands: [`docs/remaining_measurements.md`](docs/remaining_measurements.md). A split of synthetic Probe 5 lines by exact overlap with the training manifest needs no GPU and tests whether AUROC 0.838 is held-out correctness or memorisation.
+Status and commands: [`docs/remaining_measurements.md`](docs/remaining_measurements.md). Probe 5 AUROC cannot be split into held-out vs memorised lines: every synthetic-natural eval string is in `hindi_natural.jsonl` ([`docs/memorisation_vs_correctness.md`](docs/memorisation_vs_correctness.md)).
 
 A larger demo model (LoRA, reading-order module, RL fine-tuning) is specified in `IMPLEMENTATION.md` and is out of scope for the current preprint.
 

@@ -37,7 +37,13 @@ PYTHONPATH=src python src/probes/probe_pos0_null.py --seed 0 --device cpu \
 ## Step 3 — existing probes
 
 **Not computed.** `docs/tier0b_gt_mismatch.md`,
-`docs/tier0c_cross_attn_norms.md`, `docs/tier0d_noise_scrambled.md`.
+`docs/tier0c_cross_attn_norms.md`, `docs/tier0d_noise_scrambled.md`
+(grayscale fix present; extra jsonl still absent).
+
+## Probe 5 memorisation split
+
+**Computed (CPU).** `docs/memorisation_vs_correctness.md`. Non-matching
+subset empty.
 
 ## Step 4 — n-grams
 
@@ -45,8 +51,8 @@ PYTHONPATH=src python src/probes/probe_pos0_null.py --seed 0 --device cpu \
 `src/analysis/position_matched_ngrams.py`. Same train/eval split as
 stats §7.
 
-**4b not computed.** jsonl has `step_p_gt` only, not the full softmax
-or model argmax. Needs a checkpoint forward pass.
+**4b not computed.** Probe written (`src/probes/probe_ngram_kl.py`);
+needs a checkpoint forward. Status: `docs/ngram_kl_argmax.md`.
 
 ## Step 5 — Surya
 
@@ -69,3 +75,9 @@ environment. `ignore_mismatched_sizes` was **not** used.
 **Computed.** `docs/tier0e_paddleocr.md`. n=420 scored; exact 11;
 Tier 1 among non-exact 4.2% (17/409). Tesseract/Surya Table 1 rows
 unchanged.
+
+## PaddleOCR instrument-matched control
+
+**Not viable.** `docs/paddleocr_positive_control.md`. CTC/SVTR rec head,
+no AR teacher forcing, character dict ≠ grapheme clusters. Stopped at
+feasibility (same rule as Surya).

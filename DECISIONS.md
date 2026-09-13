@@ -1930,4 +1930,69 @@ and requires `n_image_tokens * hidden == image_features.numel()`. For
 
 **Date:** 2026-09-13
 
+---
+
+### 84. Close Decision #3: SmolDocling-256M on measured T4 LoRA VRAM
+
+**Decision:** demo backbone = `ds4sd/SmolDocling-256M-preview`.
+
+**Why:** one Colab T4 dummy-LoRA pass over all four ids. All four
+peaked under 14 GB. SmolDocling was lowest (1.63 GB). granite-docling
+1.84 GB (dummy loss nan). Both LightOnOCR variants 5.67 GB after the
+mistral3 placeholder-id fix (#83). SFT then ran 100 steps on that
+SmolDocling adapter (`docs/tier2_stage2b_demo.md`).
+
+**Alternatives considered:** (a) keep #3 open because this laptop has
+no T4; (b) pick LightOnOCR from a two-id subset; (c) pick granite on
+size alone.
+
+**Why not those:** (a) the T4 numbers now exist. (b) was an incomplete
+pool. (c) nan dummy loss plus a higher peak than SmolDocling.
+
+**Date:** 2026-09-13
+
+---
+
+### 85. Step 4b stores KL and argmax flags, not the full softmax
+
+**Decision:** the exclusivity probe (`src/probes/probe_ngram_kl.py`)
+computes KL(model ‖ 5-gram) and argmax agreement **online** from
+`generate(..., return_full_probs=True)` and writes two scalars per
+teacher-forced step. It does not commit the V-wide softmax.
+
+**Alternatives considered:** (a) extend committed GT-likelihood jsonl
+with full `step_probs`; (b) skip 4b until someone dumps tensors by
+hand; (c) fake KL from scalar `step_p_gt`.
+
+**Why:** (a) is huge and would mix a new schema into the paper's
+canonical real/blank files. (c) is one coordinate, not exclusivity.
+(b) leaves Section 8 as a consistency claim only. Compact jsonl is
+what `src/analysis/ngram_kl_argmax.py` aggregates. The 5-gram is the
+same add-α split as `position_matched_ngrams.py`; scatter onto the
+grapheme tokenizer so KL is on decoder support.
+
+**Date:** 2026-09-13
+
+---
+
+### 86. PaddleOCR is not an instrument-matched positive control
+
+**Decision:** stop at feasibility. Do not implement Table 6 / Table 5
+diagnostics on PaddleOCR 3.7's Hindi rec model.
+
+**Alternatives considered:** (a) treat CTC width-softmax as "per-step
+logits"; (b) map `character_list` codepoints onto grapheme clusters;
+(c) fork `forward` and zero backbone features as encoder ablation.
+
+**Why:** installed `lang=hi` loads `devanagari_PP-OCRv5_mobile_rec`.
+Recognition is one `AutoModelForTextRecognition` forward
+(softmax over width × ~18k charset) plus CTC greedy collapse, not an
+autoregressive grapheme loop. `PaddleOCR.predict()` never calls
+`TransformersPredictor.generate`. Vocabulary is a character dict, not
+Decision #2 clusters. (a)–(c) would report a different estimand under
+instrument names. Same stop rule as Surya (`docs/tier1_surya_control.md`).
+Write-up: `docs/paddleocr_positive_control.md`.
+
+**Date:** 2026-09-13
+
 

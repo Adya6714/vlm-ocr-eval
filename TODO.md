@@ -82,10 +82,10 @@ project — protect time for those first if something has to give.
 - Stage 3 metrics **code** exists; the demo-model curve is still blocked
   on Stage 1 layout-bank gaps (form / table-embedded / india.gov) and
   on a trained demo.
-- [ ] Demo: T4 LoRA VRAM for SmolDocling-256M vs LightOnOCR-1B (and
-  successors if time); close DECISIONS.md #3. Still open (#79).
-- [x] Demo: LoRA config + SFT **script** (corpus choice #80). SFT
-  **run** still TODO on T4.
+- [x] Demo: T4 LoRA VRAM four-way; close DECISIONS.md #3 as #84
+      (`ds4sd/SmolDocling-256M-preview`, 1.63 GB).
+- [x] Demo: LoRA config + SFT **script** (corpus choice #80). Colab SFT
+      100 steps; adapter on Drive `checkpoints/demo/`.
 - [x] Demo: layout module as PageGT oracle (not a trained detector)
 - [x] Demo: pairwise reading-order module (geometry; unit tests)
 
@@ -105,7 +105,8 @@ Region-level order on the PARTIAL bank is already scorable
 - [x] RLVR reward function (accuracy + TEDS + tau − coverage); tests
 - [ ] Full RLVR training run
 - [ ] Coverage-term-removed ablation **on a trained policy** (not
-      attempted; no SFT). `docs/tier2_rlvr_ablation.md`
+      attempted; Cell 10 scored SFT greedy decode only).
+      `docs/tier2_rlvr_ablation.md`
 
 ## Stage 5 — The probe suite (days 26–33)
 
@@ -188,7 +189,7 @@ Region-level order on the PARTIAL bank is already scorable
   mixed-effects Probe 1; kappa on a hand-review subsample; bootstrap
   CIs — not this phase
 - [ ] Keep `DECISIONS.md` current — append, don't rewrite
-      (latest: \#78 in-process PaddleOCR corpus fill)
+      (latest: \#86 PaddleOCR positive-control stop)
 - [x] Heavy scripts (OCR batches, training) written for Colab: one
   `--data-root`, no local-only paths, export into the IMPLEMENTATION.md
   output path (`run_baselines.py` + AGENTS.md; DECISIONS.md #32)

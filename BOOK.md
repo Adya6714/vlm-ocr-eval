@@ -54,11 +54,12 @@ A short orientation:
 - **Engineering that makes the science runnable:** resume-by-default
   baselines, hand-review suggestions, line-crop export, `make smoke-test`,
   Colab `--data-root` + zip export.
-- **Specified, taught, not executed:** Stage 2b **training** (Decision
-  #3 still open; no T4 LoRA VRAM), RLVR **training**, Stage 5b
-  rank-correlation transfer, Stage 6 triage cascade. Stage 3 **metric
-  code** and a geometric bank baseline exist locally
-  (`docs/tier2_stage3_reading_order.md`); that is not a demo-model curve.
+- **Specified, taught, not executed:** RLVR **policy** training
+  (coverage ablation still untrained), Stage 5b rank-correlation
+  transfer, Stage 6 triage cascade. Stage 2b **SFT** ran on Colab T4
+  (Decision #84). Stage 3 **metric code** and a geometric bank baseline
+  exist locally (`docs/tier2_stage3_reading_order.md`); that is not a
+  demo-model curve.
 
 Numbers recomputed from this checkout are labeled **measured**. Numbers
 that appear on the site or in older write-ups but whose result files are
@@ -217,12 +218,16 @@ accuracy ≈ *c*? Does calibration break on starved glyphs (Probe 1 × 5)?
 offline equal-mass ECE in `paper_defensibility_stats.py` (Decision #64).
 
 **What we found.** Natural: confidence ~99%, line accuracy in the
-mid-teens, ECE ≈ 0.81. Flattened/inverted: accuracy ~0–1%. Synthetic
-AUROC ~0.838 is **not** a held-out-string result: the instrument trained
-on the **full** 2,538-line manifest; 19 of 60 evaluation strings appear
-as training lines (Decision #73, `docs/training_config.md`). Mid-sequence
-teacher-forced log *p*(GT) sits in the same band as a 4–5-gram grapheme
-LM.
+mid-teens, ECE ≈ 0.81. Flattened/inverted: accuracy ~0–1%. Cite
+`docs/paper_defensibility_stats.md` for the pooled AUROC. That AUROC
+is **not** a held-out-string result: Probe 5 samples its eval rows from
+`hindi_natural.jsonl` itself, so the non-overlapping subset is empty
+(`docs/memorisation_vs_correctness.md`). A different pool (60
+teacher-forced real-scan strings) has partial overlap with the same
+manifest; that is not the Probe 5 split. Mid-sequence teacher-forced
+log *p*(GT) sits in the same band as a 4–5-gram grapheme LM
+(`docs/position_matched_ngrams.md`); full-softmax KL vs that prior is
+**not computed** (`docs/ngram_kl_argmax.md`).
 
 **Implied fix.** Report calibration with equal-mass bins and ECE; never
 treat AUROC on overlapping strings as generalization.
@@ -419,9 +424,10 @@ the fake path).
 ### Stage 2b — Demo
 
 Loaders, LoRA config, pairwise orderer, SFT script, RLVR **reward**
-wired. Decision #3 **open** (no T4 numbers, #79). SFT and RLVR
-**training** not run. Reports: `docs/tier2_stage2b_demo.md`,
-`docs/tier2_rlvr_ablation.md`.
+wired. Decision #3 **closed** (#84): Colab T4 dummy LoRA selected
+`ds4sd/SmolDocling-256M-preview` (1.63 GB). SFT 100 steps on that
+adapter. RLVR **policy** training not run (`docs/tier2_rlvr_ablation.md`).
+Reports: `docs/tier2_stage2b_demo.md`.
 
 ### Stage 3 — Structure metrics
 
@@ -443,7 +449,10 @@ holes (#81). No demo-model curve. `docs/tier2_stage3_reading_order.md`.
 | Attention ablation | VERIFIED | 3 seeds; `docs/attention_ablation_analysis.md` |
 | GT-likelihood | VERIFIED | 360 records |
 | Paper stats + figures | VERIFIED | `docs/paper_defensibility_stats.md`; `paper/figures/` |
-| mismatch TF, cross-attn norms, noise/scrambled | code; **not run** | need checkpoints locally |
+| mismatch TF, cross-attn norms, noise/scrambled | code; **not run** | `docs/tier0d_noise_scrambled.md` |
+| Probe 5 train-overlap AUROC split | VERIFIED (offline) | `docs/memorisation_vs_correctness.md` — non-match n=0 |
+| Step 4b KL / argmax vs 5-gram | code; **not run** | `docs/ngram_kl_argmax.md` |
+| PaddleOCR same-protocol control | **not viable** | `docs/paddleocr_positive_control.md` |
 | 6 synthetic–real (paper scope) | VERIFIED | 0 leakage |
 
 ### Stage 5 — Sarvam
@@ -480,9 +489,9 @@ pretraining already drowned the manipulation.
 **#2 Grapheme vocab, not BPE.** Probe 1 measures exposure per visual
 unit. BPE merges mix tokenizer frequency with visual frequency.
 
-**#3 Demo base TBD.** SmolDocling-256M vs LightOnOCR-1B after T4 memory
-benchmark. Still open (#79): this checkout has no CUDA T4 measurement;
-demo training not run.
+**#3 Demo base = SmolDocling-256M-preview.** Closed on a Colab T4
+four-way dummy LoRA (#84): 1.63 GB peak, below granite (1.84 GB) and
+both LightOnOCR ids (5.67 GB). #79 was the “do not fake T4” hold.
 
 **#4 Do not re-solve NFC.** olmOCR-bench already NFC-normalizes. The
 claim is about equivalences NFC *ignores*.
@@ -588,7 +597,10 @@ terminology. **#76** README is a map. **#77** One Sarvam-facing note.
 **#78** Paddle in-process fill. **#79** Do not close demo-base without
 T4 VRAM. **#80** Demo SFT = Hindi natural line crops. **#81** Stage 3
 scores live bank region order; no invented tables. **#82** RLVR reward
-yes, train no until SFT.
+yes, train no until SFT. **#83** Mistral3 dummy image-token ids.
+**#84** Close Decision #3 on T4: SmolDocling-256M.
+**#85** Step 4b stores per-step KL + argmax flags, not full softmax jsonl.
+**#86** PaddleOCR rec is CTC/SVTR, not an AR grapheme decoder — no instrument-matched control.
 
 ---
 
@@ -2014,11 +2026,10 @@ Model B → peak VRAM → fits / doesn’t fit
 Then choose based on actual hardware constraints, including headroom
 for layout and reading-order modules that would also be resident later.
 
-That is what **Decision #3 being open** means: the project has not yet
-made that measurement, and therefore has not honestly committed to a
-base model. Newer successors exist on the model cards
-(granite-docling-258M, LightOnOCR-2-1B); swapping them in is also a
-Decision #3 question, not something this script silently decides.
+That measurement **ran on Colab T4**. Decision #84 records the close:
+SmolDocling-256M-preview at 1.63 GB dummy-LoRA peak. Newer successors
+(granite-docling-258M, LightOnOCR-2) were in the same pass; they were
+not silent swaps for the Decision #3 pair.
 
 ### The key distinction to remember
 
@@ -2356,9 +2367,13 @@ full sweep across every reward term would cost more than it teaches
 here; the coverage-term removal is cheap (a single retrain) and points
 at the mechanism rather than a spreadsheet of tiny deltas.
 
-### Why this is not being built yet
+### Why the coverage ablation is still untrained
 
-RLVR sits behind the **demo** model, not the instrument:
+SFT for the demo now exists (100 LoRA steps on SmolDocling, Colab).
+The coverage-term **retrain** still has not run. Cell 10 scored the
+SFT adapter’s greedy decode with λ=0 and did not update the policy
+(`docs/tier2_rlvr_ablation.md`). RLVR still sits behind the demo, not
+the instrument:
 
 ```text
 Instrument
@@ -3307,8 +3322,8 @@ the front of this file.
 |---|---|---|
 | 1 | Instrument vs demo | 0, 3, 4; Q2–Q3 |
 | 2 | Grapheme-cluster vocabulary | 1, 3 |
-| 3 | Demo base TBD | 4; Stage 2b status; #79 |
-| 79–82 | T4 not faked; SFT corpus; bank tau; RLVR no-train | 4–6 |
+| 3 | Demo base = SmolDocling (#84) | 4; Stage 2b status |
+| 79–84 | T4 not faked; SFT corpus; bank tau; RLVR; mistral3 ids; #3 close | 4–6 |
 | 4 | NFC already upstream | 1 |
 | 6 | Script scope + Sarvam verify | 0, 7, 8; Q7 |
 | 7 | Grapheme-level alignment | 1 |

@@ -222,22 +222,24 @@ GlotOCR slice after #28.
 
 ### 2b. The demo (LoRA on a real small VLM)
 
-- [x] BUILT — NOT RUN `src/models/demo/base_model.py` — loader for
+- [x] BUILT — VERIFIED `src/models/demo/base_model.py` — loader for
       SmolDocling / granite-docling / LightOnOCR ids. Decision #3
-      **still open** (no T4 LoRA VRAM; DECISIONS.md #79).
-- [x] BUILT — NOT RUN `src/models/demo/lora_config.py` — PEFT config;
-      refuses to guess `target_modules` until inspect json exists.
+      **closed** (#84): T4 dummy LoRA selected
+      `ds4sd/SmolDocling-256M-preview` (1.63 GB peak).
+- [x] BUILT — VERIFIED `src/models/demo/lora_config.py` — PEFT config
+      from inspect json (same leaf list as the VRAM dummy).
 - [x] BUILT — PARTIAL `src/models/demo/layout_module.py` — PageGT-line
       oracle boxes, **not** a trained detector (bank still PARTIAL).
 - [x] BUILT — VERIFIED `src/models/demo/reading_order_module.py` —
       pairwise count-and-sort; unit tests. Not a pointer network.
-- [x] BUILT — NOT RUN `src/models/demo/sft.py` — Hindi natural line-crop
-      corpus chosen (#80). `--run` requires CUDA; collate unwired.
-      Report: `docs/tier2_stage2b_demo.md`.
+- [x] BUILT — VERIFIED `src/models/demo/sft.py` — 100-step Colab SFT on
+      Hindi natural line crops; adapter under `checkpoints/demo/`
+      (Drive, not this git tree). Report: `docs/tier2_stage2b_demo.md`.
 - [x] BUILT — VERIFIED `src/models/demo/rlvr.py` — reward terms + tests.
-  - [ ] Coverage-term ablation **training**: not attempted (no SFT
-        adapter). Reward-shape tests only. `docs/tier2_rlvr_ablation.md`.
-        Still the _only_ RLVR ablation (DECISIONS.md #11, #82).
+  - [ ] Coverage-term ablation **training**: not attempted. Cell 10
+        scored SFT greedy decode with λ=0; no policy update.
+        `docs/tier2_rlvr_ablation.md`. Still the _only_ planned RLVR
+        ablation (DECISIONS.md #11, #82).
 
 **Acceptance:** the instrument trains three times (Stage 5, Probe 1)
 without manual intervention and produces per-glyph-class accuracy and
@@ -383,8 +385,18 @@ Claim B numbers to real Tier C (paper scope; DECISIONS.md #58).
       - cross-attn contrib norms: `src/probes/probe_cross_attn_norms.py`
         → `data/probe_results/cross_attn_norms_hindi_natural_seed{N}.jsonl`
       - noise + scrambled TF: `probe_gt_likelihood.py --extra-conditions noise scrambled`
-        (append to existing jsonl or write a sibling out path)
-      DECISIONS.md #63, #64.
+        (sibling jsonl; `[!]` still blocked on checkpoints —
+        `docs/tier0d_noise_scrambled.md`, grayscale fix in
+        `make_matched_noise` not yet re-run)
+      - Step 4b KL(model ‖ 5-gram) + argmax agreement: code in
+        `src/probes/probe_ngram_kl.py` + `src/analysis/ngram_kl_argmax.py`;
+        `[!]` jsonl not written (`docs/ngram_kl_argmax.md`)
+      Probe 5 AUROC vs training overlap: offline
+        `src/analysis/memorisation_vs_correctness.py` →
+        `docs/memorisation_vs_correctness.md` (no GPU).
+      PaddleOCR instrument-matched control: **not viable**
+        (`docs/paddleocr_positive_control.md`, DECISIONS.md #86).
+      DECISIONS.md #63, #64, #85, #86.
 - [x] BUILT — VERIFIED **Probe 6 — Synthetic-to-real gap (paper scope).**
       Tier C Hindi plain+degraded+blank vs synthetic Claim B (Probe 3/5).
       Held-out validity is leakage-free (0 overlaps between
