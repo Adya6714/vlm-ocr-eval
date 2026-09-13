@@ -1,0 +1,12 @@
+{
+  "n": 32,
+  "n_empty_hyp": 0,
+  "mean_coverage": 0.30869641534573455,
+  "n_coverage_lt_0.5": 32,
+  "lambda_coverage_scored": 0.0,
+  "acc_used": "emitted_only",
+  "chat_template": "sft_user_turn + add_generation_prompt=True",
+  "swallowed_exceptions": false,
+  "note": "SFT-greedy scored with SFT chat template; not a retrained policy. No generate() exceptions were converted to hyp=''."
+}
+

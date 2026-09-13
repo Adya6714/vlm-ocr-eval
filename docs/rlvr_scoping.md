@@ -384,16 +384,25 @@ python src/models/demo/rlvr_train.py --sft-root checkpoints/demo --device cpu
 # attempted: false, mean_coverage: null
 ```
 
-The Cell 10 figure **n=32, mean_coverage=0.0** is still
-**untrustworthy**: images-only generate + swallowed exceptions. It is
-**not** replaced by a new number in this pass.
+The old Cell 10 figure **n=32, mean_coverage=0.0** is still
+**untrustworthy**: it used images-only generate and silently converted
+`generate()` crashes to `hyp=""`. It is **superseded** by a corrected
+baseline once the fixed chat-template generate and exception handling
+were used (Decision #88).
 
-**Colab (still Phase 2a, not 2b):** with the Drive adapter and
-`--device cuda` (or cpu), run the same command, n=32 default, write
-`checkpoints/demo_rlvr_sft_baseline/rlvr_summary.json`. That file’s
-`mean_coverage` and `n_empty_hyp` are the baseline Phase 2b should
-use. If coverage is still 0.0 **and** `n_empty_hyp=0`, that is a
-trustworthy floor. If `n_empty_hyp=32`, generate is still broken.
+**Corrected SFT-greedy baseline (trustworthy, executed):**
+
+From `Colab Run Summary.json` (committed alongside this doc for provenance):
+
+- n = **32**
+- n_empty_hyp = **0**  ✅ (real continuations; not crash→empty)
+- mean_coverage = **0.3087**
+- n_coverage_lt_0.5 = **32**
+- chat_template = `sft_user_turn + add_generation_prompt=True`
+- swallowed_exceptions = **false**
+
+This is still **not** a retrained policy (no RL loop). It is the
+baseline Phase 2b (λ=0 retrain) should be compared against.
 
 ### 4. Accuracy metric: **emitted-only** (both train-path R and gaming)
 

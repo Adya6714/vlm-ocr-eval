@@ -8,12 +8,18 @@ occurred.
 
 **What actually ran:** the existing SFT checkpoint's own greedy outputs,
 scored once against the λ=0 reward function, with no policy update.
-n=32, mean_coverage=0.0 across all 32 examples, all below the 0.5
-threshold. This says the plain SFT model (100 training steps) doesn't
-cover its inputs well on its own — plausibly just an undertrained model
-after a short smoke-test SFT run — and says nothing about whether
-removing the coverage reward causes omission, since coverage was never
-part of a training signal here.
+
+**Corrected SFT-greedy baseline (trustworthy):** n=32, **n_empty_hyp=0**,
+mean_coverage **0.3087**, and all 32 examples had coverage < 0.5.
+This baseline supersedes the earlier Cell 10 “mean_coverage=0.0” number,
+which is known-untrustworthy because it used the wrong chat template and
+silently converted `generate()` crashes to `hyp=""`.
+
+This says the plain SFT model (100 training steps) doesn't cover its
+inputs well on its own — plausibly just an undertrained model after a
+short smoke-test SFT run — and says nothing about whether removing the
+coverage reward causes omission, since coverage was never part of a
+training signal here.
 
 **Why retraining didn't happen:** it was never in the executed script.
 `src/models/demo/rlvr_train.py` prints that full PPO is not implemented
@@ -25,10 +31,15 @@ stdout was not kept in the paste, so a per-example `generate()` crash
 versus empty or useless decode is not established; only the scored
 summary (n=32, mean_coverage=0.0) is.
 
+The corrected baseline explicitly records `n_empty_hyp=0` and
+`swallowed_exceptions=false` (Decision #88), so it is auditable and can
+be treated as real.
+
 Not pursued further this session. SFT itself (Decision #84 closing #3,
 real trained adapter on `ds4sd/SmolDocling-256M-preview`) is confirmed
 working and is the result this session actually produced.
 
-Raw summary: Colab wrote `checkpoints/demo_rlvr_nocov/rlvr_summary.json`
-(not in this git tree). Reward-shape tests remain in
+Raw summary: `Colab Run Summary.json` (committed to this repo root for
+provenance) records the corrected SFT-greedy baseline. Reward-shape tests
+remain in
 `tests/test_demo_rlvr_order.py`; those are not a trained-policy result.
