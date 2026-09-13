@@ -314,15 +314,15 @@ def choose_demo_backbone(vram: dict) -> dict:
 def append_decision_3_close(repo: Path, choice: dict) -> None:
     path = repo / "DECISIONS.md"
     text = path.read_text(encoding="utf-8")
-    if "### 83." in text or "Close Decision #3 from T4 LoRA VRAM" in text:
-        print("[decision] #83 already present; not duplicating")
+    if "Close Decision #3" in text:
+        print("[decision] Decision #3 already closed in DECISIONS.md; not duplicating")
         return
     selected = choice.get("selected")
     block = f"""
 
 ---
 
-### 83. Close Decision #3 from T4 LoRA VRAM
+### 84. Close Decision #3 from T4 LoRA VRAM
 
 **Decision:** demo backbone = `{selected}`.
 
@@ -335,4 +335,4 @@ sentence is historical; this entry is the close.
 **Date:** 2026-09-12
 """
     path.write_text(text.rstrip() + block + "\n", encoding="utf-8")
-    print(f"[decision] appended #83 selected={selected}")
+    print(f"[decision] appended #84 selected={selected}")

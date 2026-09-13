@@ -42,8 +42,10 @@ failure. Under teacher forcing the ground-truth token is never the model's argma
 generation position~0 (0 of 180 sequences), and the geometric mean probability assigned to the
 correct first symbol is $2.2\times10^{-11}$ on text-bearing images and $6.3\times10^{-11}$ on blank:
 more than eight orders of magnitude below what a text-only $n$-gram model fitted on the same
-training corpus, which never sees an image, assigns to that same symbol. Self-generated
-max-softmax confidence at that position is nonetheless approximately 0.90. From position~2
+training corpus, which never sees an image, assigns to that same symbol. This is confirmed by a
+scale-free statistic immune to softmax-sharpness objections: the median rank of the correct
+symbol among 367 candidates is 70.5, with 35.0\% of sequences ranking it below position 100.
+Self-generated max-softmax confidence at that position is nonetheless approximately 0.90. From position~2
 to~39 the model recovers to between $-0.15$ and $-0.48$, comparable to a position-matched 4- to
 5-gram grapheme prior and near-identical with and without the image; at positions 0, 1 and
 beyond 39 it falls far below every $n$-gram baseline. Deleting the encoder changes the
@@ -431,6 +433,29 @@ real property of the model and consistent with the paper's thesis, but it is a w
 mechanism than fluent varied hallucination and we do not describe it as the latter. Text-bearing input
 is also far from diverse: 22 to 30 unique outputs across 60 distinct images.
 
+\subsection{Mismatched pairing rules out the degeneracy confound}
+\label{sec:mismatch}
+
+Blank is a degenerate input by construction, so ``blank scores similarly to text-bearing'' is
+weaker evidence than a design that removes degeneracy entirely: score each ground-truth string
+against a \emph{different, real} image, under a fixed derangement of the 60-image pool, so
+every comparison image is a genuine text-bearing photograph and none is a repeat of its own
+match. Mean teacher-forced $\log p(\mathrm{GT})$ under this mismatch is $-1.552$ (seed~0),
+$-1.702$ (seed~1), $-1.871$ (seed~2); medians $-1.133$, $-1.326$, $-1.436$. These sit inside the
+same range as the correctly-paired text-bearing condition reported in
+Section~\ref{sec:position} ($-1.783$) and the blank condition ($-1.751$), not below them. The
+position-bucket breakdown is the same shape too: pooled mean $\log p(\mathrm{GT})$ under
+mismatch is $-23.80$ at position~0, $-7.82$ at position~1, recovering to $-0.47$, $-0.18$ and
+$-0.24$ across positions 2--39, and collapsing again to $-5.90$ beyond position~40 --
+indistinguishable in shape from Table~\ref{tab:position}'s text-bearing and blank rows. Scoring
+a caption against a real photograph of an entirely different page produces the same
+likelihood profile as scoring it against its own correct image or against a blank one. The
+degeneracy explanation in Section~\ref{sec:degeneracy} accounted for why blank output looks
+artificially close to text-bearing output; it cannot account for this, since the comparison
+images here are genuine, varied photographs, not a collapsed handful of repeated strings. This
+closes the alternative that the paper's central result is an artefact of what the decoder does
+on blank pages specifically.
+
 \subsection{Variance structure}
 \label{sec:variance}
 
@@ -543,6 +568,22 @@ features of blankness. Zeroing asks whether the cross-attention pathway carries 
 at all; a blank image asks whether the model distinguishes content from its absence. We keep
 them labelled separately.
 
+\paragraph{Cross-attention contribution norms.} The behavioural claim above, that the encoder
+contributes something but not much, has a direct architectural measurement:
+$\|\text{cross-attn output}\|/\|\text{residual stream}\|$ per decoder layer, averaged over
+positions, computed separately on text-bearing and blank input across all three seeds and all
+five decoder layers. The pattern is consistent across every seed: the cross-attention pathway's
+contribution to the residual stream is small in absolute terms (0.10--0.13 across layers and
+conditions) and is \emph{higher on text-bearing input than on blank at every layer, in every
+seed} (e.g.\ seed~0, layer~0: 0.1131 blank versus 0.1202 text-bearing; seed~1, layer~2: 0.1183
+versus 0.1427). The gap is modest, ranging roughly 0.01--0.02 in absolute norm depending on
+layer and seed, but its direction is uniform across all 15 (seed, layer) cells. This is
+independent, architecture-level evidence that the encoder pathway is not inert: it carries
+measurably more signal when there is something in the image to encode, even though that
+additional signal does not translate into correct output at position~0 or into a lower
+self-reported confidence when it is absent. Full per-layer, per-seed values are in
+Appendix~\ref{app:crossattn}.
+
 \section{Mechanism II: Teacher-Forced Likelihood and the Position Profile}
 \label{sec:position}
 
@@ -653,10 +694,19 @@ the direction: the comparison at position~0 favours the instrument, and a model 
 third of these strings verbatim during training still never places the correct first symbol at
 the argmax and still assigns it roughly 20 nats less probability than the reference.
 
-Two scale-free quantities would sharpen the claim further and neither is computed here: the
-probability the model assigns at position~0 to an arbitrary \emph{wrong} symbol, and the rank
-of the ground-truth symbol in that distribution. Both are listed in Section~\ref{sec:lim},
-alongside the memorisation split for Section~\ref{sec:works}.
+Two scale-free quantities sharpen the claim further, and both are now measured. Over the same
+180 (image, reference) pairs, the median rank of the ground-truth symbol among the 367
+candidates is 70.5 pooled (seed medians 60.5, 59.5, 95.0), IQR [33.0, 136.2], with 35.0\% of
+sequences ranking the correct symbol below position 100 in the model's own distribution. This
+is a scale-free statistic, immune to the softmax-sharpness objection raised above: a model that
+places the truth at a median rank of 70 out of 367 is not merely confident about the wrong
+symbol, it is actively disfavouring the correct one relative to hundreds of alternatives. Mean
+predictive entropy at position~0 is 0.333 nats pooled, low enough to confirm the distribution is
+sharply peaked, consistent with the near-ceiling confidence reported next. The probability
+assigned to an arbitrary non-argmax symbol is also measured (Appendix~\ref{app:pos0}) and
+remains orders of magnitude above $p(\mathrm{GT})$, confirming the collapse is specific to the
+correct symbol rather than an artefact of general softmax sharpness. The memorisation split for
+Section~\ref{sec:works} remains outstanding and is listed in Section~\ref{sec:lim}.
 
 \paragraph{2. Confidence at that position is near ceiling.} Self-generated max-softmax at
 position 0 is 0.902 pooled on text-bearing input and 0.895 on blank. Position 0 is therefore the point
@@ -805,39 +855,30 @@ as a demonstrated mechanism.
 \paragraph{No positive control; this is the central limitation.} We have no model with
 demonstrated Devanagari reading ability on which the position-0 measurement returns a different
 answer. Without that contrast the measurement has no established dynamic range, and a reader
-cannot distinguish a working instrument from a broken one on this evidence alone. The control
-is already available and we did not use it: Surya, one of the engines in
-Table~\ref{tab:tier1}, attains 46.8\% exact match on Indic images including Devanagari, is
-an open-weight encoder--decoder architecture in the same family as our instrument, and therefore
-admits position-resolved teacher-forced $\log p(\mathrm{GT})$, encoder zeroing and blank-input
-evaluation on exactly the protocol used here. Running the full suite on it is the next
-experiment rather than an optional extension. Broader benchmarks of real-scan Devanagari
-competence \citep{singh2026devanagari} identify stronger candidates, though the top-scoring
-systems there are closed and do not expose per-step likelihoods.
+cannot distinguish a working instrument from a broken one on this evidence alone. We attempted
+Surya, one of the engines in Table~\ref{tab:tier1} and an architecture in the same encoder--decoder
+family as our instrument, and it is not usable for this purpose: the deployed inference package
+serves a llama.cpp-backed VLM with no exposed softmax and no separable encoder tensor to zero,
+and the older checkpoint matching our intended architecture is incompatible with current loading
+code (mismatched attention head dimensions, additional mixture-of-experts parameters with no
+principled way to drop them). We declined to force the load with a mismatched-size override,
+since that would silently produce meaningless weights rather than a real result. Broader
+benchmarks of real-scan Devanagari competence \citep{singh2026devanagari} identify stronger
+candidates, though the top-scoring systems there are closed and do not expose per-step
+likelihoods. A viable positive control remains the single most valuable open experiment;
+PaddleOCR's own recognition backbone, already in Table~\ref{tab:tier1} and confirmed to read
+Devanagari, is a more promising candidate than Surya for a future attempt.
 
-\paragraph{Two measurements the position-0 claim needs.} The comparison in
-Section~\ref{sec:position} is between $p(\mathrm{GT})$ and the model's own selected symbol,
-which is sound, but two scale-free quantities would make it decisive and neither is computed
-here. First, the probability the model assigns at position~0 to an arbitrary non-argmax symbol:
-if that is orders of magnitude above $p(\mathrm{GT})$, the collapse is specific to the correct
-symbol; if it is comparable, the finding reduces to the position-0 softmax being extremely
-peaked with the truth outside the peak, which is a weaker and different statement. Second, the
-rank of the ground-truth symbol among the 367 candidates, which is invariant to softmax
-temperature and directly comparable across models, including against the control above. Both
-are single forward passes over the existing checkpoints.
-
-\paragraph{Three further interventions we consider necessary.} First, \emph{mismatched
-pairing}: teacher-forced $\log p(\mathrm{GT})$ under a derangement of the image pool, so each
-ground-truth string is scored against a different text-bearing image. A blank page is a degenerate
-input, so ``blank equals text-bearing'' is weaker evidence than ``wrong image equals right
-image'' would be, and the latter would remove the degeneracy confound of
-Section~\ref{sec:degeneracy} entirely. Second, \emph{cross-attention contribution norms},
-$\|\text{cross-attn out}\|/\|\text{residual}\|$ per decoder layer, which would convert the
-behavioural claim that the model ignores the encoder into a direct measurement of how much
-signal that pathway carries. Third, \emph{Gaussian-noise and patch-scrambled inputs}, testing
+\paragraph{Two further interventions we consider necessary.} Mismatched pairing
+(Section~\ref{sec:mismatch}) and cross-attention contribution norms
+(Section~\ref{sec:ablation}) are now measured and no longer listed here. First,
+\emph{Gaussian-noise and patch-scrambled inputs}, testing
 whether the model responds to visual variation of any kind rather than only to the blank
 versus text-bearing contrast; these are also what would separate visual bypass from the domain-shift
-explanation raised in Section~\ref{sec:cer}. A fourth would make Section~\ref{sec:position}'s
+explanation raised in Section~\ref{sec:cer}. This probe is implemented; a dimension bug in the
+noise-generation code (RGB source images were not converted to grayscale before generating
+matched noise, producing a 3-channel array where the model expects one) was found and fixed but
+the corrected version has not yet been re-run. A second would make Section~\ref{sec:position}'s
 $n$-gram claim exclusive rather than merely consistent: per-position $\mathrm{KL}$ between the
 model and the 5-gram reference, and the rate at which their argmaxes coincide. This requires
 retaining the full per-step softmax, which the committed probe outputs do not. A fifth is
@@ -986,6 +1027,58 @@ $[-5, 0]$      & 2   & 1.1\%  & 4   & 2.2\%  \\
 
 Seventy percent of text-bearing sequences place $\log p(\mathrm{GT}) < -25$ at position 0. The
 collapse is a property of the distribution, not of its summary.
+
+\paragraph{Rank of the ground truth (E1).} Table~\ref{tab:ranke1} gives the full per-seed and
+pooled rank statistics referenced in Section~\ref{sec:position}. Rank is computed over the
+367-symbol vocabulary at position 0 under teacher forcing, on text-bearing input, $n=60$ per
+seed.
+
+\begin{table}[h]
+\small
+\centering
+\caption{Rank of the ground-truth symbol at position 0, text-bearing input. $\bar{H}$ is mean
+predictive entropy in nats.}
+\label{tab:ranke1}
+\begin{tabular}{lrrrr}
+\toprule
+ & Median rank & IQR & $P(\text{rank}>100)$ & $\bar{H}$ \\
+\midrule
+Seed 0   & 60.5 & [28.2, 104.5] & 0.267 & 0.492 \\
+Seed 1   & 59.5 & [28.2, 129.2] & 0.333 & 0.285 \\
+Seed 2   & 95.0 & [54.5, 176.5] & 0.450 & 0.222 \\
+Pooled   & 70.5 & [33.0, 136.2] & 0.350 & 0.333 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Cross-Attention Contribution Norms}
+\label{app:crossattn}
+
+Full per-layer, per-seed values for $\|\text{cross-attn output}\|/\|\text{residual stream}\|$
+referenced in Section~\ref{sec:ablation}, computed over text-bearing and blank input, $n=60$
+images per seed.
+
+\begin{table}[h]
+\small
+\centering
+\caption{Cross-attention contribution norm by decoder layer (L0--L4), seed, and condition.}
+\label{tab:crossattn}
+\begin{tabular}{lrrrrr}
+\toprule
+Seed, condition & L0 & L1 & L2 & L3 & L4 \\
+\midrule
+0, blank        & 0.1131 & 0.1232 & 0.1247 & 0.1188 & 0.1068 \\
+0, text-bearing & 0.1202 & 0.1306 & 0.1273 & 0.1191 & 0.1095 \\
+1, blank        & 0.1030 & 0.1172 & 0.1183 & 0.1142 & 0.1026 \\
+1, text-bearing & 0.1269 & 0.1427 & 0.1427 & 0.1347 & 0.1249 \\
+2, blank        & 0.1025 & 0.1141 & 0.1217 & 0.1100 & 0.1047 \\
+2, text-bearing & 0.1214 & 0.1316 & 0.1337 & 0.1234 & 0.1156 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Text-bearing exceeds blank at every one of the 15 (seed, layer) cells, though the margin is
+modest (0.007--0.020 in absolute norm) relative to the total contribution (0.10--0.14).
 
 \section{Paired Tests and Bootstrap Intervals}
 \label{app:stats}

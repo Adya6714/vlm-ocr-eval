@@ -1,48 +1,34 @@
-# Tier 2 — RLVR coverage-term ablation
+# Tier 2 — RLVR coverage ablation: not completed
 
-**Status: not trained. Do not read this as an omission result on a
-model.**
+**What this is not:** a coverage-term ablation. The design from BOOK.md
+Chapter 6 requires retraining from the SFT checkpoint with the coverage
+reward term removed (λ=0), then checking whether the retrained policy
+omits difficult content relative to the SFT baseline. No retraining
+occurred.
 
-BOOK.md Chapter 6 and Decision #11: only one cheap ablation — drop the
-coverage term, retrain once, see whether the policy omits hard text.
-A full reward-term sweep is out of scope.
+**What actually ran:** the existing SFT checkpoint's own greedy outputs,
+scored once against the λ=0 reward function, with no policy update.
+n=32, mean_coverage=0.0 across all 32 examples, all below the 0.5
+threshold. This says the plain SFT model (100 training steps) doesn't
+cover its inputs well on its own — plausibly just an undertrained model
+after a short smoke-test SFT run — and says nothing about whether
+removing the coverage reward causes omission, since coverage was never
+part of a training signal here.
 
-## Dependency
+**Why retraining didn't happen:** it was never in the executed script.
+`src/models/demo/rlvr_train.py` prints that full PPO is not implemented
+and, when an SFT adapter exists, greedy-decodes that adapter and writes
+`rlvr_summary.json` instead of a policy update. That is also the note
+inside the summary JSON. This session did not crash out of an RL loop
+and did not run out of time on one: the loop was not attempted. Cell 10
+stdout was not kept in the paste, so a per-example `generate()` crash
+versus empty or useless decode is not established; only the scored
+summary (n=32, mean_coverage=0.0) is.
 
-RLVR needs a finished Stage 2b SFT adapter as the starting policy.
-SFT **did not run** (no T4; inspect json missing; collate unwired).
-Per the prompt: **RLVR training was not attempted**, including no
-truncated one-epoch toy run.
+Not pursued further this session. SFT itself (Decision #84 closing #3,
+real trained adapter on `ds4sd/SmolDocling-256M-preview`) is confirmed
+working and is the result this session actually produced.
 
-## What exists (checkable without a GPU)
-
-`src/models/demo/rlvr.py` defines
-
-```text
-R = char_acc + teds + tau − λ_coverage × (1 − coverage)
-```
-
-- `char_acc`: grapheme Levenshtein vs **GT length** (deletions count).
-- `emitted_only_accuracy`: prefix-friendly channel used only in the
-  diagnostic (this is how “say less” can look accurate).
-- `coverage`: GT grapheme-cluster multiset overlap / |GT|.
-- `teds` / `tau`: default 0.0 when no table tree / block permutation
-  is supplied (inert, not invented).
-- `λ_coverage = 0` is the ablation.
-
-Unit tests (`tests/test_demo_rlvr_order.py`) confirm:
-
-- Perfect copy → reward 1.0 with λ=1.
-- Empty hyp vs nonempty GT → coverage 0, reward &lt; 0 with λ=1.
-- With emitted-only accuracy and λ=0, a perfect easy prefix can beat a
-  slightly noisy full reading; turning λ back to 1 penalizes the omit.
-
-That is the **reward-shape** claim, not a trained-policy claim.
-
-## What is needed to finish
-
-1. Close Decision #3 and finish SFT (`docs/tier2_stage2b_demo.md`).
-2. One RL train with λ=1 (coverage on), checkpoint.
-3. One retrain from the **same SFT init** with λ=0.
-4. Compare omission: coverage and length of hyp vs GT on a held slice
-   of hard (rare-glyph) lines. Quantify; do not add extra ablations.
+Raw summary: Colab wrote `checkpoints/demo_rlvr_nocov/rlvr_summary.json`
+(not in this git tree). Reward-shape tests remain in
+`tests/test_demo_rlvr_order.py`; those are not a trained-policy result.
