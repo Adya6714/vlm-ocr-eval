@@ -41,3 +41,11 @@ have helped). Do not treat mid-sequence \(-0.15\) or synthetic AUROC
 
 Push `index.html` (and this file) to `main` so Pages updates before any
 external send that links the site.
+
+Default tab is the **preprint** (Decision #87). Extract audit is the
+other toggle. Do not restore the 17-section BOOK walkthrough.
+
+## Now in the PDF (do not list as remaining)
+
+Noise/scramble log p(GT), n-gram KL/argmax agreement, Probe 5
+non-match n=0, PaddleOCR CTC infeasibility.

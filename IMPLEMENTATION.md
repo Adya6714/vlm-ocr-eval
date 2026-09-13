@@ -238,8 +238,9 @@ GlotOCR slice after #28.
 - [x] BUILT — VERIFIED `src/models/demo/rlvr.py` — reward terms + tests.
   - [ ] Coverage-term ablation **training**: not attempted. Cell 10
         scored SFT greedy decode with λ=0; no policy update.
-        `docs/tier2_rlvr_ablation.md`. Still the _only_ planned RLVR
-        ablation (DECISIONS.md #11, #82).
+        `docs/tier2_rlvr_ablation.md`. Scope of a real retrain:
+        `docs/rlvr_scoping.md` (investigation only; no trainer yet).
+        Still the _only_ planned RLVR ablation (DECISIONS.md #11, #82).
 
 **Acceptance:** the instrument trains three times (Stage 5, Probe 1)
 without manual intervention and produces per-glyph-class accuracy and
@@ -384,18 +385,15 @@ Claim B numbers to real Tier C (paper scope; DECISIONS.md #58).
         → `data/probe_results/probe_gt_mismatch_hindi_natural_seed{N}.jsonl`
       - cross-attn contrib norms: `src/probes/probe_cross_attn_norms.py`
         → `data/probe_results/cross_attn_norms_hindi_natural_seed{N}.jsonl`
-      - noise + scrambled TF: `probe_gt_likelihood.py --extra-conditions noise scrambled`
-        (sibling jsonl; `[!]` still blocked on checkpoints —
-        `docs/tier0d_noise_scrambled.md`, grayscale fix in
-        `make_matched_noise` not yet re-run)
-      - Step 4b KL(model ‖ 5-gram) + argmax agreement: code in
-        `src/probes/probe_ngram_kl.py` + `src/analysis/ngram_kl_argmax.py`;
-        `[!]` jsonl not written (`docs/ngram_kl_argmax.md`)
+      - noise + scrambled TF: **VERIFIED** 3 seeds
+        (`docs/tier0d_noise_scrambled.md`; in `paper/main.tex`)
+      - Step 4b KL(model ‖ 5-gram) + argmax agreement: **VERIFIED** 3
+        seeds (`docs/ngram_kl_argmax.md`; in `paper/main.tex`)
       Probe 5 AUROC vs training overlap: offline
         `src/analysis/memorisation_vs_correctness.py` →
-        `docs/memorisation_vs_correctness.md` (no GPU).
+        `docs/memorisation_split.md` (no GPU).
       PaddleOCR instrument-matched control: **not viable**
-        (`docs/paddleocr_positive_control.md`, DECISIONS.md #86).
+        (`docs/paddleocr_feasibility.md`, DECISIONS.md #86).
       DECISIONS.md #63, #64, #85, #86.
 - [x] BUILT — VERIFIED **Probe 6 — Synthetic-to-real gap (paper scope).**
       Tier C Hindi plain+degraded+blank vs synthetic Claim B (Probe 3/5).

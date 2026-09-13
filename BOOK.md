@@ -55,11 +55,10 @@ A short orientation:
   baselines, hand-review suggestions, line-crop export, `make smoke-test`,
   Colab `--data-root` + zip export.
 - **Specified, taught, not executed:** RLVR **policy** training
-  (coverage ablation still untrained), Stage 5b rank-correlation
-  transfer, Stage 6 triage cascade. Stage 2b **SFT** ran on Colab T4
-  (Decision #84). Stage 3 **metric code** and a geometric bank baseline
-  exist locally (`docs/tier2_stage3_reading_order.md`); that is not a
-  demo-model curve.
+  (coverage ablation still untrained; `docs/rlvr_scoping.md`), Stage 5b
+  rank-correlation transfer, Stage 6 triage cascade. Stage 2b **SFT**
+  ran on Colab T4 (Decision #84). Noise/scramble, n-gram KL, and the
+  Probe 5 overlap check are in the preprint.
 
 Numbers recomputed from this checkout are labeled **measured**. Numbers
 that appear on the site or in older write-ups but whose result files are
@@ -226,8 +225,11 @@ is **not** a held-out-string result: Probe 5 samples its eval rows from
 teacher-forced real-scan strings) has partial overlap with the same
 manifest; that is not the Probe 5 split. Mid-sequence teacher-forced
 log *p*(GT) sits in the same band as a 4–5-gram grapheme LM
-(`docs/position_matched_ngrams.md`); full-softmax KL vs that prior is
-**not computed** (`docs/ngram_kl_argmax.md`).
+(`docs/position_matched_ngrams.md`). Full-softmax KL vs that prior
+**is computed** on three seeds (`docs/ngram_kl_argmax.md`): mid-sequence
+KL is ~0.27–0.32 nats with ~91–94% argmax agreement; positions 0, 1,
+and 40+ diverge. The paper treats the exclusive 5-gram account as
+supported.
 
 **Implied fix.** Report calibration with equal-mass bins and ECE; never
 treat AUROC on overlapping strings as generalization.
@@ -427,6 +429,7 @@ Loaders, LoRA config, pairwise orderer, SFT script, RLVR **reward**
 wired. Decision #3 **closed** (#84): Colab T4 dummy LoRA selected
 `ds4sd/SmolDocling-256M-preview` (1.63 GB). SFT 100 steps on that
 adapter. RLVR **policy** training not run (`docs/tier2_rlvr_ablation.md`).
+What a retrain would actually require: `docs/rlvr_scoping.md`.
 Reports: `docs/tier2_stage2b_demo.md`.
 
 ### Stage 3 — Structure metrics
@@ -449,7 +452,8 @@ holes (#81). No demo-model curve. `docs/tier2_stage3_reading_order.md`.
 | Attention ablation | VERIFIED | 3 seeds; `docs/attention_ablation_analysis.md` |
 | GT-likelihood | VERIFIED | 360 records |
 | Paper stats + figures | VERIFIED | `docs/paper_defensibility_stats.md`; `paper/figures/` |
-| mismatch TF, cross-attn norms, noise/scrambled | code; **not run** | `docs/tier0d_noise_scrambled.md` |
+| mismatch TF, cross-attn norms | code; **not run** | `docs/tier0b_gt_mismatch.md`, `docs/tier0c_cross_attn_norms.md` |
+| noise/scrambled GT-likelihood | VERIFIED 3 seeds | `docs/tier0d_noise_scrambled.md`; now in `paper/main.tex` |
 | Probe 5 train-overlap AUROC split | VERIFIED (offline) | `docs/memorisation_split.md` — non-match n=0 |
 | Step 4b KL / argmax vs 5-gram | VERIFIED 3 seeds | `docs/ngram_kl_argmax.md` |
 | PaddleOCR same-protocol control | **not viable** | `docs/paddleocr_feasibility.md` |
@@ -586,11 +590,12 @@ GT-aligned + *p*(true). **#59** Extract, not Digitise, for confidence.
 **#60** Cite Sarvam blog with fetch date. **#61** Canonical results =
 `data/probe_results` + `docs/`; Colab zips stay local. **#62**
 Teacher-forced log *p*(GT) vs max-softmax bias. **#63** Follow-up
-probes (mismatch, cross-attn norms, noise/scrambled) authored; run
-blocked on local checkpoints. **#64** Unified figure generator +
+probes (mismatch, cross-attn norms authored; noise/scrambled **ran**;
+mismatch/cross-attn still blocked on local checkpoints). **#64** Unified figure generator +
 offline defensibility battery. **#67** Live bibliography, no invented
 venues. **#68** Single `paper/` directory. **#69** GitHub Pages: one
-URL, two modes. **#70–#71** Figure 1 inset layout. **#72** Surya
+URL, two modes; **#87** default is the preprint, Extract is the other
+tab. **#70–#71** Figure 1 inset layout. **#72** Surya
 positive-control citation is a reported preprint, not our verification.
 **#74** Never call eval images “real.” **#75** Preprint tab matches tex
 terminology. **#76** README is a map. **#77** One Sarvam-facing note.
@@ -2420,7 +2425,9 @@ learn to omit difficult text.
 
 `src/models/demo/rlvr.py` implements that scalar (including λ=0). Unit
 tests check the omission **shape**. A coverage-term-removed **retrain**
-was not run: there is no SFT adapter yet (`docs/tier2_rlvr_ablation.md`).
+was not run. SFT exists (Colab Drive adapter); the trainer never
+implements a policy update (`docs/tier2_rlvr_ablation.md`,
+`docs/rlvr_scoping.md`).
 
 > **What to remember.** RLVR lets us optimize OCR for whole-document
 > quality, but the reward must include coverage — otherwise the model
@@ -2731,10 +2738,15 @@ bootstrap 2,000 reps, length-controlled CER, n-gram sweep, equal-mass
 ECE). `src/analysis/make_paper_figures.py` writes Figures 1–4 PDF under
 `paper/figures/` and PNG under `docs/figures/` (Decision #64).
 
-**Authored, not run** (need `checkpoint_hindi_natural_seed{N}.pt` on
-disk): shuffled image–text teacher forcing (`probe_gt_mismatch.py`),
-cross-attention contribution norms (`probe_cross_attn_norms.py`),
-noise + patch-scrambled extra conditions on GT-likelihood. Log:
+**Now measured (in the preprint):** noise + patch-scrambled
+teacher-forcing (`docs/tier0d_noise_scrambled.md`); n-gram KL / argmax
+agreement (`docs/ngram_kl_argmax.md`); Probe 5 memorisation split
+empty (`docs/memorisation_split.md`); PaddleOCR same-protocol control
+**not viable** (`docs/paddleocr_feasibility.md`).
+
+**Authored, not run** (need checkpoints on disk): shuffled image–text
+teacher forcing (`probe_gt_mismatch.py`), cross-attention contribution
+norms (`probe_cross_attn_norms.py`). Log:
 `docs/remaining_measurements.md`.
 
 ### How all the probes fit together
@@ -3350,12 +3362,13 @@ the front of this file.
 
 ## Appendix B — Built vs described-only
 
-**Built and used for measured claims:** Stage 0 taxonomy stack (Tesseract
-+ Surya; Paddle incomplete); Stage 1 renderer + Hindi/Bengali manifests;
-Stage 2a instrument (9 Hindi checkpoints on Colab); `make smoke-test`;
-Probe 1 FE (β withheld); Probes 2, 3, 3b, 5, 5b; attention ablation;
-GT-likelihood; Probe 6 paper scope; Stage 5a Extract 35-page probe;
-offline `paper_defensibility_stats.md` + paper figures.
+**Built and used for measured claims:** Stage 0 taxonomy stack
+(Tesseract + Surya + PaddleOCR n=420); Stage 1 renderer + Hindi/Bengali
+manifests; Stage 2a instrument (9 Hindi checkpoints on Colab);
+`make smoke-test`; Probe 1 FE (β withheld); Probes 2, 3, 3b, 5, 5b;
+attention ablation; GT-likelihood including noise/scrambled extras;
+n-gram KL; Probe 5 overlap check; Probe 6 paper scope; Stage 5a Extract
+35-page probe; offline `paper_defensibility_stats.md` + paper figures.
 
 **Partial:** layout bank (`form` / `table-embedded`, india.gov);
 degradation source mix; UNREVIEWED / unlabeled
@@ -3363,14 +3376,16 @@ adjudication sample; Probe 4 on instrument outputs; Bengali probe sweep;
 equal-mass ECE offline but not in the live Probe 5 printer.
 
 **Code written, not run (need checkpoints):** `probe_gt_mismatch.py`,
-`probe_cross_attn_norms.py`, GT-likelihood noise/scrambled, position-0
-null rank (`docs/remaining_measurements.md`), Surya positive-control
-diagnostic.
+`probe_cross_attn_norms.py`, position-0 null rank
+(`docs/remaining_measurements.md`). Surya and PaddleOCR
+instrument-matched controls are **not viable** (architecture), not
+waiting on a run.
 
-**Described only (this phase):** demo LoRA stack; reading-order / table
-metrics; RLVR; Stage 5b rank-correlation transfer;
-`analyze_sarvam_transfer.py`; Stage 6 cascade; mixed-effects Probe 1;
-second annotator kappa.
+**Described only (this phase):** RLVR **policy** training (reward +
+SFT exist; `docs/rlvr_scoping.md`); reading-order / table metrics on
+the **demo** (code exists, no demo curve); Stage 5b rank-correlation
+transfer; `analyze_sarvam_transfer.py`; Stage 6 cascade; mixed-effects
+Probe 1; second annotator kappa. Demo LoRA **SFT** ran on Colab T4.
 
 ---
 
@@ -3487,7 +3502,8 @@ Do not memorize headlines. Use this lookup (same as `docs/RESULTS.md`).
 | Colab log | `COLAB_RUNS.md` |
 
 Raw jsonl: `data/probe_results/`. Preprint: `paper/main.pdf`. Project
-page: `index.html` (Decision #69).
+page: `index.html` (Decision #69; default view is the preprint,
+Extract audit is the other tab).
 
 ---
 

@@ -157,9 +157,9 @@ Region-level order on the PARTIAL bank is already scorable
   dual export: Figs 1–4 publication PDF in `paper/figures/` (compile root
   `paper/main.tex`) and Figs 1–5 working PNG
   in `docs/figures/`; DECISIONS.md #64)
-- [!] Probes for mismatch TF, cross-attn norms, noise/scrambled: code authored and dry-run
-  clean; local execution on CPU blocked by lack of checkpoint weights
-  (`checkpoint_hindi_natural_seed{0,1,2}.pt` only on Colab/Drive); queued for Colab run
+- [x] Noise/scrambled GT-likelihood + n-gram KL (3 seeds) — in preprint
+- [!] Mismatch TF and cross-attn norms: code authored; still need
+  checkpoints on disk (`docs/remaining_measurements.md`)
 - [x] Probe 6 (paper scope) — BUILT — VERIFIED (Tier C plain+degraded+blank;
   0 leakage; `docs/probe6_synthetic_real_analysis.md`; DECISIONS.md #58)
 

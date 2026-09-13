@@ -1,8 +1,10 @@
 # Remaining measurements — run log
 
 Ground truth for already-published numbers:
-`docs/paper_defensibility_stats.md`. New numbers live in the files
-named below, not in `paper/main.tex`.
+`docs/paper_defensibility_stats.md`. Several follow-ups are now also
+in `paper/main.tex` (noise/scramble, n-gram KL, memorisation n=0,
+PaddleOCR CTC stop). Remaining GPU items still live only in the files
+named below.
 
 ## Step 0
 

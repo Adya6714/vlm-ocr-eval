@@ -40,7 +40,10 @@ Headline numbers are computed from committed probe outputs in `data/probe_result
 - **Confidence stays near ceiling** on text-bearing Hindi, blank pages, Ol Chiki, and Perso-Arabic (condition means within ~0.005).
 - **Position 0:** geometric-mean *p*(ground truth) is on the order of 10⁻¹¹ while self-generated max-softmax is ~0.90. The comparison is to a **text-only grapheme *n*-gram**, not to a uniform vocabulary prior. Ground truth is never the argmax at position 0 (0/180 sequences).
 - **Encoder ablation** changes mean confidence by ~−0.003. About 8% of decoding steps flip the argmax and account for ~97% of the KL; agreeing steps keep a near-unit peak.
-- **Mid-sequence** teacher-forced log *p*(GT) sits in the same band as a 4- to 5-gram grapheme language model, and the text-bearing and blank columns match. The instrument was trained on the **full** 2,538-line manifest (19 of 60 evaluation strings appear as training lines). Position 0 still fails at floor; synthetic AUROC 0.838 is not a held-out-string result.
+- **Mid-sequence** teacher-forced log *p*(GT) sits in the same band as a 4- to 5-gram grapheme language model. Full-softmax KL vs that 5-gram is low there (~0.27–0.32 nats) with ~91–94% argmax agreement; positions 0, 1, and 40+ diverge (`docs/ngram_kl_argmax.md`).
+- **Noise and patch-scrambled** images do not open a visual gap: whole-sequence mean log *p*(GT) stays within 0.05 nats of text-bearing and blank (`docs/tier0d_noise_scrambled.md`).
+- The instrument was trained on the **full** 2,538-line manifest (19 of 60 evaluation strings appear as training lines). Probe 5's AUROC 0.838 is **in-training-manifest only**: every synthetic eval string is in that file (`docs/memorisation_split.md`).
+- **PaddleOCR** as an instrument-matched positive control is **not viable** (CTC rec head, not autoregressive; `docs/paddleocr_feasibility.md`). Table 1 still uses it as an off-the-shelf engine (n=420).
 
 Figures 1–4: `paper/figures/` (PDF) and `docs/figures/` (PNG).
 
@@ -151,20 +154,20 @@ Further documentation: [`BOOK.md`](BOOK.md) (full project reference: questions, 
 
 ## Follow-up measurements
 
-These are **inference-only** (no retraining). They require the Hindi/natural checkpoints, which are not stored in git.
+Several items that used to sit here are **in the preprint**: noise /
+patch-scrambled teacher-forcing, n-gram KL vs 5-gram, Probe 5 overlap
+(empty held-out arm), PaddleOCR feasibility stop.
 
-| Experiment | Purpose |
-|---|---|
-| Position-0 rank / non-argmax mass | Scale-free localization of the first-token collapse |
-| Shuffled image–text pairing | Stronger control than blank pages |
-| Cross-attention contribution norms | Direct measure of encoder use |
-| Noise and patch-scrambled inputs | Visual variation vs empty pages |
-| Full-softmax vs 5-gram | Whether the decoder *is* a grapheme LM |
-| Surya, same protocol | Positive control: a system that reads Devanagari |
+Still **inference-only** and still blocked on checkpoints in this
+checkout: position-0 rank (jsonl not written), shuffled image–text
+pairing, cross-attention contribution norms. A viable autoregressive
+positive control is still open (Surya and PaddleOCR failed for
+architecture).
 
-Status and commands: [`docs/remaining_measurements.md`](docs/remaining_measurements.md). Probe 5 AUROC cannot be split into held-out vs memorised lines: every synthetic-natural eval string is in `hindi_natural.jsonl` ([`docs/memorisation_vs_correctness.md`](docs/memorisation_vs_correctness.md)).
-
-A larger demo model (LoRA, reading-order module, RL fine-tuning) is specified in `IMPLEMENTATION.md` and is out of scope for the current preprint.
+Status: [`docs/remaining_measurements.md`](docs/remaining_measurements.md).
+A larger demo model (LoRA SFT ran; RLVR policy did not —
+[`docs/rlvr_scoping.md`](docs/rlvr_scoping.md)) is out of scope for the
+current preprint.
 
 ---
 

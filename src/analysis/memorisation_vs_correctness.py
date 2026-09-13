@@ -10,7 +10,7 @@ tracks memorised text." This script does the split on already-committed
 jsonl — no new inference.
 
 Called from: `python src/analysis/memorisation_vs_correctness.py`
-Output: `docs/memorisation_vs_correctness.md`
+Output: `docs/memorisation_split.md`
 """
 from __future__ import annotations
 
@@ -83,7 +83,7 @@ def write_doc(repo: Path) -> str:
     train_texts = {r["text"] for r in manifest if "text" in r}
 
     lines = [
-        "# Memorisation vs correctness (Probe 5 AUROC split)",
+        "# Memorisation split (Section 9 AUROC)",
         "",
         "Question: does the synthetic-natural AUROC in",
         "`docs/paper_defensibility_stats.md` (pooled **0.8381**, cite that",
@@ -144,6 +144,7 @@ def write_doc(repo: Path) -> str:
 
     n_all, acc_all, auc_all = acc_auroc(pooled_all)
     n_non, _, auc_non = acc_auroc(pooled_non)
+    n_unique_all = len({r.get("ground_truth") or "" for r in pooled_all})
 
     lines += [
         "",
@@ -152,24 +153,24 @@ def write_doc(repo: Path) -> str:
     ]
     if n_non == 0:
         lines += [
-            "**The non-matching subset is empty.** Every Probe 5 synthetic-natural",
-            f"evaluation line (n={n_all} across three seeds) has `ground_truth`",
-            "verbatim in `hindi_natural.jsonl`. That is expected from the",
-            "sampler: Probe 5 draws its eval rows *from* the training manifest",
-            "(`probe5_calibration.py` `run_probe5`, `Random(0).sample`).",
+            "**The non-matching subset is empty (n=0).** Every Probe 5",
+            f"synthetic-natural evaluation line (n={n_all} rows across three",
+            f"seeds; {n_unique_all} unique `ground_truth` strings) appears",
+            "verbatim in `hindi_natural.jsonl`. Probe 5 samples with",
+            "`random.Random(0).sample` from that same file",
+            "(`src/probes/probe5_calibration.py` `run_probe5`), so overlap is",
+            "100% by construction. n=0 is not a small held-out slice: there",
+            "is no held-out slice. AUROC on the non-matching group is not",
+            "defined and is not reported as 0.5 or as a collapse.",
             "",
-            "Pooled AUROC on the matching (i.e. only) subset is therefore the",
-            f"same computation as Follow-Up 3: {fmt(auc_all)} (accuracy {fmt(acc_all)}).",
-            "AUROC on held-out-from-manifest strings **cannot be computed**",
-            "from these files. The 0.838 figure is **not** evidence that",
-            "confidence tracks correctness on unseen text. It is also not a",
-            "demonstration that AUROC *collapses* off-manifest — there is no",
-            "off-manifest Probe 5 slice to collapse.",
+            "Pooled AUROC on the matching (only) subset is the same",
+            f"computation as Follow-Up 3: {fmt(auc_all)} (accuracy {fmt(acc_all)}).",
+            "Section 9's 0.838 therefore cannot be read as confidence tracking",
+            "correctness on unseen text.",
             "",
-            "Settling the exclusivity claim needs a Probe 5 rerun whose eval",
-            "lines are disjoint from the training `text` set (or a different",
-            "already-scored jsonl with that property). That rerun is **not**",
-            "this script.",
+            "Settling that claim needs a Probe 5 eval whose GT strings are",
+            "disjoint from the training `text` set. That rerun is not this",
+            "script.",
         ]
     elif math.isnan(auc_non):
         lines += [
@@ -204,17 +205,24 @@ def write_doc(repo: Path) -> str:
         "PYTHONPATH=src python src/analysis/memorisation_vs_correctness.py",
         "```",
         "",
+        "Output: `docs/memorisation_split.md`.",
+        "",
     ]
     text = "\n".join(lines) + "\n"
-    out = repo / "docs" / "memorisation_vs_correctness.md"
+    out = repo / "docs" / "memorisation_split.md"
     out.write_text(text, encoding="utf-8")
+    stub = repo / "docs" / "memorisation_vs_correctness.md"
+    stub.write_text(
+        "Moved to [`memorisation_split.md`](memorisation_split.md).\n",
+        encoding="utf-8",
+    )
     return text
 
 
 def main() -> None:
     text = write_doc(_ROOT)
     print(text, end="")
-    print(f"[memorisation] wrote {_ROOT / 'docs' / 'memorisation_vs_correctness.md'}")
+    print(f"[memorisation] wrote {_ROOT / 'docs' / 'memorisation_split.md'}")
 
 
 if __name__ == "__main__":

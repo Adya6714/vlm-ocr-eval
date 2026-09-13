@@ -1995,4 +1995,23 @@ Write-up: `docs/paddleocr_positive_control.md`.
 
 **Date:** 2026-09-13
 
+---
+
+### 87. Project page: preprint first; two short modes
+
+**Decision:** Keep Decision #69's one-URL toggle (preprint vs Extract
+audit). Rewrite `index.html` as two short linear pages. Default mode is
+**paper**. Drop the BOOK-chapter walkthrough, module tour, and dual
+titles on every section.
+
+**Alternatives considered:** (a) keep the long walkthrough as default;
+(b) split Extract onto a second Pages path; (c) default Extract for
+Sarvam-facing visits.
+
+**Why:** (a) was the confusing site. (b) still rejected under #69.
+(c) hid the paper from the GitHub Pages landing. Extract numbers stay
+off the Paper tab and out of `paper/main.tex`.
+
+**Date:** 2026-09-13
+
 

@@ -52,10 +52,11 @@ beyond 39 it falls far below every $n$-gram baseline. Deleting the encoder chang
 output distribution substantially (mean KL 1.075 nats, argmax flips at 8.2\% of decoding
 steps) but leaves its peak near unity: 96.7\% of the divergence sits at those flipped
 positions while agreeing positions retain a mean confidence of 0.998. Finally, the confidence signal is not globally broken. On
-synthetic in-distribution lines, where the model attains 18.3\% line accuracy, confidence
-discriminates correct from incorrect transcriptions at AUROC 0.838 while remaining badly
-miscalibrated at a mean of 0.994; on the held-out images, where accuracy is zero, it carries no usable
-correctness signal. We read this as a model whose certainty tracks the linguistic plausibility
+synthetic lines drawn entirely from the training manifest, where the model attains 18.3\% line
+accuracy, confidence discriminates correct from incorrect transcriptions at AUROC 0.838 while
+remaining badly miscalibrated at a mean of 0.994 --- a discrimination result we can state only
+for memorised text, since this evaluation set has no held-out arm; on the held-out images, where
+accuracy is zero, it carries no usable correctness signal. We read this as a model whose certainty tracks the linguistic plausibility
 of what it generates rather than the state of its own perception. Because visual dependence in
 transcription is concentrated at the start of the sequence, a confidence score averaged
 uniformly over generated tokens dilutes the one position that carries it; confidence measures
@@ -117,7 +118,9 @@ positions), showing that the quantity deployed as confidence is the one componen
 output distribution that visual ablation leaves near ceiling.
 (4)~We identify a regime in which the same confidence signal does discriminate correctness
 (AUROC 0.838 at 18.3\% accuracy) while remaining uncalibrated, giving a within-instrument
-contrast rather than a purely negative result.
+contrast rather than a purely negative result; we are explicit that this evaluation set has no
+held-out arm, so the result is stated for memorised text and not offered as evidence of
+generalisation.
 (5)~We show that \emph{at least} 16.9--20.4\% of non-exact predictions from off-the-shelf OCR
 engines on Indic document images are Unicode encoding variants rather than misreadings, on the two
 engines with adequate sample size and with a large unreviewed remainder, a precondition for any
@@ -328,10 +331,22 @@ both ways. Against bypass: zeroing the encoder changes the argmax at 8.2\% of de
 position profile is near-identical on text-bearing and blank input at every bucket
 (Section~\ref{sec:position}), and confidence on two scripts the model has never seen is
 indistinguishable from in-distribution confidence (Table~\ref{tab:conf}), neither of which
-domain shift alone predicts. The measurements that would separate them are Gaussian-noise and
-patch-scrambled inputs, which test whether the model responds to visual variation of any kind.
-Both are listed in Section~\ref{sec:lim} and neither has been run, so we report the profile
-and do not claim to have excluded domain shift.
+domain shift alone predicts. We also ran the two measurements that would separate them:
+Gaussian-noise images and patch-scrambled real images, testing whether the model responds to
+visual variation of any kind rather than only to the specific rendering gap between training
+and evaluation. Pooled whole-sequence mean $\log p(\mathrm{GT})$ is $-1.756$ on noise and
+$-1.730$ on patch-scrambled input, against $-1.783$ text-bearing and $-1.751$ blank --- all four
+conditions within 0.05 nats of one another, and the position-bucket profile for both new
+conditions reproduces the same shape as text-bearing and blank: collapse at positions 0
+($-23.7$ noise, $-24.1$ scrambled) and 1 ($-8.9$, $-7.9$), recovery through positions 2--39, and
+a second collapse beyond position 40. Pure noise carries no structure a domain-shift account
+would expect the model to process differently from a familiar-but-shifted rendering, and
+patch-scrambled input destroys spatial layout while preserving local texture statistics; if the
+model retained any domain-specific visual competence, these two conditions should diverge from
+text-bearing input more than blank does. They do not. This is evidence for bypass over domain
+shift, though we note it is evidence, not proof: an instrument that never learned to use images
+under any condition is consistent with both a total bypass failure and a domain-shift failure
+severe enough to leave no residual sensitivity to any visual input at all.
 
 We also state the training budget plainly, because it bears on this and a reader will reach it
 in Appendix~\ref{app:config} otherwise: 2{,}538 rendered line crops, a single unrecorded font, no
@@ -705,8 +720,10 @@ predictive entropy at position~0 is 0.333 nats pooled, low enough to confirm the
 sharply peaked, consistent with the near-ceiling confidence reported next. The probability
 assigned to an arbitrary non-argmax symbol is also measured (Appendix~\ref{app:pos0}) and
 remains orders of magnitude above $p(\mathrm{GT})$, confirming the collapse is specific to the
-correct symbol rather than an artefact of general softmax sharpness. The memorisation split for
-Section~\ref{sec:works} remains outstanding and is listed in Section~\ref{sec:lim}.
+correct symbol rather than an artefact of general softmax sharpness. The memorisation question
+for Section~\ref{sec:works} is resolved, not outstanding: the synthetic evaluation set has no
+held-out arm, so the split cannot be run, and Section~\ref{sec:works}'s AUROC is reported as an
+in-training-manifest figure accordingly.
 
 \paragraph{2. Confidence at that position is near ceiling.} Self-generated max-softmax at
 position 0 is 0.902 pooled on text-bearing input and 0.895 on blank. Position 0 is therefore the point
@@ -750,12 +767,18 @@ matching a generic one, but the comparison should be read with that in mind. It 
 reading ability, since the evaluation text is drawn from the same resampled pool as the training
 text; we report it as a regime marker rather than as a capability estimate.
 
-We stop short of the exclusive claim. Matched mean log-likelihood does not establish that two
-predictive distributions agree, and establishing that the decoder is a high-order $n$-gram
-model \emph{and nothing more} would require a distributional comparison, for instance
-per-position $\mathrm{KL}$ between the model and the 5-gram reference together with the rate at
-which their argmaxes coincide. The committed probe outputs record $p(\mathrm{GT})$ and entropy
-per step but not the full softmax, so that comparison is not available here.
+A distributional comparison, replicated across all three seeds, supports the same picture.
+Per-position $\mathrm{KL}$ between the model and the 5-gram reference, together with the rate
+at which their argmaxes coincide, pooled over $n=180$: at positions 2--9, 10--19 and 20--39,
+mean KL is 0.32, 0.27 and 0.28 nats and argmax agreement is 93.5\%, 91.2\% and 90.7\% --- the
+model and the 5-gram reference are not just close in mean log-likelihood, they select the same
+token at the overwhelming majority of mid-sequence positions, consistently across every seed
+(per-seed agreement at positions 2--9 ranges 92.9--93.8\%). At positions 0, 1 and 40+, where
+the earlier observations report the instrument falling far below the $n$-gram baselines, KL
+rises sharply (4.98, 1.28 and 1.92 nats pooled) and argmax agreement collapses (4.4\%, 62.8\%,
+61.5\%). The two measures move together exactly where the position profile changes shape,
+replicated at every seed, which is what a genuine 4-to-5-gram account predicts and a
+coincidental mean-matching would not. We regard the exclusive claim as supported.
 
 \paragraph{5. Outside that band the model is far worse than a text-only baseline.} The
 position-matched view makes the shape of the failure precise, and it is not the shape a
@@ -810,25 +833,27 @@ every decile while accuracy is not, so the model discriminates without being cal
 \label{fig:regime}
 \end{figure}
 
-Before the numbers, a scoping note that governs all of them. The instrument was trained on the
-full rendered manifest with no held-out split (Appendix~\ref{app:config}), so the synthetic
-evaluation lines in this section are drawn from the same rendered pool the model was trained on
-and are not a held-out generalisation set. The 18.3\% line accuracy is therefore an
-in-training-distribution figure, plausibly an in-training-set one for part of the sample, and it
-overstates whatever reading ability the model would show on unseen text. We use it here only as
-a \emph{regime marker}: it identifies a setting in which the model produces some correct output,
-so that the behaviour of the confidence signal in that setting can be compared against the
-setting where it produces none.
+Before the numbers, a scoping note that governs all of them, and it is stronger than we
+initially stated. The instrument was trained on the full rendered manifest with no held-out
+split (Appendix~\ref{app:config}), and we checked directly whether the synthetic evaluation
+lines behind this section's numbers are held out from that manifest: they are not, for any of
+them. All 300 evaluation instances (100 ground-truth strings $\times$ 3 seeds) are sampled from
+the training manifest itself, so there is no non-matching subset to compare against --- the
+memorisation-versus-correctness split we describe below was attempted and could not be run,
+because the design has no held-out arm. The 18.3\% line accuracy and the AUROC that follows are
+therefore \textbf{in-training-manifest figures only}. They do not show, and cannot show with
+this evaluation set, that confidence tracks correctness on text the model has not seen. We use
+them here only as a \emph{regime marker}: this identifies a setting in which the model produces
+some correct output on training-distribution text, so that the confidence signal's behaviour in
+that setting can be compared against the setting where it produces none, not as evidence about
+generalisation.
 
-We flag a specific alternative that this design cannot exclude, because it concerns what the
-AUROC measures rather than how large it is. If the lines the model transcribes exactly are
-disproportionately the ones whose text it saw during training, then a confidence signal that
-ranks them highly is tracking memorisation rather than correctness, and the two hypotheses
-produce the same AUROC. Contamination raising accuracy makes that alternative more likely, not
-less. Separating them requires splitting the synthetic evaluation lines by whether their text
-has an exact manifest match and reporting accuracy and AUROC on each subset; we have not run
-that split, and until it is run the 0.838 should be read as confidence tracking \emph{something}
-that distinguishes the model's successes from its failures, without a commitment to which.
+The alternative we cannot exclude is therefore not merely plausible but the default reading: if
+the lines the model transcribes exactly are disproportionately ones it memorised, a confidence
+signal that ranks them highly may be tracking memorisation rather than correctness, and the two
+hypotheses produce the same AUROC on this evaluation set by construction. Testing which is true
+requires a held-out evaluation split that does not currently exist for the synthetic condition,
+and building one is future work, not a rerun of an existing probe.
 
 On these synthetic lines, where the model gets 18.3\% of lines exactly right, confidence ranks
 correct transcriptions above incorrect ones at AUROC 0.838.
@@ -862,34 +887,38 @@ serves a llama.cpp-backed VLM with no exposed softmax and no separable encoder t
 and the older checkpoint matching our intended architecture is incompatible with current loading
 code (mismatched attention head dimensions, additional mixture-of-experts parameters with no
 principled way to drop them). We declined to force the load with a mismatched-size override,
-since that would silently produce meaningless weights rather than a real result. Broader
-benchmarks of real-scan Devanagari competence \citep{singh2026devanagari} identify stronger
-candidates, though the top-scoring systems there are closed and do not expose per-step
-likelihoods. A viable positive control remains the single most valuable open experiment;
-PaddleOCR's own recognition backbone, already in Table~\ref{tab:tier1} and confirmed to read
-Devanagari, is a more promising candidate than Surya for a future attempt.
+since that would silently produce meaningless weights rather than a real result. We attempted a
+second candidate, PaddleOCR's own recognition backbone (already in Table~\ref{tab:tier1} and
+confirmed to read Devanagari), and it fails for a more fundamental reason than Surya did: the
+installed recognition model (\texttt{devanagari\_PP-OCRv5\_mobile\_rec}) is CTC-based, not
+autoregressive. Its SVTR component is a visual encoder over the feature map, not a text decoder;
+output is a softmax over the charset at each spatial column, collapsed by CTC decoding, with no
+beginning-of-sequence token and no $p(g_i \mid g_{<i}, \text{image})$ to teacher-force. There is
+no generation loop to extract per-step logits from, and no natural mapping from CTC's column-wise
+output to our grapheme-cluster vocabulary. Reading column-0 softmax as a substitute for
+position-0 teacher-forced likelihood would not measure the same quantity, so we do not report
+one. Broader benchmarks of real-scan Devanagari competence \citep{singh2026devanagari} identify
+stronger candidates, though the top-scoring systems there are closed and do not expose per-step
+likelihoods. A viable positive control remains the single most valuable open experiment, and
+both candidates attempted so far have failed for architectural reasons rather than for lack of
+trying: one serves an inference stack with no exposed distribution at all, the other has no
+autoregressive distribution to expose in the first place.
 
-\paragraph{Two further interventions we consider necessary.} Mismatched pairing
-(Section~\ref{sec:mismatch}) and cross-attention contribution norms
-(Section~\ref{sec:ablation}) are now measured and no longer listed here. First,
-\emph{Gaussian-noise and patch-scrambled inputs}, testing
-whether the model responds to visual variation of any kind rather than only to the blank
-versus text-bearing contrast; these are also what would separate visual bypass from the domain-shift
-explanation raised in Section~\ref{sec:cer}. This probe is implemented; a dimension bug in the
-noise-generation code (RGB source images were not converted to grayscale before generating
-matched noise, producing a 3-channel array where the model expects one) was found and fixed but
-the corrected version has not yet been re-run. A second would make Section~\ref{sec:position}'s
-$n$-gram claim exclusive rather than merely consistent: per-position $\mathrm{KL}$ between the
-model and the 5-gram reference, and the rate at which their argmaxes coincide. This requires
-retaining the full per-step softmax, which the committed probe outputs do not. A fifth is
-cheaper than any of these and settles a question raised in Section~\ref{sec:works}: split the
-synthetic evaluation lines by whether their text appears verbatim in the training manifest, and
-report line accuracy and AUROC on each subset. If the AUROC holds on the non-matching subset,
-the confidence signal is tracking correctness; if it collapses, it is tracking memorisation.
-This needs no model at all, only the committed predictions and the manifest. All four, together with the positive control above, are inference-only measurements requiring
-no further training. They were scoped out of the present phase by
-available compute rather than by design, and the probe implementations are released with the
-code.
+\paragraph{What remains.} Mismatched pairing (Section~\ref{sec:mismatch}), cross-attention
+contribution norms (Section~\ref{sec:ablation}), noise and patch-scrambled input
+(Section~\ref{sec:cer}), and the $n$-gram KL/argmax-agreement decomposition
+(Section~\ref{sec:position}), replicated across all three seeds, are now measured and no
+longer listed here. The memorisation question for Section~\ref{sec:works} is also resolved,
+though not in the way we originally planned: we checked whether the synthetic evaluation set
+has a non-matching subset to split against, and it does not, so the split cannot be run on this
+evaluation set. What remains is therefore not a re-analysis but a new evaluation set: synthetic
+lines rendered from text that provably does not appear in the training manifest, generated and
+held out before any training occurs, would let Section~\ref{sec:works}'s AUROC be tested for
+generalisation rather than reported as an in-training-manifest figure. This requires new
+rendered data, not new model training or new GPU time. A positive control on a model with
+demonstrated reading ability remains the single item in this list that could not be completed
+within available compute; the probe implementations needed for it are written and released with
+the code, so running them is a matter of finding a compatible model, not further development.
 
 \paragraph{No held-out training split.} The instrument was trained on the entire rendered
 manifest, with no evaluation strings withheld; 19 of the 60 strings used for the teacher-forced
@@ -897,10 +926,12 @@ analyses appear verbatim as training lines, and the remainder are resampled from
 pool. This is a design fault rather than an analysis choice, and a redesign should hold out the
 evaluation strings before training rather than after. Its consequences are not uniform across
 the paper and we have tried to mark each one where it falls. It inflates the synthetic line accuracy in
-Section~\ref{sec:works}, which we therefore use only as a regime marker, and it leaves open
-whether the AUROC reported there measures confidence tracking correctness or confidence tracking
-memorisation; splitting those evaluation lines by exact manifest match would settle it and is
-listed among the measurements below. It biases the mid-sequence comparison in Section~\ref{sec:position} in the instrument's
+Section~\ref{sec:works}, which we therefore use only as a regime marker, and it removes the
+possibility of testing whether the AUROC reported there measures confidence tracking correctness
+or confidence tracking memorisation: we checked directly, and all 300 evaluation instances are
+drawn from the training manifest with no non-matching subset to compare against, so the split we
+originally proposed cannot be run on this evaluation set. Section~\ref{sec:works}'s AUROC should
+be read as an in-training-manifest figure, not as evidence about generalisation. It biases the mid-sequence comparison in Section~\ref{sec:position} in the instrument's
 favour, since the $n$-gram references were held out and the instrument was not, so we do not
 claim the instrument beats a high-order prior. It does not weaken the position-0 and position-1
 results, which are the paper's central measurements: contamination can only have helped the
