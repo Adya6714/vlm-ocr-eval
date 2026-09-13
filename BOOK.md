@@ -222,7 +222,7 @@ mid-teens, ECE ≈ 0.81. Flattened/inverted: accuracy ~0–1%. Cite
 `docs/paper_defensibility_stats.md` for the pooled AUROC. That AUROC
 is **not** a held-out-string result: Probe 5 samples its eval rows from
 `hindi_natural.jsonl` itself, so the non-overlapping subset is empty
-(`docs/memorisation_vs_correctness.md`). A different pool (60
+(`docs/memorisation_split.md`). A different pool (60
 teacher-forced real-scan strings) has partial overlap with the same
 manifest; that is not the Probe 5 split. Mid-sequence teacher-forced
 log *p*(GT) sits in the same band as a 4–5-gram grapheme LM
@@ -450,9 +450,9 @@ holes (#81). No demo-model curve. `docs/tier2_stage3_reading_order.md`.
 | GT-likelihood | VERIFIED | 360 records |
 | Paper stats + figures | VERIFIED | `docs/paper_defensibility_stats.md`; `paper/figures/` |
 | mismatch TF, cross-attn norms, noise/scrambled | code; **not run** | `docs/tier0d_noise_scrambled.md` |
-| Probe 5 train-overlap AUROC split | VERIFIED (offline) | `docs/memorisation_vs_correctness.md` — non-match n=0 |
-| Step 4b KL / argmax vs 5-gram | code; **not run** | `docs/ngram_kl_argmax.md` |
-| PaddleOCR same-protocol control | **not viable** | `docs/paddleocr_positive_control.md` |
+| Probe 5 train-overlap AUROC split | VERIFIED (offline) | `docs/memorisation_split.md` — non-match n=0 |
+| Step 4b KL / argmax vs 5-gram | VERIFIED 3 seeds | `docs/ngram_kl_argmax.md` |
+| PaddleOCR same-protocol control | **not viable** | `docs/paddleocr_feasibility.md` |
 | 6 synthetic–real (paper scope) | VERIFIED | 0 leakage |
 
 ### Stage 5 — Sarvam

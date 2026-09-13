@@ -45,8 +45,8 @@ Grayscale `make_matched_noise` did not crash.
 
 ## Probe 5 memorisation split
 
-**Computed (CPU).** `docs/memorisation_vs_correctness.md`. Non-matching
-subset empty.
+**Computed (CPU).** `docs/memorisation_split.md`. Non-matching
+subset empty (n=0).
 
 ## Step 4 — n-grams
 
@@ -54,8 +54,7 @@ subset empty.
 `src/analysis/position_matched_ngrams.py`. Same train/eval split as
 stats §7.
 
-**4b partial.** Seed 0 jsonl committed; seeds 1–2 missing.
-`docs/ngram_kl_argmax.md`.
+**4b computed (3 seeds).** `docs/ngram_kl_argmax.md`.
 
 ## Step 5 — Surya
 
@@ -81,6 +80,6 @@ unchanged.
 
 ## PaddleOCR instrument-matched control
 
-**Not viable.** `docs/paddleocr_positive_control.md`. CTC/SVTR rec head,
-no AR teacher forcing, character dict ≠ grapheme clusters. Stopped at
-feasibility (same rule as Surya).
+**Not viable.** `docs/paddleocr_feasibility.md`. Suite not run
+(`docs/paddleocr_positive_control.md`). CTC/SVTR rec head, no AR
+teacher forcing, character dict ≠ grapheme clusters. Same rule as Surya.
