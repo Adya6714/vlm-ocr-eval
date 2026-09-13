@@ -394,7 +394,7 @@ From `docs/rlvr_sft_greedy_baseline.json` (committed for provenance):
 
 - n = **32**
 - n_empty_hyp = **0**  ✅ (real continuations; not crash→empty)
-- mean_coverage = **0.309**
+- mean_coverage = **0.309** (exact: **0.30869641534573455**)
 - n_coverage_lt_0.5 = **32** (32/32 below 0.5)
 - chat_template = `sft_user_turn + add_generation_prompt=True`
 - swallowed_exceptions = **false** ✅ (zero swallowed exceptions)
@@ -417,6 +417,15 @@ used default `char_acc`. Those are now the same default
 A future λ=0 retrain must keep `use_emitted_only_acc=True`. Do not
 train on char_acc and then evaluate gaming with emitted-only.
 
-Phase 2b still waits on a real SFT-greedy coverage from a machine that
-has the adapter.
+### Phase 2a result (baseline complete)
+
+The re-baseline is now complete and trustworthy (numbers above). It
+supersedes the earlier Cell 10 “mean_coverage=0.0” result, which is now
+understood to have measured a broken decode path rather than the model’s
+real behaviour.
+
+### Phase 2b status
+
+Phase 2b (the actual λ=0 retrain) remains **unstarted** and is treated
+as **deferred** (not blocked, not in progress).
 

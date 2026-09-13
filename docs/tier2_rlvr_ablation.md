@@ -10,7 +10,8 @@ occurred.
 scored once against the λ=0 reward function, with no policy update.
 
 **Corrected SFT-greedy baseline (trustworthy):** n=32, **n_empty_hyp=0**,
-mean_coverage **0.309**, and **32/32** examples had coverage < 0.5.
+mean_coverage **0.309** (exact: **0.30869641534573455**), and **32/32**
+examples had coverage < 0.5.
 This baseline supersedes the earlier Cell 10 “mean_coverage=0.0” number,
 which is known-untrustworthy because it used the wrong chat template and
 silently converted `generate()` crashes to `hyp=""`.
