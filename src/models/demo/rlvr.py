@@ -111,21 +111,27 @@ def compute_reward(
     tau: float = 0.0,
     teds: float = 0.0,
     lambda_coverage: float = 1.0,
-    use_emitted_only_acc: bool = False,
+    use_emitted_only_acc: bool = True,
 ) -> dict:
     """
     Scalar reward plus terms. lambda_coverage=0 is Decision #11 ablation.
+
+    Accuracy in R is emitted-only by default (Decision #88): that is the
+    Chapter 6 gaming channel. Pass use_emitted_only_acc=False only to
+    inspect GT-length char_acc; do not mix the two in one train/eval pair.
     """
-    acc = (
-        emitted_only_accuracy(hyp, gt)
-        if use_emitted_only_acc
-        else char_accuracy(hyp, gt)
-    )
+    char_acc = char_accuracy(hyp, gt)
+    emitted_acc = emitted_only_accuracy(hyp, gt)
+    # RLVR / gaming analysis use emitted-only (Decision #88). char_acc is
+    # still recorded so empty-hyp vs omit-prefix is visible in jsonl.
+    acc = emitted_acc if use_emitted_only_acc else char_acc
     cov = coverage(hyp, gt)
     reward = acc + teds + tau - lambda_coverage * (1.0 - cov)
     return {
         "reward": reward,
-        "char_acc": acc,
+        "char_acc": char_acc,
+        "emitted_acc": emitted_acc,
+        "acc_used": "emitted_only" if use_emitted_only_acc else "char_acc",
         "teds": teds,
         "tau": tau,
         "coverage": cov,

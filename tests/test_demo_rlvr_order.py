@@ -10,6 +10,7 @@ sys.path.insert(0, str(ROOT / "src" / "eval"))
 
 from reading_order_module import count_sort_order  # noqa: E402
 from layout_module import blocks_from_page_gt  # noqa: E402
+from sft import sft_user_turn, SFT_USER_INSTRUCTION, encode_for_generate  # noqa: E402
 from rlvr import ablation_omission_signal, char_accuracy, compute_reward, coverage  # noqa: E402
 
 
@@ -53,13 +54,30 @@ class RewardTests(unittest.TestCase):
     def test_perfect_copy(self):
         r = compute_reward("भारत", "भारत", lambda_coverage=1.0)
         self.assertAlmostEqual(r["char_acc"], 1.0)
+        self.assertAlmostEqual(r["emitted_acc"], 1.0)
+        self.assertEqual(r["acc_used"], "emitted_only")
         self.assertAlmostEqual(r["coverage"], 1.0)
         self.assertAlmostEqual(r["reward"], 1.0)
 
     def test_empty_hyp_has_zero_coverage(self):
         r = compute_reward("", "abcdefghij", lambda_coverage=1.0)
         self.assertEqual(r["coverage"], 0.0)
+        self.assertEqual(r["emitted_acc"], 0.0)
         self.assertLess(r["reward"], 0.0)
+
+    def test_sft_user_turn_is_the_sft_instruction(self):
+        turn = sft_user_turn()
+        self.assertEqual(turn["role"], "user")
+        texts = [c["text"] for c in turn["content"] if c.get("type") == "text"]
+        self.assertEqual(texts, [SFT_USER_INSTRUCTION])
+        self.assertTrue(any(c.get("type") == "image" for c in turn["content"]))
+
+    def test_encode_for_generate_refuses_images_only_fallback(self):
+        class NoChat:
+            pass
+
+        with self.assertRaises(RuntimeError):
+            encode_for_generate(NoChat(), image=None, device="cpu")
 
     def test_ablation_omit_beats_full_without_coverage(self):
         gt = "easy sentence. rareglyphcluster hard tail."

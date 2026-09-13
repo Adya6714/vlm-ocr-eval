@@ -2014,4 +2014,83 @@ off the Paper tab and out of `paper/main.tex`.
 
 **Date:** 2026-09-13
 
+---
+
+### 88. RLVR accuracy term is emitted-only, not GT-length char_acc
+
+**Decision:** `compute_reward` uses `emitted_only_accuracy` by default.
+SFT-greedy scoring and any later λ=0 retrain use that same term.
+
+**Alternatives considered:** (a) keep GT-length `char_accuracy` in R
+because deletions are “real errors”; (b) keep two different metrics
+for train vs gaming tests.
+
+**Why:** Chapter 6’s coverage ablation is about gaming by omitting hard
+spans. That only appears if accuracy does not already punish deletions.
+(a) would make λ=0 unlikely to show the book’s omission story even with
+a correct update. (b) is what Cell 10 vs `ablation_omission_signal`
+already did; that mismatch is what Phase 2a closed.
+
+**Date:** 2026-09-13
+
+---
+
+### 89. Stage 5b rank correlation: Spearman, permutation null, per-image unit
+
+**Decision:** Before looking at any coefficient, lock Stage 5b to:
+
+1. **Unit of analysis: per image**, not per-glyph-class. Instrument
+   ranking is `−mean` over seeds `{0,1,2}` of teacher-forced
+   `mean_log_p_gt` on `condition=real` from
+   `data/probe_results/probe_gt_likelihood_hindi_natural_seed{0,1,2}.jsonl`
+   (higher = harder). Production ranking is Tier-1 grapheme-cluster CER
+   of the engine vs GT on that same `image_id`.
+2. **Statistic: Spearman ρ** (average-ranks, same helper as the paper's
+   conf-vs-CER Spearman). Both axes increase with hardness; useful
+   transfer is **positive** ρ.
+3. **Null:** two-sided permutation of the CER vector, **10,000**
+   shuffles, RNG seed **0**,
+   p = (1 + #{|ρ*| ≥ |ρ_obs|}) / (1 + 10,000).
+4. **Primary cohort:** Hindi, `*_plain.png` (Tier A), Sarvam Extract
+   `full_text` CER, same ids as the instrument pool.
+5. **Secondary:** (a) Decision #15 Tier B — same Hindi ids on
+   `*_degraded.png` if those pages are fetched; (b) Tesseract / Surya /
+   PaddleOCR CER on the matching plains (₹0 extra); (c) Santhali and
+   Kashmiri Stage 5a n=10 arms, exploratory, using `−` Probe 5b
+   `mean_confidence` because those scripts have no Hindi GT-likelihood
+   ranking — **not** pooled with Hindi as a primary test (language
+   confounds difficulty).
+6. **Stage 6** uses Probe 5b `mean_confidence` (inference-time), not
+   GT log p, as the router. Escalated pages are scored CER=0. Compare
+   at matched k, including k = round(0.2 n), vs random / GT grapheme
+   length / Tesseract confidence.
+
+**Alternatives considered:** (a) keep IMPLEMENTATION.md's original
+per-glyph-class error-rate correlation; (b) Pearson on raw log p vs
+CER; (c) Kendall tau (already used in this repo for *reading-order
+permutations*, not two real-valued rankings); (d) choose Spearman vs
+Kendall after seeing ρ; (e) pool 30 Stage 5a pages across three
+scripts as the primary n.
+
+**Why:** this session's spec asked for the instrument's *per-image*
+difficulty ranking (log p(GT) or confidence) vs production error,
+including Sarvam, with a permutation null. That is an explicit override
+of the glyph-class bullet. Spearman was the unnamed rank-correlation
+already used for conf-vs-CER in `paper_defensibility_stats.py`; Kendall
+would be a second statistic chosen for the same pair of lists.
+Permutation p-value formula and seed are fixed so they cannot be tuned
+after ρ is known. Hindi-only primary avoids treating script identity as
+image difficulty. Glyph-class aggregation is not estimated here: Extract
+returns one `full_text` string, not per-class error rates, without a
+new annotation pass.
+
+**Spend gate (not a statistic, but locked with it):** no new Extract
+POST without `--i-confirm-spend-inr` equal to ₹0.5 × uncached pages.
+Recommended sets, all hashed against `data/cache/sarvam/` on 2026-09-13:
+50 remaining Hindi plains = **₹25.00**; 60 Hindi degraded = **₹30.00**;
+both = **₹55.00**. Cache-only primary is n=10 Hindi plains already in
+Stage 5a (₹0, underpowered). Stage 6 adds **₹0**.
+
+**Date:** 2026-09-13
+
 

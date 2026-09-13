@@ -131,28 +131,69 @@ def train(args) -> None:
     print(f"[sft] finished {args.max_steps} steps; adapter in {output_root}")
 
 
+SFT_USER_INSTRUCTION = "Transcribe the text in this image."
+
+
+def sft_user_turn() -> dict:
+    """
+    The user message SFT actually trained on (Decision #80 collate).
+
+    RLVR greedy / future rollouts must use this exact turn plus
+    add_generation_prompt=True. Images-only processor() is a different
+    input and is not a valid SFT eval decode.
+    """
+    return {
+        "role": "user",
+        "content": [
+            {"type": "image"},
+            {"type": "text", "text": SFT_USER_INSTRUCTION},
+        ],
+    }
+
+
+def encode_for_generate(processor, image, device: str) -> dict:
+    """
+    Inference tensors matching SFT's user turn, generation prompt on.
+
+    Raises if the processor has no chat template — do not fall back to
+    images-only (that was the Cell 10 decode path).
+    """
+    if not hasattr(processor, "apply_chat_template"):
+        raise RuntimeError(
+            "processor has no apply_chat_template; refusing images-only generate"
+        )
+    prompt = processor.apply_chat_template(
+        [sft_user_turn()], add_generation_prompt=True
+    )
+    enc = processor(text=prompt, images=image, return_tensors="pt", padding=True)
+    return {k: v.to(device) if hasattr(v, "to") else v for k, v in enc.items()}
+
+
+def decode_continuation(processor, generated_ids, prompt_len: int) -> str:
+    """Decode only tokens after the prompt so hyp is not the chat prefix."""
+    cont = generated_ids[0, prompt_len:]
+    if cont.numel() == 0:
+        return ""
+    return processor.batch_decode(cont.unsqueeze(0), skip_special_tokens=True)[0]
+
+
 def _encode_example(processor, item: dict, device: str) -> dict:
     """
-    Best-effort image+text collate. Chat-template models differ; if this
+    Image+text collate used in SFT. Chat-template models differ; if this
     raises, sft.py stops rather than training on dummy tensors.
     """
     image = item["image"]
     text = item["text"]
-    if hasattr(processor, "apply_chat_template"):
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image"},
-                    {"type": "text", "text": "Transcribe the text in this image."},
-                ],
-            },
-            {"role": "assistant", "content": [{"type": "text", "text": text}]},
-        ]
-        prompt = processor.apply_chat_template(messages, add_generation_prompt=False)
-        enc = processor(text=prompt, images=image, return_tensors="pt", padding=True)
-    else:
-        enc = processor(images=image, text=text, return_tensors="pt", padding=True)
+    if not hasattr(processor, "apply_chat_template"):
+        raise RuntimeError(
+            "processor has no apply_chat_template; SFT will not train on dummy tensors"
+        )
+    messages = [
+        sft_user_turn(),
+        {"role": "assistant", "content": [{"type": "text", "text": text}]},
+    ]
+    prompt = processor.apply_chat_template(messages, add_generation_prompt=False)
+    enc = processor(text=prompt, images=image, return_tensors="pt", padding=True)
     if "labels" not in enc:
         enc["labels"] = enc.get("input_ids")
     return {k: v.to(device) if hasattr(v, "to") else v for k, v in enc.items()}

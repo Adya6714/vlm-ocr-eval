@@ -343,3 +343,73 @@ Either is a **new Colab task**, not “uncomment the PPO branch.”
 
 Phase 2 Colab instructions are intentionally **not** in this file;
 they depend on choosing REINFORCE vs rejection sampling vs defer.
+
+---
+
+## Phase 2a (2026-09-13) — generate fix, no trainer
+
+Fixes in `src/models/demo/sft.py` and `src/models/demo/rlvr_train.py`.
+**No rollout / update-rule code.** Decision #88.
+
+### 1. Chat template now matches SFT
+
+SFT `_encode_example` (the collate that actually ran 100 LoRA steps)
+uses:
+
+- user: image + text `"Transcribe the text in this image."`
+- assistant: GT
+- `apply_chat_template(..., add_generation_prompt=False)`
+
+That user turn is now `sft_user_turn()` / `SFT_USER_INSTRUCTION`.
+Generate uses the **same user turn** with `add_generation_prompt=True`
+(`encode_for_generate`). Continuation tokens only
+(`decode_continuation`); the old path `processor(images=...)` with no
+text is refused (`RuntimeError` if there is no chat template).
+
+### 2. Generate failures are no longer `hyp=""`
+
+The `except Exception: hyp = ""` branch is gone. A failed `generate`
+raises. Resume is append+skip on `image_path`. Per-line print includes
+`hyp_empty` and coverage so a real empty continuation is distinguishable
+from a crash.
+
+### 3. Re-baseline mean_coverage — **not computed here**
+
+This laptop has **no** `checkpoints/demo/adapter_config.json` (SFT
+adapter lived on Colab Drive). The diagnostic now exits 0 with
+`mean_coverage: null` rather than writing a fake 0.0:
+
+```
+python src/models/demo/rlvr_train.py --sft-root checkpoints/demo --device cpu
+# attempted: false, mean_coverage: null
+```
+
+The Cell 10 figure **n=32, mean_coverage=0.0** is still
+**untrustworthy**: images-only generate + swallowed exceptions. It is
+**not** replaced by a new number in this pass.
+
+**Colab (still Phase 2a, not 2b):** with the Drive adapter and
+`--device cuda` (or cpu), run the same command, n=32 default, write
+`checkpoints/demo_rlvr_sft_baseline/rlvr_summary.json`. That file’s
+`mean_coverage` and `n_empty_hyp` are the baseline Phase 2b should
+use. If coverage is still 0.0 **and** `n_empty_hyp=0`, that is a
+trustworthy floor. If `n_empty_hyp=32`, generate is still broken.
+
+### 4. Accuracy metric: **emitted-only** (both train-path R and gaming)
+
+**Choice:** `emitted_only_accuracy` is the term inside `R`.
+
+**Why:** Chapter 6’s omission game is “precision on what you said.”
+`char_accuracy` is Levenshtein vs **full GT**, so deletions already
+hurt; λ=0 would not recreate the unit-test cheat. Gaming analysis
+(`ablation_omission_signal`) already used emitted-only; the diagnostic
+used default `char_acc`. Those are now the same default
+(`compute_reward(..., use_emitted_only_acc=True)`). Jsonl still stores
+**both** `char_acc` and `emitted_acc`.
+
+A future λ=0 retrain must keep `use_emitted_only_acc=True`. Do not
+train on char_acc and then evaluate gaming with emitted-only.
+
+Phase 2b still waits on a real SFT-greedy coverage from a machine that
+has the adapter.
+

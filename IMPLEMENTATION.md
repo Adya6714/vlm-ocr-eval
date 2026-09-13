@@ -239,8 +239,10 @@ GlotOCR slice after #28.
   - [ ] Coverage-term ablation **training**: not attempted. Cell 10
         scored SFT greedy decode with λ=0; no policy update.
         `docs/tier2_rlvr_ablation.md`. Scope of a real retrain:
-        `docs/rlvr_scoping.md` (investigation only; no trainer yet).
-        Still the _only_ planned RLVR ablation (DECISIONS.md #11, #82).
+        `docs/rlvr_scoping.md` Phase 2a: SFT chat-template generate,
+        no swallowed exceptions, emitted-only R (Decision #88).
+        Re-baseline coverage **blocked** here (no adapter on this
+        laptop). Still no policy update.
 
 **Acceptance:** the instrument trains three times (Stage 5, Probe 1)
 without manual intervention and produces per-glyph-class accuracy and
@@ -450,19 +452,30 @@ docs.sarvam.ai, Sept 2026).  Allocate up front, do not spend ad hoc.**
         Hindi 95.91 %, Santhali 80.32 %, Kashmiri 55.93 %
 
 - [ ] `src/analysis/analyze_sarvam_transfer.py` — bootstrap CIs +
-      full comparison table. **Not yet built** (Stage 5b, deferred).
+      full comparison table. **Not yet built** (5a leftover; not the
+      rank-correlation statistic).
 
-### Stage 5b — full transfer analysis (DEFERRED)
+### Stage 5b — full transfer analysis
 
-The original Stage 5 spec also called for:
-- Rank-correlation test (with permutation null) between the instrument's
-  per-glyph-class error rates and Sarvam's, on Tier A (clean) and Tier B
-  (degraded) — see DECISIONS.md #15.
-- `src/eval/transfer_analysis.py` with pre-specified statistic.
-- 60 + 40 pages for core probe + degradation conditions, 60 for cascade.
+Statistic pre-registered in DECISIONS.md **#89** (Spearman ρ,
+permutation null, per-image unit). Do not change it after seeing ρ.
 
-This fuller version is deferred — run Stage 5a first and commit results
-before spending more budget.
+- [x] BUILT — NOT RUN (spend gate) `src/eval/transfer_analysis.py` —
+      Spearman + 10k permutation p. Default CLI writes protocol only
+      (`docs/stage5b_rank_correlation.md`). `--compute-now` after the
+      user confirms the page set.
+- [x] BUILT — NOT RUN (spend gate) `src/probes/stage5b_sarvam_pages.py`
+      — remaining Hindi plains / degraded Extract. Dry-run default;
+      live POST requires `--i-confirm-spend-inr` matching ₹0.5 ×
+      uncached pages. Output:
+      `data/probe_results/sarvam_stage5b_pages.jsonl`.
+- Original glyph-class unit: **overridden** by #89 (per-image).
+- Original 60 cascade pages: **not purchased** (Decision #19: Stage 6
+  is cache-only).
+
+**Acceptance (5b):** report ρ, permutation p, n in
+`docs/stage5b_rank_correlation.md` after confirmed spend (or after an
+explicit ₹0 / n=10 cache-only confirmation).
 
 **Acceptance (5a):** 35 cached JSON records in `data/cache/sarvam/`,
 one output JSONL, and an honest report of whether Sarvam confidence tracks
@@ -472,17 +485,14 @@ its own per-language accuracy gap.
 
 ## Stage 6 — Triage cascade demo
 
-- [ ] `src/probes/cascade.py` — using Probe 5's confidence scores, sweep
-      every escalation threshold **offline against the Stage 5 cache**.
-      Report accuracy-recovered vs. fraction-escalated vs. cost-per-page.
-      Compare against three baselines: random escalation, layout-
-      complexity escalation, Tesseract-confidence escalation — the point
-      is router _quality_, not headline cost savings, because the
-      instrument is not expected to be more accurate than Tesseract (see
-      `DECISIONS.md` #16).
+- [x] BUILT — NOT RUN (waits on 5b) `src/probes/cascade.py` — Probe 5b
+      `mean_confidence` vs random / GT grapheme-length / Tesseract
+      confidence at matched k (Decision #16, #89). No API.
+      `docs/stage6_triage_cascade.md`. Default CLI is protocol-only.
 
-**Acceptance:** one accuracy-vs-escalation-rate curve, instrument vs.
-three baselines.
+**Acceptance:** residual system CER (escalated pages scored 0) vs
+fraction escalated, instrument vs three baselines, after Stage 5b
+`--compute-now`.
 
 ---
 

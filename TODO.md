@@ -171,10 +171,10 @@ Region-level order on the PARTIAL bank is already scorable
   spread holds).
 - [ ] Allocate the ~200-page budget per IMPLEMENTATION.md Stage 5
 - [ ] Fetch, cache, never re-fetch
-- [ ] Transfer analysis: pre-specify the rank-correlation statistic
-  before looking at results
-- [ ] Cascade: sweep thresholds offline against cache, compare to the
-  three baselines (random, layout-complexity, Tesseract-confidence)
+- [x] Transfer analysis statistic pre-specified (DECISIONS.md #89:
+  Spearman + permutation null). Coefficient **not** computed pending
+  spend confirmation.
+- [~] Cascade code built (`src/probes/cascade.py`); results wait on 5b.
 
 ## Ongoing, throughout
 
@@ -189,7 +189,7 @@ Region-level order on the PARTIAL bank is already scorable
   mixed-effects Probe 1; kappa on a hand-review subsample; bootstrap
   CIs — not this phase
 - [ ] Keep `DECISIONS.md` current — append, don't rewrite
-      (latest: \#86 PaddleOCR positive-control stop)
+      (latest: \#89 Stage 5b Spearman / permutation lock)
 - [x] Heavy scripts (OCR batches, training) written for Colab: one
   `--data-root`, no local-only paths, export into the IMPLEMENTATION.md
   output path (`run_baselines.py` + AGENTS.md; DECISIONS.md #32)

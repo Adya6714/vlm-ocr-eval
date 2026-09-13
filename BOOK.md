@@ -9,14 +9,16 @@ Companion files still exist and stay authoritative for their jobs:
 | File | Job |
 |---|---|
 | This `BOOK.md` | Narrative + pipeline + findings + decision *summaries* + status |
-| `DECISIONS.md` | Append-only log: Decision / Alternatives / Why. Numbered 1–77+. Do not rewrite past entries. |
-| `IMPLEMENTATION.md` | Module checklist, inputs/outputs, acceptance criteria, `[x]` / `[~]` / `[!]` |
-| `TODO.md` | Sequencing and pace; not the spec |
-| `docs/RESULTS.md` | Index: claim → jsonl → analysis script |
-| `docs/paper_defensibility_stats.md` | Regenerable tables. **Cite this file; do not copy tables into chat or invent new headlines.** |
-| `docs/training_config.md` | Hyperparameters and eval-set provenance |
-| `paper/main.pdf` | Preprint (*Reading Without Looking*) |
-| `README.md` | Dual-audience map, not a second paper (Decision #76) |
+| [`AGENTS.md`](./AGENTS.md) | Workflow rules for agents (read order, when to flip checkboxes, Colab/resume requirements) |
+| [`DECISIONS.md`](./DECISIONS.md) | Append-only log: Decision / Alternatives / Why. Numbered 1–89+. Do not rewrite past entries. |
+| [`IMPLEMENTATION.md`](./IMPLEMENTATION.md) | Module checklist, inputs/outputs, acceptance criteria, `[x]` / `[~]` / `[!]` |
+| [`TODO.md`](./TODO.md) | Sequencing and pace; not the spec |
+| [`docs/RESULTS.md`](./docs/RESULTS.md) | Index: claim → jsonl → analysis script |
+| [`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md) | Regenerable tables. **Cite this file; do not copy tables into chat or invent new headlines.** |
+| [`docs/training_config.md`](./docs/training_config.md) | Hyperparameters and eval-set provenance |
+| [`COLAB_RUNS.md`](./COLAB_RUNS.md) | What ran where (Colab vs laptop) and where artifacts landed |
+| [`paper/main.pdf`](./paper/main.pdf) | Preprint (*Reading Without Looking*) |
+| [`README.md`](./README.md) | Dual-audience map, not a second paper (Decision #76) |
 
 If a number in this book disagrees with `docs/paper_defensibility_stats.md`
 or a committed jsonl under `data/probe_results/`, the doc and the jsonl
@@ -73,6 +75,7 @@ not in the tree are labeled **reported**.
 
 | If you want… | Start here |
 |---|---|
+| A quick repo map + what runs where | **Start here (15 minutes)** |
 | The research questions and what we concluded | **Research questions and answers** (next) |
 | How data flowed from GlotOCR pages to paper figures | **How the results were built** |
 | What exists vs what is still a checkbox | **Implementation status** |
@@ -95,6 +98,153 @@ Teaching chapters keep this shape:
 6. One sentence to keep.
 
 ---
+
+## Start here (15 minutes)
+
+If you are reading this repo for the first time, the fastest way to get
+oriented is to separate three things:
+
+- **The paper narrative** (`paper/main.pdf`) — what we claim and why.
+- **The committed evidence** (`data/probe_results/*.jsonl`, plus `docs/*_analysis.md`)
+  — what you can regenerate from this checkout.
+- **The heavy compute** (Colab checkpoints, `data/raw/*`, `data/cache/*`) — what is
+  intentionally *not* in git.
+
+If you plan to modify the repo, read `AGENTS.md` first — it defines the stage order,
+what “done” means, and the Colab/resume rules this project treats as non-negotiable.
+
+### Glossary (terms used everywhere)
+
+- **Instrument vs demo**: the “instrument” is the from-scratch model used for probes
+  (it has deliberately empty pretraining exposure); the “demo” is the LoRA-adapted VLM
+  whose job is to resemble a production system’s components (Decision #1).
+- **Tier 0/1/2 (scoring)**: Tier 0 = whitespace normalization; Tier 1 = deterministic
+  encoding equivalence; Tier 2 = phonetic equivalence via transliteration (Decisions
+  #4, #7, #8).
+- **Tier A/B/C (data realism)**: Tier A = clean controlled renders; Tier B = degraded
+  controlled renders; Tier C = held-out GlotOCR evaluation images (Decision #74:
+  they are renders, not “real scans”).
+- **Teacher forcing**: score \(p(\mathrm{GT})\) on the ground-truth next token under the
+  ground-truth prefix, instead of letting the model follow its own argmax path.
+- **Position 0**: the first generated token. There is no prefix yet, so any high
+  probability on the correct first grapheme must come from the image, not a language prior.
+
+### What you can run on a laptop (no GPU)
+
+- **Architecture proof (fake data, no `data/raw/`)**: `make smoke-test`  
+  This is the “does the pipeline wire together?” check. It does not produce findings.
+- **Recompute offline paper tables from committed jsonl**: `python3 src/analysis/paper_defensibility_stats.py`  
+  Writes/overwrites `docs/paper_defensibility_stats.md`.
+- **Regenerate figures from committed jsonl**: `python3 src/analysis/make_paper_figures.py`  
+  Writes `paper/figures/*.pdf` and `docs/figures/*.png` (see Decision #64).
+
+### What requires Colab T4 (checkpoints live off-repo)
+
+- **Training the instrument**: `src/models/instrument/train.py` (fp16 on free Colab T4; resumable by default — see hard constraints in `AGENTS.md`)
+- **Probes that forward-pass the trained instrument**: most of `src/probes/`  
+  These write committed JSONL outputs under `data/probe_results/`.
+
+`COLAB_RUNS.md` is the short “what ran where” ledger.
+
+### Repo structure (what lives where)
+
+This is the map most beginners want before reading any chapter:
+
+```
+src/
+  data_pipeline/        fetch + export (GlotOCR fetch, line-crop manifests)
+  eval/                 Stage 0: baselines + Tier 0/1/2 scoring + taxonomy + hand review
+  renderer/             Stage 1: layout bank + degradation + HarfBuzz render + glyph-frequency dial
+  models/
+    instrument/         Stage 2a: from-scratch OCR model used for probes (the “instrument”)
+    demo/               Stage 2b: LoRA + SFT + RLVR reward scaffolding (the “demo”)
+  probes/               Stage 4/5: runs that emit `data/probe_results/*.jsonl`
+  analysis/             scripts that turn jsonl into `docs/*_analysis.md` + figures
+
+data/
+  probe_results/        committed JSONL evidence (small; must be pushed after Colab)
+  manifests/            committed line-crop manifests (training inputs)
+  raw/                  GlotOCR images + GT (gitignored; fetch upstream)
+  cache/                caches (gitignored; incl. Sarvam JSON responses)
+
+docs/                   regenerable reports (source-of-truth tables live here)
+paper/                  LaTeX + publication figures + compiled PDF
+```
+
+### Pipeline at a glance
+
+Two pictures: one for **data flow**, one for **what to touch** when you want a new result.
+
+```mermaid
+flowchart LR
+  RAW[data/raw/* (gitignored)] -->|export manifests| MAN[data/manifests/*.jsonl (committed)]
+  MAN -->|train on Colab T4| CKPT[checkpoints/*.pt (not in git)]
+  CKPT -->|run probes| PR[data/probe_results/*.jsonl (committed)]
+  PR -->|analysis scripts| DOCS[docs/*_analysis.md (committed)]
+  DOCS --> FIGS[paper/figures/*.pdf + docs/figures/*.png]
+```
+
+```mermaid
+flowchart TD
+  A[You want a new number/plot] --> B{Where should it live?}
+  B -->|Raw model outputs| PR[data/probe_results/*.jsonl]
+  B -->|Aggregated narrative + plots| DOCS[docs/*_analysis.md]
+  B -->|Paper-ready figure| FIGS[paper/figures/*.pdf]
+  B -->|Design rationale| DEC[DECISIONS.md entry]
+  B -->|Build status| IMPL[IMPLEMENTATION.md checkbox]
+  PR --> DOCS
+  DOCS --> FIGS
+```
+
+### Where to find “the results” (links, not duplicated tables)
+
+This book explains. These files *are the evidence*:
+
+- **Canonical result index**: [`docs/RESULTS.md`](./docs/RESULTS.md)
+- **Regenerable paper tables**: [`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md)
+- **Stage 0 measurement + validation**:
+  - [`docs/tier0e_paddleocr.md`](./docs/tier0e_paddleocr.md) (PaddleOCR corpus fill + taxonomy slice)
+  - [`docs/adjudication_analysis.md`](./docs/adjudication_analysis.md) (UNREVIEWED sample + what’s still provisional)
+  - [`docs/tier2_validation.md`](./docs/tier2_validation.md) (Tier 2 hand-checked pairs)
+- **Probe write-ups**:
+  - [`docs/probe5b_analysis.md`](./docs/probe5b_analysis.md) (zero-shot floor)
+  - [`docs/attention_ablation_analysis.md`](./docs/attention_ablation_analysis.md) (encoder-memory ablation)
+  - [`docs/gt_likelihood_analysis.md`](./docs/gt_likelihood_analysis.md) (teacher-forced log \(p(\mathrm{GT})\) + entropy)
+  - [`docs/probe6_synthetic_real_analysis.md`](./docs/probe6_synthetic_real_analysis.md) (synthetic → held-out Tier C check)
+- **Production API audit**: [`docs/sarvam_vision_confidence.md`](./docs/sarvam_vision_confidence.md)
+- **Where runs happened**: [`COLAB_RUNS.md`](./COLAB_RUNS.md)
+- **The paper narrative**: [`paper/main.pdf`](./paper/main.pdf)
+
+### “Jump to evidence”: each research question → the backing artifact
+
+If you only have time for the defensible core, this is the fastest path.
+
+- **Q1 (what counts as an error?)**: Stage 0 scoring + taxonomy  
+  - Code: `src/eval/error_taxonomy.py`, `src/eval/equivalence_tables.py`, `src/eval/transliteration_equivalence.py`  
+  - Report: [`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md) (Tier 1 fraction; see also [`docs/adjudication_analysis.md`](./docs/adjudication_analysis.md))
+- **Q2 (exposure vs complexity)**: Probe 1 fixed-effects diagnostic  
+  - Script: `src/analysis/probe1_fixed_effects.py`  
+  - Report: `docs/probe1_fixed_effects.md`
+- **Q3 (reading vs guessing / confidence without sight)**: blank/noise + training curve + ablations + teacher forcing  
+  - Probe 3: `data/probe_results/probe3_hindi_*.jsonl` + analysis in `docs/`  
+  - Probe 3b: `data/probe_results/probe3_curve_*.json` + report `docs/probe3_curve_analysis.md`  
+  - Attention ablation: `data/probe_results/attention_ablation_*.jsonl` + report [`docs/attention_ablation_analysis.md`](./docs/attention_ablation_analysis.md)  
+  - Teacher-forced likelihood: `data/probe_results/probe_gt_likelihood_*.jsonl` + report [`docs/gt_likelihood_analysis.md`](./docs/gt_likelihood_analysis.md)
+- **Q4 (does softmax “know the right glyph” when argmax is wrong?)**: Probe 2 substitutions + \(p(\mathrm{true})\) / rank  
+  - JSONL: `data/probe_results/probe2_hindi_natural_seed*.jsonl`  
+  - Report: `docs/probe2_confusion_analysis.md`
+- **Q5 (calibration)**: Probe 5 + offline defensibility battery  
+  - JSONL: `data/probe_results/probe5_hindi_*.jsonl`  
+  - Tables: [`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md)
+- **Q6 (synthetic → held-out Tier C check)**: Probe 6  
+  - JSONL: `data/probe_results/probe6_synthetic_real_hindi_seed*.jsonl`  
+  - Report: [`docs/probe6_synthetic_real_analysis.md`](./docs/probe6_synthetic_real_analysis.md)
+- **Q7 (production API confidence vs its own accuracy spread)**: Stage 5a (Sarvam Extract)  
+  - JSONL: `data/probe_results/sarvam_transfer_probe.jsonl`  
+  - Report: [`docs/sarvam_vision_confidence.md`](./docs/sarvam_vision_confidence.md)
+- **Q8 (triage cascade)**: Stage 6 protocol + (future) compute-now run  
+  - Protocol: `docs/stage6_triage_cascade.md`  
+  - Code: `src/probes/cascade.py`
 
 ## Research questions and answers
 
@@ -281,7 +431,9 @@ cache; compare to random / layout-complexity / Tesseract-confidence
 escalation. Metric is router quality, not cost savings (Decision #16),
 because the instrument is not expected to beat Tesseract.
 
-**Status.** Not built. Chapter 9 is the design, not a result.
+**Status.** Router code exists (`src/probes/cascade.py`). Results are
+not computed until Stage 5b spend is confirmed (Decision #89). Chapter 9
+is still the design chapter until those numbers exist.
 
 ---
 
@@ -465,12 +617,12 @@ holes (#81). No demo-model curve. `docs/tier2_stage3_reading_order.md`.
 |---|---|
 | `sarvam_client.py` | `[x]` Extract, cache by SHA-256 |
 | `sarvam_transfer_probe.py` | VERIFIED RUN — 35 pages |
-| `analyze_sarvam_transfer.py` | `[ ]` bootstrap CIs |
-| Stage 5b rank correlation | DEFERRED |
+| `analyze_sarvam_transfer.py` | `[ ]` 5a bootstrap CIs |
+| Stage 5b rank correlation | statistic locked (#89); spend not confirmed; ρ not computed |
 
 ### Stage 6 — Cascade
 
-`cascade.py` `[ ]`.
+`cascade.py` built, protocol-only until 5b `--compute-now`.
 
 ### Tooling
 
@@ -595,6 +747,7 @@ mismatch/cross-attn still blocked on local checkpoints). **#64** Unified figure 
 offline defensibility battery. **#67** Live bibliography, no invented
 venues. **#68** Single `paper/` directory. **#69** GitHub Pages: one
 URL, two modes; **#87** default is the preprint, Extract is the other
+tab. **#88** RLVR reward accuracy is emitted-only.
 tab. **#70–#71** Figure 1 inset layout. **#72** Surya
 positive-control citation is a reported preprint, not our verification.
 **#74** Never call eval images “real.” **#75** Preprint tab matches tex
@@ -606,6 +759,10 @@ yes, train no until SFT. **#83** Mistral3 dummy image-token ids.
 **#84** Close Decision #3 on T4: SmolDocling-256M.
 **#85** Step 4b stores per-step KL + argmax flags, not full softmax jsonl.
 **#86** PaddleOCR rec is CTC/SVTR, not an AR grapheme decoder — no instrument-matched control.
+**#87** Project page: preprint first; two short modes.
+**#88** RLVR accuracy term is emitted-only, not GT-length char_acc.
+**#89** Stage 5b: Spearman ρ, 10k permutation null, per-image unit;
+locked before looking at ρ. Spend gated.
 
 ---
 
