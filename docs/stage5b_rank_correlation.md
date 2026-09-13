@@ -33,6 +33,69 @@ degraded = **₹30.00**; both = **₹55.00** (110 pages).
 
 ## Results
 
-**Not computed.** Spend has not been confirmed, and this
-report must not contain a coefficient until the user confirms
-the page set (including the ₹0 / n=10 cache-only option).
+### Primary: Hindi plains, Sarvam CER
+
+- Statistic: Spearman rho (Decision #89)
+- ρ = **0.0293**
+- permutation p (two-sided, 10000 shuffles, seed 0) = **0.8267**
+- n = **60**
+
+Ids: 20, 21, 22, 23, 24, 47, 48, 49, 50, 51, 137, 138, 139, 140, 141, 152, 153, 154, 155, 156, 177, 178, 179, 180, 181, 222, 223, 224, 225, 226, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 292, 293, 294, 295, 296, 307, 308, 309, 310, 311, 317, 318, 319, 320, 321, 356, 357, 358, 359, 360
+
+### Secondary: Hindi degraded, Sarvam CER
+
+- Statistic: Spearman rho (Decision #89)
+- ρ = **-0.2222**
+- permutation p (two-sided, 10000 shuffles, seed 0) = **0.2913**
+- n = **24**
+
+### Secondary (no API): Hindi plains, tesseract CER
+
+- Statistic: Spearman rho (Decision #89)
+- ρ = **-0.0808**
+- permutation p (two-sided, 10000 shuffles, seed 0) = **0.5453**
+- n = **60**
+
+### Secondary (no API): Hindi plains, surya CER
+
+- Statistic: Spearman rho (Decision #89)
+- ρ = **0.2348**
+- permutation p (two-sided, 10000 shuffles, seed 0) = **0.0685**
+- n = **60**
+
+### Secondary (no API): Hindi plains, paddleocr CER
+
+- Statistic: Spearman rho (Decision #89)
+- ρ = **-0.1593**
+- permutation p (two-sided, 10000 shuffles, seed 0) = **0.2173**
+- n = **60**
+
+### Exploratory, underpowered: santhali plains (instrument = −Probe5b mean_confidence, not GT log p)
+
+- Statistic: Spearman rho (Decision #89)
+- ρ = **-0.3891**
+- permutation p (two-sided, 10000 shuffles, seed 0) = **0.2632**
+- n = **10**
+
+### Exploratory, underpowered: kashmiri plains (instrument = −Probe5b mean_confidence, not GT log p)
+
+- Statistic: Spearman rho (Decision #89)
+- ρ = **-0.5394**
+- permutation p (two-sided, 10000 shuffles, seed 0) = **0.1182**
+- n = **10**
+
+Local engines on the full 60-id Hindi pool (independent of Sarvam n):
+
+### Full Hindi-60 pool, tesseract CER (no extra API)
+
+- Statistic: Spearman rho (Decision #89)
+- ρ = **-0.0808**
+- permutation p (two-sided, 10000 shuffles, seed 0) = **0.5453**
+- n = **60**
+
+### Full Hindi-60 pool, surya CER (no extra API)
+
+- Statistic: Spearman rho (Decision #89)
+- ρ = **0.2348**
+- permutation p (two-sided, 10000 shuffles, seed 0) = **0.0685**
+- n = **60**

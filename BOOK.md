@@ -52,13 +52,13 @@ A short orientation:
 - **Executed in this phase:** Stage 0 (error taxonomy), Stage 1
   (controlled renderer + line manifests), Stage 2a (from-scratch
   instrument), Stage 4 probes on that instrument, Stage 5a (Sarvam
-  Extract confidence vs published accuracy).
+  Extract confidence vs published accuracy), Stage 5b (rank-correlation
+  transfer, offline), Stage 6 (triage cascade, offline).
 - **Engineering that makes the science runnable:** resume-by-default
   baselines, hand-review suggestions, line-crop export, `make smoke-test`,
   Colab `--data-root` + zip export.
 - **Specified, taught, not executed:** RLVR **policy** training
-  (coverage ablation still untrained; `docs/rlvr_scoping.md`), Stage 5b
-  rank-correlation transfer, Stage 6 triage cascade. Stage 2b **SFT**
+  (coverage ablation still untrained; `docs/rlvr_scoping.md`), Stage 2b **SFT**
   ran on Colab T4 (Decision #84). Noise/scramble, n-gram KL, and the
   Probe 5 overlap check are in the preprint.
 
@@ -242,8 +242,8 @@ If you only have time for the defensible core, this is the fastest path.
 - **Q7 (production API confidence vs its own accuracy spread)**: Stage 5a (Sarvam Extract)  
   - JSONL: `data/probe_results/sarvam_transfer_probe.jsonl`  
   - Report: [`docs/sarvam_vision_confidence.md`](./docs/sarvam_vision_confidence.md)
-- **Q8 (triage cascade)**: Stage 6 protocol + (future) compute-now run  
-  - Protocol: `docs/stage6_triage_cascade.md`  
+- **Q8 (triage cascade)**: Stage 6 cascade results (offline)  
+  - Report: `docs/stage6_triage_cascade.md`  
   - Code: `src/probes/cascade.py`
 
 ## Research questions and answers
@@ -432,8 +432,9 @@ escalation. Metric is router quality, not cost savings (Decision #16),
 because the instrument is not expected to beat Tesseract.
 
 **Status.** Router code exists (`src/probes/cascade.py`). Results are
-not computed until Stage 5b spend is confirmed (Decision #89). Chapter 9
-is still the design chapter until those numbers exist.
+computed offline on the Stage 5b cached pages (no new API): see
+`docs/stage6_triage_cascade.md`. Chapter 9 should cite that file and
+treat the result as router quality (Decision #16), not a cost claim.
 
 ---
 
@@ -618,7 +619,7 @@ holes (#81). No demo-model curve. `docs/tier2_stage3_reading_order.md`.
 | `sarvam_client.py` | `[x]` Extract, cache by SHA-256 |
 | `sarvam_transfer_probe.py` | VERIFIED RUN — 35 pages |
 | `analyze_sarvam_transfer.py` | `[ ]` 5a bootstrap CIs |
-| Stage 5b rank correlation | statistic locked (#89); spend not confirmed; ρ not computed |
+| Stage 5b rank correlation | computed offline on cached pages (no new API): `docs/stage5b_rank_correlation.md` |
 
 ### Stage 6 — Cascade
 
@@ -3143,7 +3144,7 @@ Everything after the API call happens **offline**. Separate expensive
 data collection from cheap analysis. An escalation sweep that re-called
 the API per threshold would burn the whole budget on one experiment.
 
-### What actually ran (Stage 5a), vs what is still deferred (5b)
+### What actually ran (Stage 5a), plus the offline follow-ups (5b/6)
 
 **Built and run.** `src/eval/sarvam_client.py` wraps Doc-AI **Extract**
 (not Digitise — only Extract exposes `annotations.{field}.confidence`,
@@ -3167,9 +3168,12 @@ though the API will go to zero on empty pages.
 
 This is **not** in the preprint. It is also **not** the rank-correlation
 glyph-class transfer of Decision #15. That fuller Stage 5b
-(`analyze_sarvam_transfer.py`, permutation null, Tier A+B, more pages)
-is deferred so the cache is committed before more budget is spent. A
-null correlation on 5b would still be a finding.
+(`analyze_sarvam_transfer.py`, glyph-class unit) is separate from the
+per-image rank-correlation transfer that was pre-registered in Decision
+#89. That Stage 5b per-image Spearman report is now computed **offline**
+on cached pages (no new API): see `docs/stage5b_rank_correlation.md`.
+Stage 6’s triage cascade sweep is also computed offline: see
+`docs/stage6_triage_cascade.md`.
 
 If you explain Chapter 8 in a conversation, do not reduce it to “we’re
 comparing our model against Sarvam.” Say: the owned model is how we

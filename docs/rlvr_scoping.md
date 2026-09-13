@@ -164,12 +164,10 @@ non-throwing `generate()` is not a drop-in training rollout.
 
 ### Last Colab numbers (not re-run here)
 
-From `docs/tier2_rlvr_ablation.md`: n=32, **mean_coverage=0.0**, all
-32 below 0.5. That is SFT greedy (or empty hyp) under this decode
-path, **not** a λ=0-trained policy. Coverage 0 on every row is
-consistent with empty `hyp` (caught exceptions) **or** decoded text
-with no grapheme overlap with GT. Stdout was not kept, so those two
-cannot be separated from git.
+From `docs/tier2_rlvr_ablation.md`: the **corrected** SFT-greedy baseline
+is n=32, mean_coverage ≈ **0.309**, 32/32 below 0.5, with `n_empty_hyp=0`
+and zero swallowed exceptions (Decision #88). This is **not** a λ=0-trained
+policy; it is the baseline any later retrain must be compared against.
 
 ---
 
@@ -338,7 +336,7 @@ Either is a **new Colab task**, not “uncomment the PPO branch.”
 | `src/models/demo/rlvr.py` | `R`; no trainer |
 | `src/models/demo/rlvr_train.py` | Diagnostic greedy decode; PPO/REINFORCE not implemented |
 | `src/models/demo/sft.py` | Working LoRA loop + chat collate to copy |
-| `docs/tier2_rlvr_ablation.md` | Last Colab: n=32, mean_coverage=0.0, no retrain |
+| `docs/tier2_rlvr_ablation.md` | Corrected baseline: n=32, mean_coverage≈0.309, 32/32 < 0.5; no retrain |
 | `scripts/build_colab_run_nb.py` Cell 10 | Invokes the diagnostic script |
 
 Phase 2 Colab instructions are intentionally **not** in this file;
