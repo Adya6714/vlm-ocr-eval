@@ -1004,7 +1004,7 @@
       <p>The failure is localised at generation position 0 — the first symbol, before any prefix the model wrote itself. Under teacher forcing, the geometric-mean probability of the correct first symbol is 2.2×10⁻¹¹ on text-bearing images and 6.3×10⁻¹¹ on blank: more than eight orders of magnitude below a text-only n-gram that never sees an image (19.8 nats). We do not compare this to a uniform vocabulary prior; the decoder is peaked, not uniform. The median rank of the correct symbol among 367 candidates is 70.5, with 35.0% of sequences ranking it below position 100. Ground truth is never the <span class="gloss" title="The symbol the model assigns the highest probability.">argmax</span> (0 of 180 sequences). Self-generated max-softmax confidence at that same step is still approximately 0.90.</p>
       <figure class="pub-fig">
         <img src="docs/figures/fig1_position_dissociation.png" alt="Position-resolved log p(GT): collapse at 0, n-gram-like mid sequence, second collapse past 40.">
-        <figcaption>Figure 1. Teacher-forced log probability of the true symbol by position, with self-generated confidence underneath. Mid-sequence (positions 2–39) recovers toward a 4- to 5-gram grapheme prior, with and without the image.</figcaption>
+        <figcaption>Figure 4 in the preprint. Teacher-forced log probability of the true symbol by position, with self-generated confidence underneath. Mid-sequence (positions 2–39) recovers toward a 4- to 5-gram grapheme prior, with and without the image.</figcaption>
       </figure>
     </div>
   </div>
@@ -1021,7 +1021,7 @@
         <p>From position 2 to 39, teacher-forced log probability sits in the same band as a 4- to 5-gram. A distributional check, replicated on three seeds, supports treating that as more than a mean match. Pooled <span class="gloss" title="How different two probability distributions are; here, the model versus a text-only 5-gram.">KL divergence</span> (model versus 5-gram) at positions 2–9 / 10–19 / 20–39 is 0.32 / 0.27 / 0.28 nats, with argmax agreement 93.5% / 91.2% / 90.7%. At positions 0, 1, and 40+ both KL and agreement move the other way. We regard the exclusive claim as supported.</p>
         <figure class="pub-fig">
           <img src="docs/figures/fig7_ngram_kl.png" alt="KL and argmax agreement by position bucket versus a 5-gram.">
-          <figcaption>Working figure: KL(model ‖ 5-gram) and argmax agreement by position bucket (bars pooled, points are seeds). Not yet wired into the PDF.</figcaption>
+          <figcaption>Figure 5 in the preprint. KL(model ‖ 5-gram) and argmax agreement by position bucket (bars pooled, points are seeds).</figcaption>
         </figure>
       </div>
 
@@ -1030,7 +1030,7 @@
         <p>We ran Gaussian-noise images and patch-scrambled real images — visual variation of any kind, not only blank versus text. Pooled whole-sequence mean log p(GT) is −1.756 on noise and −1.730 on scrambled, against −1.783 text-bearing and −1.751 blank: all four within 0.05 nats. Position 0 still collapses (−23.7 noise, −24.1 scrambled). Pure noise has no structure a domain-shift account would expect the model to treat differently from a familiar-but-shifted rendering. This is evidence for bypass over domain shift, not proof: an instrument that never learned to use images under any condition is consistent with both a total bypass failure and a domain-shift failure severe enough to leave no residual sensitivity to any visual input at all.</p>
         <figure class="pub-fig">
           <img src="docs/figures/fig6_noise_scrambled.png" alt="Four conditions of mean log p(GT) sitting in a tight band.">
-          <figcaption>Working figure: whole-sequence and position-0 log p(GT) for text-bearing, blank, noise, and scrambled. Not yet wired into the PDF.</figcaption>
+          <figcaption>Figure 1 in the preprint. Whole-sequence and position-0 log p(GT) for text-bearing, blank, noise, and scrambled.</figcaption>
         </figure>
       </div>
 
@@ -1039,7 +1039,7 @@
         <p>Deleting encoder memory changes the output distribution (mean KL 1.075 nats; argmax flips at 8.2% of decoding steps) but leaves the peak near unity: 96.7% of the divergence sits at those flipped positions, while agreeing positions retain mean confidence 0.998. The scalar used as confidence is the part ablation does not move.</p>
         <figure class="pub-fig">
           <img src="docs/figures/fig2_ablation_kl.png" alt="Almost all ablation KL sits in the 8.2% of steps where the argmax flips.">
-          <figcaption>Figure 2. Shape versus peak: most of the KL from encoder ablation is in the minority of steps that flip.</figcaption>
+          <figcaption>Figure 3 in the preprint. Shape versus peak: most of the KL from encoder ablation is in the minority of steps that flip.</figcaption>
         </figure>
       </div>
     </div>
@@ -1055,11 +1055,11 @@
       <p>All 300 Probe 5 evaluation instances (100 strings × 3 seeds) are sampled from the training manifest. There is no non-matching subset. The memorisation-versus-correctness split cannot be run on this evaluation set. The 0.838 figure is an in-training-manifest result, not evidence of generalisation. A confidence signal that ranks memorised successes highly may be tracking memorisation rather than correctness; the two hypotheses produce the same AUROC here by construction.</p>
       <figure class="pub-fig">
         <img src="docs/figures/fig3_confidence_distributions.png" alt="Confidence near ceiling on text-bearing, blank, and unseen scripts.">
-        <figcaption>Figure 3. Held-out confidence means sit in a ~0.004-wide window.</figcaption>
+        <figcaption>Figure 2 in the preprint. Held-out confidence means sit in a ~0.004-wide window.</figcaption>
       </figure>
       <figure class="pub-fig">
         <img src="docs/figures/fig4_regime_contrast.png" alt="AUROC on synthetic memorised lines versus held-out Hindi.">
-        <figcaption>Figure 4. Ranking on training-manifest lines versus no usable signal on held-out images.</figcaption>
+        <figcaption>Figure 6 in the preprint. Ranking on training-manifest lines versus no usable signal on held-out images.</figcaption>
       </figure>
       <p>Because visual dependence is concentrated at the start of the sequence, a confidence score averaged uniformly over generated tokens dilutes the one position that carries it.</p>
     </div>

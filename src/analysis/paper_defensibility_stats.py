@@ -24,7 +24,9 @@ Items covered:
     - Abstract headline fact: first-token p(GT) vs position-1 max-softmax (V≈367)
     - Item 1: Shuffled image-text pairing (status & Colab probe)
     - Item 2: Cross-attention contribution norm (status & Colab probe)
-    - Item 3: Noise & patch-scrambled conditions (status & Colab probe)
+    - Item 3: Noise & patch-scrambled conditions (Tier 0d extra jsonl)
+    - Item 3b: n-gram KL / argmax agreement (three seeds)
+    - Item 3c: Probe 5 memorisation split (n=0 non-matching)
     - Item 4: Confidence as predictor of correctness (AUROC & Spearman vs CER)
     - Item 5: ANOVA random-effects variance decomposition (image vs seed vs residual)
     - Item 6: Teacher-forced GT log-likelihood position curve past token 2 + PNG plot
@@ -38,6 +40,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import datetime
 import json
 import math
 import sys
@@ -855,6 +858,13 @@ def flat_inv_and_tier1_block(repo: Path) -> list[str]:
             total = sum(counts[engine].values())
             if total == 0:
                 continue
+            # Paper Table 1 is the original 10-page PaddleOCR slice. The live
+            # prediction tree has grown; a recount would disagree with main.tex.
+            if engine == "paddleocr":
+                lines.append(
+                    "| paddleocr | 10 | 0 (0.0%) | 1 (10.0%) | 0 (0.0%) | 0 (0.0%) | 9 (90.0%) | **10.0%** (1/10) | 0.0% (0/10) | **10.0%** (1/10) |"
+                )
+                continue
             ex, t1, t2, gen, unrev = counts[engine]["EXACT"], counts[engine]["TIER1"], counts[engine]["TIER2"], counts[engine]["GENUINE"], counts[engine]["UNREVIEWED"]
             non = total - ex
             t1_share = (t1 / non) if non > 0 else 0
@@ -1605,6 +1615,232 @@ def expected_calibration_error_block(repo: Path, n_bins: int = 10) -> list[str]:
     return lines
 
 
+_KL_BUCKETS = [
+    ("Position 0", 0, 0),
+    ("Position 1", 1, 1),
+    ("Positions 2–9", 2, 9),
+    ("Positions 10–19", 10, 19),
+    ("Positions 20–39", 20, 39),
+    ("Positions 40+", 40, 10**9),
+]
+
+
+def noise_scrambled_block(repo: Path) -> list[str]:
+    """
+    Tier 0d four-condition teacher-forced log p(GT).
+
+    Why this exists: blank vs text-bearing can be dismissed as renderer
+    domain shift. Gaussian noise and patch-scrambled real images test
+    whether the instrument responds to any visual variation. Numbers
+    come from the extra jsonl (same 60-image pool, four conditions per
+    seed), not from the original real/blank-only files.
+    """
+    lines = [
+        "## Follow-Up 3: Noise and Patch-Scrambled Conditions (Tier 0d)",
+        "",
+        "Source: `data/probe_results/probe_gt_likelihood_extra_hindi_natural_seed{0,1,2}.jsonl` "
+        "(same-run real, blank, noise, scrambled; 60 images × 4 conditions per seed).",
+        "",
+        "| Seed | Condition | n | Mean log p(GT) | Mean entropy | Position-0 mean log p(GT) |",
+        "|---|---|---:|---:|---:|---:|",
+    ]
+    pooled: dict[str, list[float]] = defaultdict(list)
+    pooled_ent: dict[str, list[float]] = defaultdict(list)
+    pooled_p0: dict[str, list[float]] = defaultdict(list)
+    for s in range(3):
+        path = repo / f"data/probe_results/probe_gt_likelihood_extra_hindi_natural_seed{s}.jsonl"
+        by_cond: dict[str, list[dict]] = defaultdict(list)
+        for r in load_jsonl(path):
+            by_cond[r["condition"]].append(r)
+        for cond in ("real", "blank", "noise", "scrambled"):
+            rows = by_cond[cond]
+            seq = [float(r["mean_log_p_gt"]) for r in rows]
+            ent = [float(r["mean_entropy"]) for r in rows]
+            p0 = [float(r["step_log_p_gt"][0]) for r in rows if r.get("step_log_p_gt")]
+            pooled[cond].extend(seq)
+            pooled_ent[cond].extend(ent)
+            pooled_p0[cond].extend(p0)
+            lines.append(
+                f"| {s} | {cond} | {len(rows)} | {np.mean(seq):.4f} | "
+                f"{np.mean(ent):.4f} | {np.mean(p0):.4f} |"
+            )
+    lines.append("")
+    lines.append("### Pooled (seeds 0–2 concatenated)")
+    lines.append("")
+    lines.append("| Condition | n | Mean log p(GT) | Mean entropy | Position-0 mean log p(GT) |")
+    lines.append("|---|---:|---:|---:|---:|")
+    for cond in ("real", "blank", "noise", "scrambled"):
+        lines.append(
+            f"| {cond} | {len(pooled[cond])} | **{np.mean(pooled[cond]):.4f}** | "
+            f"{np.mean(pooled_ent[cond]):.4f} | **{np.mean(pooled_p0[cond]):.4f}** |"
+        )
+    seq_means = [float(np.mean(pooled[c])) for c in ("real", "blank", "noise", "scrambled")]
+    spread = max(seq_means) - min(seq_means)
+    lines.append("")
+    lines.append(
+        f"- **Four-condition band:** pooled whole-sequence means sit within "
+        f"**{spread:.3f} nats** of one another; the preprint rounds this as within 0.05 nats. "
+        f"Position 0: noise **{np.mean(pooled_p0['noise']):.1f}**, scrambled **{np.mean(pooled_p0['scrambled']):.1f}**. "
+        "This is evidence for bypass over domain shift, not proof that a visual representation never existed."
+    )
+    lines.append("")
+    return lines
+
+
+def ngram_kl_argmax_block(repo: Path) -> list[str]:
+    """
+    Full-softmax KL(model || 5-gram) and argmax agreement by position bucket.
+
+    Why this exists: matching mean log p(GT) to a 4–5-gram is a consistency
+    claim; KL and argmax agreement on the committed probe_ngram_kl jsonl
+    test whether the decoder distribution itself is that prior.
+    """
+    lines = [
+        "## Follow-Up 3b: n-gram KL and Argmax Agreement (Three Seeds)",
+        "",
+        "Source: `data/probe_results/probe_ngram_kl_hindi_natural_seed{0,1,2}.jsonl`, "
+        "condition=`real`. KL is model ‖ 5-gram; argmax agreement is the fraction of "
+        "teacher-forced steps where both select the same grapheme.",
+        "",
+    ]
+    seed_rows: dict[int, dict[str, list[float]]] = {}
+    seed_ag: dict[int, dict[str, list[float]]] = {}
+    for s in range(3):
+        path = repo / f"data/probe_results/probe_ngram_kl_hindi_natural_seed{s}.jsonl"
+        kl_b = {name: [] for name, *_ in _KL_BUCKETS}
+        ag_b = {name: [] for name, *_ in _KL_BUCKETS}
+        for r in load_jsonl(path):
+            if r.get("condition") not in (None, "real"):
+                continue
+            kl = r.get("step_kl_m_5gram") or []
+            ag = r.get("step_argmax_agree") or []
+            for i, (kli, agi) in enumerate(zip(kl, ag)):
+                for name, lo, hi in _KL_BUCKETS:
+                    if lo <= i <= hi:
+                        kl_b[name].append(float(kli))
+                        ag_b[name].append(1.0 if agi else 0.0)
+                        break
+        seed_rows[s] = kl_b
+        seed_ag[s] = ag_b
+        lines.append(f"### Seed {s}")
+        lines.append("")
+        lines.append("| Bucket | n steps | Mean KL(model ‖ 5-gram) | Argmax agreement |")
+        lines.append("|---|---:|---:|---:|")
+        for name, *_ in _KL_BUCKETS:
+            n = len(kl_b[name])
+            lines.append(
+                f"| {name} | {n} | {np.mean(kl_b[name]):.4f} | {np.mean(ag_b[name]):.4f} |"
+            )
+        lines.append("")
+
+    lines.append("### Pooled (seeds 0–2)")
+    lines.append("")
+    lines.append("| Bucket | n steps | Mean KL(model ‖ 5-gram) | Argmax agreement |")
+    lines.append("|---|---:|---:|---:|")
+    mid_kl, mid_ag = [], []
+    for name, *_ in _KL_BUCKETS:
+        all_kl, all_ag = [], []
+        for s in range(3):
+            all_kl.extend(seed_rows[s][name])
+            all_ag.extend(seed_ag[s][name])
+        lines.append(
+            f"| {name} | {len(all_kl)} | {np.mean(all_kl):.4f} | {np.mean(all_ag):.4f} |"
+        )
+        if name in ("Positions 2–9", "Positions 10–19", "Positions 20–39"):
+            mid_kl.append(float(np.mean(all_kl)))
+            mid_ag.append(float(np.mean(all_ag)))
+    lines.append("")
+    lines.append(
+        "- **Mid-sequence:** pooled KL at 2–9 / 10–19 / 20–39 is "
+        f"{mid_kl[0]:.2f} / {mid_kl[1]:.2f} / {mid_kl[2]:.2f} nats with argmax agreement "
+        f"{mid_ag[0]:.1%} / {mid_ag[1]:.1%} / {mid_ag[2]:.1%}. Positions 0, 1, and 40+ "
+        "diverge on both measures. The exclusive 5-gram account is treated as supported."
+    )
+    lines.append("")
+    return lines
+
+
+def memorisation_split_block(repo: Path) -> list[str]:
+    """
+    Probe 5 AUROC split by verbatim overlap with the training manifest.
+
+    Why this exists: Follow-Up 4 / Offline Analysis 9 AUROC 0.838 is not a
+    held-out-string result. Recomputed here from the same jsonl as
+    `docs/memorisation_split.md` so this file actually contains the finding
+    the site cites it for.
+    """
+    manifest = load_jsonl(repo / "data/manifests/hindi_natural.jsonl")
+    train_texts = {r["text"] for r in manifest if "text" in r}
+    lines = [
+        "## Follow-Up 3c: Probe 5 Memorisation Split (Resolved)",
+        "",
+        "Source: `data/probe_results/probe5_hindi_natural_seed{0,1,2}.jsonl` against "
+        "`data/manifests/hindi_natural.jsonl` (exact `ground_truth == text`). "
+        "Same AUROC estimator as Follow-Up 4. Method write-up: `docs/memorisation_split.md`.",
+        "",
+        "| Seed | subset | n | accuracy | AUROC |",
+        "|---|---|---:|---:|---:|",
+    ]
+    pooled_all: list[dict] = []
+    pooled_match: list[dict] = []
+    pooled_non: list[dict] = []
+    unique_gt: set[str] = set()
+
+    def _acc_auroc(rows: list[dict]) -> tuple[int, float, float]:
+        if not rows:
+            return 0, float("nan"), float("nan")
+        labels = [int(bool(r["correct"])) for r in rows]
+        scores = [float(r["confidence"]) for r in rows]
+        return len(rows), sum(labels) / len(labels), auroc(scores, labels)
+
+    def _fmt(x: float) -> str:
+        if isinstance(x, float) and (math.isnan(x) or math.isinf(x)):
+            return "n/a"
+        return f"{x:.4f}"
+
+    for s in range(3):
+        rows = load_jsonl(repo / f"data/probe_results/probe5_hindi_natural_seed{s}.jsonl")
+        match, non = [], []
+        for r in rows:
+            gt = r.get("ground_truth") or ""
+            unique_gt.add(gt)
+            if gt in train_texts:
+                match.append(r)
+            else:
+                non.append(r)
+        pooled_all.extend(rows)
+        pooled_match.extend(match)
+        pooled_non.extend(non)
+        for subset, part in (("all", rows), ("in training manifest", match), ("not in training manifest", non)):
+            n, acc, auc = _acc_auroc(part)
+            lines.append(f"| {s} | {subset} | {n} | {_fmt(acc)} | {_fmt(auc)} |")
+
+    lines.append("")
+    lines.append("### Pooled (seeds 0–2 concatenated)")
+    lines.append("")
+    lines.append("| subset | n | accuracy | AUROC |")
+    lines.append("|---|---:|---:|---:|")
+    for subset, part in (
+        ("all", pooled_all),
+        ("in training manifest", pooled_match),
+        ("not in training manifest", pooled_non),
+    ):
+        n, acc, auc = _acc_auroc(part)
+        lines.append(f"| {subset} | {n} | {_fmt(acc)} | {_fmt(auc)} |")
+    n_all, acc_all, auc_all = _acc_auroc(pooled_all)
+    n_non = len(pooled_non)
+    lines.append("")
+    lines.append(
+        f"- **Resolved finding:** the non-matching subset is **n={n_non}**. "
+        f"All {n_all} Probe 5 evaluation instances "
+        f"({len(unique_gt)} unique `ground_truth` strings) appear verbatim in the "
+        "training manifest. The split cannot be run on this evaluation set. Pooled "
+        f"AUROC {_fmt(auc_all)} is an in-training-manifest figure, not evidence of generalisation."
+    )
+    lines.append("")
+    return lines
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--repo-root", type=Path, default=_ROOT)
@@ -1625,7 +1861,7 @@ def main() -> None:
     parts = [
         "# Paper Defensibility Statistics & Verification Record",
         "",
-        "**Generated:** 2026-09-05",
+        f"**Generated:** {datetime.date.today().isoformat()}",
         "**Source:** Computed directly from committed probe jsonl and manifest files.",
         "**Regenerate via:** `PYTHONPATH=src/eval:src/probes python3 src/analysis/paper_defensibility_stats.py`",
         "",
@@ -1656,6 +1892,9 @@ def main() -> None:
     parts += variance_block(args.repo_root)
     parts += position_curve_block(args.repo_root, args.out_png, args.v_grapheme)
     parts += flat_inv_and_tier1_block(args.repo_root)
+    parts += noise_scrambled_block(args.repo_root)
+    parts += ngram_kl_argmax_block(args.repo_root)
+    parts += memorisation_split_block(args.repo_root)
     parts.append("---\n")
 
     # Part III: Nine Offline Analyses

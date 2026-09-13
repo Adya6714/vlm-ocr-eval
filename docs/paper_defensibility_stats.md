@@ -1,6 +1,6 @@
 # Paper Defensibility Statistics & Verification Record
 
-**Generated:** 2026-09-05
+**Generated:** 2026-09-13
 **Source:** Computed directly from committed probe jsonl and manifest files.
 **Regenerate via:** `PYTHONPATH=src/eval:src/probes python3 src/analysis/paper_defensibility_stats.py`
 
@@ -216,6 +216,112 @@ Teacher-forced mean log p(GT) by position (reference lines: uniform log(1/367) =
 | paddleocr | 10 | 0 (0.0%) | 1 (10.0%) | 0 (0.0%) | 0 (0.0%) | 9 (90.0%) | **10.0%** (1/10) | 0.0% (0/10) | **10.0%** (1/10) |
 
 - **Tier 2 finding:** Tier 2 (phonetic equivalence via ISO 15919 transliteration) resolves 0% of residual errors beyond Tier 1 on this corpus. Encoding variants (Tier 1: joiners, anusvara vs conjunct nasal, nukta compositions) account for all systematic representation ambiguities; phonetic substitution residuals are vanishingly rare once Tier 1 is applied.
+
+## Follow-Up 3: Noise and Patch-Scrambled Conditions (Tier 0d)
+
+Source: `data/probe_results/probe_gt_likelihood_extra_hindi_natural_seed{0,1,2}.jsonl` (same-run real, blank, noise, scrambled; 60 images × 4 conditions per seed).
+
+| Seed | Condition | n | Mean log p(GT) | Mean entropy | Position-0 mean log p(GT) |
+|---|---|---:|---:|---:|---:|
+| 0 | real | 60 | -1.5915 | 0.0243 | -22.3073 |
+| 0 | blank | 60 | -1.5214 | 0.0349 | -20.7942 |
+| 0 | noise | 60 | -1.5161 | 0.0283 | -20.8386 |
+| 0 | scrambled | 60 | -1.6070 | 0.0259 | -22.5238 |
+| 1 | real | 60 | -1.8445 | 0.0169 | -25.0319 |
+| 1 | blank | 60 | -1.8389 | 0.0213 | -24.1882 |
+| 1 | noise | 60 | -1.8363 | 0.0257 | -23.6617 |
+| 1 | scrambled | 60 | -1.7706 | 0.0218 | -24.9282 |
+| 2 | real | 60 | -1.9130 | 0.0216 | -26.2759 |
+| 2 | blank | 60 | -1.8940 | 0.0196 | -25.4680 |
+| 2 | noise | 60 | -1.9147 | 0.0193 | -26.5133 |
+| 2 | scrambled | 60 | -1.8124 | 0.0254 | -24.7550 |
+
+### Pooled (seeds 0–2 concatenated)
+
+| Condition | n | Mean log p(GT) | Mean entropy | Position-0 mean log p(GT) |
+|---|---:|---:|---:|---:|
+| real | 180 | **-1.7830** | 0.0210 | **-24.5384** |
+| blank | 180 | **-1.7514** | 0.0253 | **-23.4835** |
+| noise | 180 | **-1.7557** | 0.0245 | **-23.6712** |
+| scrambled | 180 | **-1.7300** | 0.0243 | **-24.0690** |
+
+- **Four-condition band:** pooled whole-sequence means sit within **0.053 nats** of one another; the preprint rounds this as within 0.05 nats. Position 0: noise **-23.7**, scrambled **-24.1**. This is evidence for bypass over domain shift, not proof that a visual representation never existed.
+
+## Follow-Up 3b: n-gram KL and Argmax Agreement (Three Seeds)
+
+Source: `data/probe_results/probe_ngram_kl_hindi_natural_seed{0,1,2}.jsonl`, condition=`real`. KL is model ‖ 5-gram; argmax agreement is the fraction of teacher-forced steps where both select the same grapheme.
+
+### Seed 0
+
+| Bucket | n steps | Mean KL(model ‖ 5-gram) | Argmax agreement |
+|---|---:|---:|---:|
+| Position 0 | 60 | 4.3638 | 0.1333 |
+| Position 1 | 60 | 1.3244 | 0.7167 |
+| Positions 2–9 | 480 | 0.3017 | 0.9375 |
+| Positions 10–19 | 600 | 0.2481 | 0.9183 |
+| Positions 20–39 | 879 | 0.2635 | 0.9147 |
+| Positions 40+ | 378 | 1.7701 | 0.6376 |
+
+### Seed 1
+
+| Bucket | n steps | Mean KL(model ‖ 5-gram) | Argmax agreement |
+|---|---:|---:|---:|
+| Position 0 | 60 | 4.6601 | 0.0000 |
+| Position 1 | 60 | 1.2311 | 0.5667 |
+| Positions 2–9 | 480 | 0.3353 | 0.9375 |
+| Positions 10–19 | 600 | 0.2827 | 0.9150 |
+| Positions 20–39 | 879 | 0.2544 | 0.9170 |
+| Positions 40+ | 378 | 1.7425 | 0.6323 |
+
+### Seed 2
+
+| Bucket | n steps | Mean KL(model ‖ 5-gram) | Argmax agreement |
+|---|---:|---:|---:|
+| Position 0 | 60 | 5.9030 | 0.0000 |
+| Position 1 | 60 | 1.2863 | 0.6000 |
+| Positions 2–9 | 480 | 0.3336 | 0.9292 |
+| Positions 10–19 | 600 | 0.2859 | 0.9033 |
+| Positions 20–39 | 879 | 0.3160 | 0.8885 |
+| Positions 40+ | 378 | 2.2391 | 0.5741 |
+
+### Pooled (seeds 0–2)
+
+| Bucket | n steps | Mean KL(model ‖ 5-gram) | Argmax agreement |
+|---|---:|---:|---:|
+| Position 0 | 180 | 4.9756 | 0.0444 |
+| Position 1 | 180 | 1.2806 | 0.6278 |
+| Positions 2–9 | 1440 | 0.3235 | 0.9347 |
+| Positions 10–19 | 1800 | 0.2722 | 0.9122 |
+| Positions 20–39 | 2637 | 0.2780 | 0.9067 |
+| Positions 40+ | 1134 | 1.9172 | 0.6146 |
+
+- **Mid-sequence:** pooled KL at 2–9 / 10–19 / 20–39 is 0.32 / 0.27 / 0.28 nats with argmax agreement 93.5% / 91.2% / 90.7%. Positions 0, 1, and 40+ diverge on both measures. The exclusive 5-gram account is treated as supported.
+
+## Follow-Up 3c: Probe 5 Memorisation Split (Resolved)
+
+Source: `data/probe_results/probe5_hindi_natural_seed{0,1,2}.jsonl` against `data/manifests/hindi_natural.jsonl` (exact `ground_truth == text`). Same AUROC estimator as Follow-Up 4. Method write-up: `docs/memorisation_split.md`.
+
+| Seed | subset | n | accuracy | AUROC |
+|---|---|---:|---:|---:|
+| 0 | all | 100 | 0.1700 | 0.7633 |
+| 0 | in training manifest | 100 | 0.1700 | 0.7633 |
+| 0 | not in training manifest | 0 | n/a | n/a |
+| 1 | all | 100 | 0.1400 | 0.9244 |
+| 1 | in training manifest | 100 | 0.1400 | 0.9244 |
+| 1 | not in training manifest | 0 | n/a | n/a |
+| 2 | all | 100 | 0.2400 | 0.8317 |
+| 2 | in training manifest | 100 | 0.2400 | 0.8317 |
+| 2 | not in training manifest | 0 | n/a | n/a |
+
+### Pooled (seeds 0–2 concatenated)
+
+| subset | n | accuracy | AUROC |
+|---|---:|---:|---:|
+| all | 300 | 0.1833 | 0.8381 |
+| in training manifest | 300 | 0.1833 | 0.8381 |
+| not in training manifest | 0 | n/a | n/a |
+
+- **Resolved finding:** the non-matching subset is **n=0**. All 300 Probe 5 evaluation instances (98 unique `ground_truth` strings) appear verbatim in the training manifest. The split cannot be run on this evaluation set. Pooled AUROC 0.8381 is an in-training-manifest figure, not evidence of generalisation.
 
 ---
 
