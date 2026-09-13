@@ -925,6 +925,7 @@
       <a href="#extract-q" class="walk-only">Question</a>
       <a href="#extract-numbers" class="walk-only">The gap</a>
       <a href="#extract-why" class="walk-only">Why an instrument</a>
+      <a href="#extract-transfer" class="walk-only">Transfer &amp; triage</a>
       <a href="paper/main.pdf">PDF</a>
       <a href="https://github.com/Adya6714/vlm-ocr-eval">GitHub</a>
       <span class="mode-toggle" role="group" aria-label="Reading mode">
@@ -1121,7 +1122,7 @@
           <div class="gap-track"><div class="gap-fill blank" style="--w:2%"></div></div>
         </div>
       </div>
-      <p class="prose" style="margin-top:16px;color:var(--ink-soft);">Write-up: <a href="docs/sarvam_vision_confidence.md">docs/sarvam_vision_confidence.md</a>. Follow-ups: <a href="docs/stage5b_rank_correlation.md">Stage 5b rank-correlation transfer</a> and <a href="docs/stage6_triage_cascade.md">Stage 6 triage cascade</a> (offline; no new API).</p>
+      <p class="prose" style="margin-top:16px;color:var(--ink-soft);">Write-up: <a href="docs/sarvam_vision_confidence.md">docs/sarvam_vision_confidence.md</a>. The next section asks whether the owned instrument’s rankings help on the same production pages.</p>
     </div>
   </div>
 </section>
@@ -1149,6 +1150,24 @@
           <div class="conf-meter"><div class="conf-meter-fill" id="confMeter"></div></div>
           <span class="note">Synthetic natural lines (Probe 3). Not the held-out Probe 5b set.</span>
         </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="extract-transfer" class="mode-item walk-only story" style="--walk-order:4; --paper-order:0">
+  <div class="fig-rail">
+    <div class="fig-body">
+      <div class="section-kicker">Transfer &amp; triage</div>
+      <h2 class="section-title">Does the instrument’s ranking predict real Extract error — and help route review?</h2>
+      <p class="lede">The gap above is about Extract confidence vs published language accuracy. A natural follow-up uses the same production pages plus the owned instrument: does the instrument’s own difficulty ranking predict Sarvam’s per-image error, and does its confidence help choose which pages to escalate?</p>
+      <p>On 60 Hindi plains, the pre-registered Stage 5b test (Spearman, permutation null locked before looking) finds essentially no transfer: ρ = 0.029, p = 0.827. That is a genuine null, not an inconclusive run. At the fair Stage 6 slice — escalate 20% of those pages (k=12) — routing by instrument confidence leaves residual system CER 0.0109, which is <em>worse</em> than random (0.0095) and clearly worse than Tesseract confidence (0.0079).</p>
+      <p>Both negatives cohere with the Paper-tab story on production data: a confidence signal that is not visually grounded also does not predict real-world difficulty or improve real-world triage. The PDF still does not name this product; these numbers live only on this Extract tab and in the project book.</p>
+      <p class="prose" style="color:var(--ink-soft);">Budget honesty: 36 of 110 new Extract calls failed with HTTP 402 (insufficient credit), all in the Hindi-degraded arm after plains finished. That leaves the degraded secondary at n=24 instead of the pre-registered n=60, and Santhali/Kashmiri exploratory arms stay n=10. Failed rows were excluded from every statistic (explicit error field — not a fake zero). Full budget would have bought power, not a known result; do not treat those underpowered arms as confirmed nulls the way the n=60 primary is.</p>
+      <div class="docs-list" style="margin-top:20px;">
+        <div class="doc-row primary"><span class="doc-name"><a href="BOOK.md">BOOK.md</a></span><span class="doc-desc">Chapters 8–9 narrative</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="docs/stage5b_rank_correlation.md">docs/stage5b_rank_correlation.md</a></span><span class="doc-desc">full Stage 5b protocol + ρ table</span></div>
+        <div class="doc-row"><span class="doc-name"><a href="docs/stage6_triage_cascade.md">docs/stage6_triage_cascade.md</a></span><span class="doc-desc">Stage 6 k-sweep</span></div>
       </div>
     </div>
   </div>

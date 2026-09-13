@@ -407,22 +407,26 @@ Sarvam Vision is a production 3B-class system with published
 per-language accuracies. Does Extract *confidence* fall when published
 accuracy falls (Hindi → Kashmiri)?
 
-**How we asked it.** Stage 5a, not 5b. Extract endpoint only (Digitise
-does not expose field confidence, Decision #59). 35 pages, cached once
-by SHA-256 (Decision #19). Published accuracies re-fetched from
-sarvam.ai (Decisions #6, #60). Full rank-correlation transfer (#15) is
-**deferred**.
+**How we asked it.** Stage 5a for the language-gap probe. Extract only
+(Digitise has no field confidence, Decision #59). 35 pages, cached once
+(Decision #19). Published accuracies re-fetched from sarvam.ai
+(Decisions #6, #60). Glyph-class transfer (#15) stays deferred; the
+**per-image** Spearman transfer (Decision #89) is the Stage 5b that ran.
 
-**What we found.** Hindi → Kashmiri published accuracy gap **39.98 pp**;
-Extract confidence delta **0.0027**. Blanks score 0.0000 (so the API
-*can* go to zero; it just does not on hard scripts). Write-up:
-`docs/sarvam_vision_confidence.md`. This is **not** in the preprint
-(README).
+**What we found (5a).** Hindi → Kashmiri published accuracy gap
+**39.98 pp**; Extract confidence delta **0.0027**. Blanks score 0.0000.
+Write-up: `docs/sarvam_vision_confidence.md` (not in the preprint).
+
+**What we found (5b).** Primary Hindi plains, Sarvam CER, n=60:
+Spearman ρ = **0.0293**, permutation p = **0.8267** — a genuine null
+(protocol locked before looking; Decision #89). Full table:
+`docs/stage5b_rank_correlation.md`. See Chapter 8.
 
 **What it does not prove.** That Sarvam “reads without looking” in the
 instrument’s mechanistic sense — we cannot blank-ablate their encoder.
 It shows that **page-level confidence does not track their own
-language-wise accuracy spread**.
+language-wise accuracy spread**, and that the instrument’s difficulty
+ranking does not predict Sarvam’s per-image CER on the same plains.
 
 ### Q8 — Can confidence route work to a stronger system or a human?
 
@@ -431,10 +435,12 @@ cache; compare to random / layout-complexity / Tesseract-confidence
 escalation. Metric is router quality, not cost savings (Decision #16),
 because the instrument is not expected to beat Tesseract.
 
-**Status.** Router code exists (`src/probes/cascade.py`). Results are
-computed offline on the Stage 5b cached pages (no new API): see
-`docs/stage6_triage_cascade.md`. Chapter 9 should cite that file and
-treat the result as router quality (Decision #16), not a cost claim.
+**What we found.** At the pre-specified fair point (k=12, 20% of n=60
+Hindi plains), instrument-confidence routing leaves residual system CER
+**0.0109** — worse than random (**0.0095**), GT grapheme-length
+(**0.0092**), and Tesseract confidence (**0.0079**). Report:
+`docs/stage6_triage_cascade.md`. On this test the instrument confidence
+signal is **not** a useful production triage router. See Chapter 9.
 
 ---
 
@@ -3144,48 +3150,110 @@ Everything after the API call happens **offline**. Separate expensive
 data collection from cheap analysis. An escalation sweep that re-called
 the API per threshold would burn the whole budget on one experiment.
 
-### What actually ran (Stage 5a), plus the offline follow-ups (5b/6)
+### What actually ran (Stage 5a), plus Stage 5b’s pre-registered null
 
-**Built and run.** `src/eval/sarvam_client.py` wraps Doc-AI **Extract**
-(not Digitise — only Extract exposes `annotations.{field}.confidence`,
-confirmed docs.sarvam.ai, Decision #59). Schema is a single field
-`{"full_text": "..."}` so we get one page-level number comparable to
-the instrument’s `mean_confidence`. Every page is cached under
-`data/cache/sarvam/` by SHA-256 of image bytes; re-runs never re-call
-(Decision #19). `src/probes/sarvam_transfer_probe.py` drew 35 images
-with `Random(0)`: 10 Hindi / 10 Santhali / 10 Kashmiri / 5 blank.
-Budget used: **₹17.50**. Output:
-`data/probe_results/sarvam_transfer_probe.jsonl`. Analysis:
+**Stage 5a — built and run.** `src/eval/sarvam_client.py` wraps Doc-AI
+**Extract** (not Digitise — only Extract exposes
+`annotations.{field}.confidence`, confirmed docs.sarvam.ai, Decision
+#59). Schema is a single field `{"full_text": "..."}` so we get one
+page-level number comparable to the instrument’s `mean_confidence`.
+Every page is cached under `data/cache/sarvam/` by SHA-256 of image
+bytes; re-runs never re-call (Decision #19).
+`src/probes/sarvam_transfer_probe.py` drew 35 images with `Random(0)`:
+10 Hindi / 10 Santhali / 10 Kashmiri / 5 blank. Budget used: **₹17.50**.
+Output: `data/probe_results/sarvam_transfer_probe.jsonl`. Analysis:
 `docs/sarvam_vision_confidence.md` (Decision #77: one Sarvam-facing
 note, not a second API doc).
 
-Published accuracies (re-verified sarvam.ai/blogs/sarvam-vision, Decisions
-#6 / #60): Hindi **95.91%**, Santhali **80.32%**, Kashmiri **55.93%**.
-Headline: Hindi → Kashmiri accuracy gap **39.98 pp**; Extract
-confidence **0.9997 → 0.9970** (Δ **0.0027**). Blanks score **0.0000**.
-Page-level confidence does **not** track the published language gap, even
-though the API will go to zero on empty pages.
+Published accuracies (re-verified sarvam.ai/blogs/sarvam-vision,
+Decisions #6 / #60): Hindi **95.91%**, Santhali **80.32%**, Kashmiri
+**55.93%**. Headline: Hindi → Kashmiri accuracy gap **39.98 pp**;
+Extract confidence **0.9997 → 0.9970** (Δ **0.0027**). Blanks score
+**0.0000**. Page-level confidence does **not** track the published
+language gap, even though the API will go to zero on empty pages.
 
-This is **not** in the preprint. It is also **not** the rank-correlation
-glyph-class transfer of Decision #15. That fuller Stage 5b
-(`analyze_sarvam_transfer.py`, glyph-class unit) is separate from the
-per-image rank-correlation transfer that was pre-registered in Decision
-#89. That Stage 5b per-image Spearman report is now computed **offline**
-on cached pages (no new API): see `docs/stage5b_rank_correlation.md`.
-Stage 6’s triage cascade sweep is also computed offline: see
-`docs/stage6_triage_cascade.md`.
+This Stage 5a result is **not** in the preprint. It is also **not** the
+glyph-class transfer of Decision #15. The unit that *did* run as Stage
+5b is the **per-image** Spearman test locked in Decision **#89**.
+
+**Stage 5b — pre-registered, computed, null.** Statistic locked before
+looking at ρ: Spearman between instrument difficulty (−mean over seeds
+of teacher-forced `mean_log_p_gt` on `condition=real`) and production
+Tier-1 grapheme CER, with a 10,000-shuffle permutation null (seed 0).
+Code: `src/eval/transfer_analysis.py --compute-now`. Report:
+`docs/stage5b_rank_correlation.md`. Evidence JSONL includes
+`data/probe_results/sarvam_stage5b_pages.jsonl` plus Stage 5a cache.
+
+Primary (Hindi plains, Sarvam CER, **n=60**):
+
+- Spearman ρ = **0.0293**
+- permutation p = **0.8267**
+
+That is **essentially zero** correlation between the instrument’s own
+difficulty ranking and Sarvam’s real production error on the same
+images. Treat this as a **genuine null**, not an inconclusive or failed
+experiment: Decision #89 locked the protocol specifically so a null
+like this one would be trustworthy rather than explained away.
+
+Secondaries (same protocol; full numbers in the report):
+
+- Tesseract plains: ρ **−0.0808**, p **0.5453**, n=60 — null / wrong-signed
+- PaddleOCR plains: ρ **−0.1593**, p **0.2173**, n=60 — null / wrong-signed
+- Hindi degraded, Sarvam: ρ **−0.2222**, p **0.2913**, **n=24** — null /
+  wrong-signed (see budget note: this n is underpowered, not a
+  confirmed null at the pre-registered n=60)
+- Surya plains: ρ **0.2348**, p **0.0685**, n=60 — the **closest thing
+  to a signal, not a finding**. Positive direction; does **not** cross
+  the pre-registered significance threshold. Do not round p=0.0685 down
+  to “significant.”
+
+Exploratory and **explicitly underpowered** (state that in the text,
+not only in a footnote): Santhali and Kashmiri use −Probe 5b
+`mean_confidence` as the instrument axis because teacher-forced log
+p(GT) does not exist for those scripts on this instrument, and each arm
+is only **n=10**. Santhali ρ **−0.3891**, p **0.2632**; Kashmiri ρ
+**−0.5394**, p **0.1182**. n=10 cannot support a claim either direction.
+
+**Budget exhaustion (honest, non-speculative).** Of 110 new Stage 5b
+Extract attempts (`--set both`), **36 failed with HTTP 402**
+(insufficient credit). All 36 were in the **Hindi degraded** condition —
+plain pages completed in full before the balance ran out. That leaves
+the Hindi-degraded secondary at **n=24** instead of the pre-registered
+n=60. Santhali/Kashmiri exploratory arms were never budgeted past n=10
+inside the project’s ₹100-ish cap. What full budget would have changed
+is **statistical power**, not a known result: the degraded secondary
+would have reached its pre-registered n, and the exploratory arms could
+in principle have been re-scoped as primary tests with adequate n. We
+do **not** know what those additional points would have shown — only
+that current n=24 and n=10 results are underpowered rather than
+“confirmed null,” unlike the fully powered **n=60 primary**. The 402
+failures were correctly excluded from every computed statistic
+(explicit `error` field, null confidence — not a fake zero); that is
+why reported n values differ from 110 rather than silently including
+failed rows.
+
+**Coherence with the paper’s central finding.** Stage 5a (confidence
+does not track published language accuracy) and Stage 5b (instrument
+difficulty does not predict Sarvam CER) independently corroborate, on
+**real production data**, the same story the preprint tells about the
+owned instrument: a confidence / difficulty signal that is not grounded
+in visual reading also does not transfer to predicting real-world
+hardness. That is a useful negative result, not a wasted probe. Stage
+6 (Chapter 9) makes the same point for triage.
 
 If you explain Chapter 8 in a conversation, do not reduce it to “we’re
 comparing our model against Sarvam.” Say: the owned model is how we
 ask *why*; Stage 5a asks whether a production confidence field tracks
-that system’s own published accuracy spread. We are not expecting
-identical accuracy; we did not (yet) test whether the ranking of
-difficult glyph classes correlates.
+that system’s own published accuracy spread; Stage 5b asks whether the
+instrument’s per-image difficulty ranking predicts Sarvam’s CER on the
+same Hindi plains — and the pre-registered answer is no (ρ≈0.03,
+p≈0.83).
 
 > **What to remember.** An API can score a language; only a model you
-> own can tell you *why* — and the 35-page Extract probe already shows
-> that production confidence need not move when published accuracy
-> does.
+> own can tell you *why*. On production Extract data, confidence need
+> not move when published accuracy does — and the instrument’s own
+> difficulty ranking does not predict Sarvam’s per-image error either
+> (Stage 5b primary null, Decision #89).
 
 ---
 
@@ -3225,7 +3293,7 @@ objective from headline accuracy.
 
 Escalation only helps if the signal you escalate on is meaningful. A
 random coin flip is an escalation policy; it is just a bad one. Probe
-5’s confidence scores are the candidate signal.
+5b’s confidence scores are the candidate signal for Stage 6.
 
 ### Why not just escalate everything?
 
@@ -3235,33 +3303,40 @@ want something like: 100 pages through the small model, 80 handled
 confidently, 20 sent to expensive OCR, while recovering most of the
 accuracy of the expensive system.
 
-### How do we test whether the router is actually good?
+### How we tested the router (and what it showed)
 
-Using the Stage 5 cache only (no new paid calls), vary the confidence
-threshold and construct an **accuracy vs escalation tradeoff**:
+Using the Stage 5 cache only (no new paid calls), Stage 6 holds the
+escalation **count** fixed and asks which policy leaves the lowest
+residual system CER when escalated pages are scored as perfect
+(CER=0). Code: `src/probes/cascade.py --compute-now`. Report:
+`docs/stage6_triage_cascade.md`. Cohort: **n=60** Hindi plains with
+Sarvam CER.
 
-| Threshold | Pages escalated | Accuracy |
-|---|---:|---:|
-| 0.50 | 10% | 70% |
-| 0.70 | 20% | 78% |
-| 0.90 | 40% | 87% |
-| 0.95 | 60% | 92% |
-| 0.99 | 85% | 96% |
+Policies compared at every k = 0…n, with the fair headline slice at
+**k = round(0.2 × n) = 12** (20% of pages):
 
-Those numbers are **hypothetical** — the project has not produced these
-results yet. The table is the *shape* of the experiment, not a finding.
+1. **Instrument** — escalate the k *lowest* Probe 5b `mean_confidence`
+   (3-seed mean, Hindi).
+2. **Random** — mean residual over 1000 draws of k pages (RNG seed 0).
+3. **Layout** — escalate the k *longest* GT grapheme strings.
+4. **Tesseract** — escalate the k lowest Tesseract confidences on the
+   matching `*_plain.png`.
 
-A good router should identify the genuinely difficult pages. A bad
-router randomly escalates. So Stage 6 compares the instrument’s
-confidence against three baselines:
+At that pre-specified fair point:
 
-1. **Random** — randomly choose 20% of pages.
-2. **Layout complexity** — complex-looking pages → escalate.
-3. **Tesseract confidence** — Tesseract says low confidence → escalate.
+| Policy | Residual system CER |
+|---|---:|
+| Instrument confidence | **0.0109** |
+| Random (mean of 1000) | **0.0095** |
+| Layout (GT grapheme count) | **0.0092** |
+| Tesseract confidence | **0.0079** |
 
-Then ask: does our instrument’s confidence identify problematic pages
-**better than these simple alternatives**? That is the actual
-experiment (`cascade.py`, not built yet).
+Lower is better. On this test, **instrument-confidence routing is worse
+than random**, worse than routing by GT grapheme length, and clearly
+worse than Tesseract’s own confidence. That pattern holds across most
+of the full k-sweep in the report, not only at k=12. State plainly:
+the instrument’s confidence signal is **not** a useful routing signal
+for real production triage here.
 
 ### Why aren’t we claiming “we’ll save money”?
 
@@ -3277,18 +3352,11 @@ The defensible claim is **router quality**:
 > Our model’s confidence is a useful signal for identifying pages that
 > should be escalated.
 
-If the router is good, *then* a production system could potentially
-use that signal to reduce unnecessary expensive processing. But the
-project does not need to prove the business economics to prove the
-scientific claim. A router-quality story survives even if the base
-model is mediocre, because you are measuring the **confidence signal**,
-not the headline CER.
+Stage 6’s answer on this cohort is **no** — which is still a scientific
+result. A router-quality story survives even when the signal fails,
+because you measured the **confidence signal**, not a business slide.
 
-`cascade.py` depends on Probe 5 being real and on Stage 5’s cache
-existing. Teaching it now keeps the end of the pipeline visible:
-diagnosis → transfer → action.
-
-### How Chapters 8 and 9 connect
+### How Chapters 8 and 9 connect — and the coherence note
 
 ```text
                  OUR INSTRUMENT
@@ -3317,6 +3385,15 @@ diagnosis → transfer → action.
                            human
 ```
 
+Stage 5b’s primary null (instrument difficulty ≉ Sarvam CER) and Stage
+6’s negative routing result (instrument confidence worse than random at
+matched k) **independently corroborate** the paper’s central finding on
+**real production data**, not only on the synthetic instrument: a
+confidence signal that does not track genuine visual grounding also
+does not transfer to predicting real-world difficulty or improving
+real-world triage. That is a real, useful negative result, not a wasted
+probe.
+
 The project’s evolution, end to end:
 
 **Stage 0** — How do we define an OCR error?  
@@ -3324,27 +3401,24 @@ The project’s evolution, end to end:
 **Stage 2** — How do we build a model whose internals we control?  
 **Probes** — What is the model actually learning?  
 **Stage 5 / Chapter 8** — Do those findings tell us anything about
-production OCR?  
+production OCR? (5a: confidence vs published language gap; 5b: null
+rank transfer.)  
 **Stage 6 / Chapter 9** — Can we use the model’s confidence to decide
-when to trust it?
+when to trust it? (On this test: no — worse than random at k=12.)
 
 If you explain Chapter 9 in a conversation:
 
-> If confidence proves informative, we can use the instrument as a
-> selective predictor or router: handle easy pages cheaply and
-> escalate uncertain pages to a stronger OCR system. The experiment
-> measures whether its confidence identifies hard pages better than
-> random, layout-based, or existing OCR-confidence baselines.
-
-That is the conceptual endpoint of the whole project:
-
-> Don’t just build an OCR model that produces answers. Build a system
-> that understands the limits of its own answers well enough to know
-> when it should ask for help.
+> Stage 6 asks whether Probe 5b confidence identifies hard Hindi plains
+> better than random, layout length, or Tesseract confidence at the
+> same escalation count. At k=12 / 20%, residual CER is 0.0109 for the
+> instrument vs 0.0095 random and 0.0079 Tesseract — so the signal is
+> not useful for production triage here, which coheres with Stage 5b’s
+> null transfer and with the paper’s “confidence without grounding”
+> story.
 
 > **What to remember.** Confidence is only useful if it knows when to
-> hand the page to someone else — and that is a measurable claim, not a
-> pricing slide.
+> hand the page to someone else — and on this Stage 6 test, the
+> instrument’s confidence does not. That negative is the finding.
 
 ---
 
@@ -3379,9 +3453,13 @@ on max-softmax for this decoder family without a grounding check.
 **Fourth**, Stage 5a shows a production Extract confidence field that
 barely moves across a ~40 pp published accuracy gap, while scoring
 blank pages at 0. That rhymes with Claim B without claiming we opened
-Sarvam’s encoder. Stage 5b glyph-rank transfer, the demo model, RLVR,
-and the cascade are still how those questions would meet a deployed
-stack; they are deferred, not abandoned.
+Sarvam’s encoder. Stage 5b’s pre-registered per-image Spearman test
+is a genuine null (ρ≈0.03, p≈0.83 on n=60 Hindi plains), and Stage 6
+instrument-confidence routing is worse than random at the fair 20%
+escalation point — both on real production data, both outside the
+preprint. Glyph-class transfer (#15), the demo model, and RLVR remain
+how the owned stack would meet a stronger reader; those are separate
+from the 5b/6 negatives already measured.
 
 If you only remember three implied fixes from the whole book, remember
 these:
