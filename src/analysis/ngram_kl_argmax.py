@@ -235,8 +235,14 @@ def write_doc(repo: Path) -> str:
 
     for s, stats in per_seed:
         lines.extend(table(f"Seed {s}", stats))
-    if pooled_rows:
-        lines.extend(table("Pooled (seeds 0–2)", aggregate(pooled_rows)))
+    if pooled_rows and len(per_seed) > 1:
+        seed_list = ",".join(str(s) for s, _ in per_seed)
+        title = (
+            "Pooled (seeds 0–2)"
+            if len(per_seed) == 3
+            else f"Pooled (seeds {seed_list} only)"
+        )
+        lines.extend(table(title, aggregate(pooled_rows)))
     if missing:
         lines += ["**Partial.** Missing or empty:"] + [f"- `{m}`" for m in missing] + [""]
 

@@ -37,8 +37,11 @@ PYTHONPATH=src python src/probes/probe_pos0_null.py --seed 0 --device cpu \
 ## Step 3 — existing probes
 
 **Not computed.** `docs/tier0b_gt_mismatch.md`,
-`docs/tier0c_cross_attn_norms.md`, `docs/tier0d_noise_scrambled.md`
-(grayscale fix present; extra jsonl still absent).
+`docs/tier0c_cross_attn_norms.md`.
+
+**0d computed (Colab T4, 2026-09-13).** Extra jsonl 240 rows/seed
+(real+blank+noise+scrambled). `docs/tier0d_noise_scrambled.md`.
+Grayscale `make_matched_noise` did not crash.
 
 ## Probe 5 memorisation split
 
@@ -51,8 +54,8 @@ subset empty.
 `src/analysis/position_matched_ngrams.py`. Same train/eval split as
 stats §7.
 
-**4b not computed.** Probe written (`src/probes/probe_ngram_kl.py`);
-needs a checkpoint forward. Status: `docs/ngram_kl_argmax.md`.
+**4b partial.** Seed 0 jsonl committed; seeds 1–2 missing.
+`docs/ngram_kl_argmax.md`.
 
 ## Step 5 — Surya
 

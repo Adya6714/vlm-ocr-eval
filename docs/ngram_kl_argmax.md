@@ -19,27 +19,17 @@ floor (1e-8) after scattering the 5-gram onto the tokenizer.
 Buckets match Follow-Up 6 / Table 6: Position 0, 1, 2–9, 10–19,
 20–39, 40+ on teacher-forced step index (content + trailing EOS).
 
-**Status: not computed.** This laptop has no Hindi instrument
-checkpoints (`docs/tier0_checkpoint_status.md`). Compact jsonl
-was not written. Missing:
-- `data/probe_results/probe_ngram_kl_hindi_natural_seed0.jsonl`
+### Seed 0
+
+| Bucket | n steps | mean KL(model ‖ 5-gram) | argmax agreement |
+|---|---:|---:|---:|
+| Position 0 | 60 | 4.3638 | 0.1333 |
+| Position 1 | 60 | 1.3244 | 0.7167 |
+| Positions 2–9 | 480 | 0.3017 | 0.9375 |
+| Positions 10–19 | 600 | 0.2481 | 0.9183 |
+| Positions 20–39 | 879 | 0.2635 | 0.9147 |
+| Positions 40+ | 378 | 1.7701 | 0.6376 |
+
+**Partial.** Missing or empty:
 - `data/probe_results/probe_ngram_kl_hindi_natural_seed1.jsonl`
 - `data/probe_results/probe_ngram_kl_hindi_natural_seed2.jsonl`
-
-Command on T4 or CPU once `--output-root` has
-`checkpoint_hindi_natural_seed{0,1,2}.pt` and
-`tokenizer_hindi_natural.json`:
-
-```bash
-for s in 0 1 2; do
-  PYTHONPATH=src python src/probes/probe_ngram_kl.py \
-    --script hindi --condition natural --seed $s \
-    --output-root checkpoints --data-root data --n-samples 100 \
-    --device cuda \
-    --out data/probe_results/probe_ngram_kl_hindi_natural_seed${s}.jsonl
-done
-PYTHONPATH=src python src/analysis/ngram_kl_argmax.py
-```
-
-Do not backfill KL from `step_p_gt`. That is one coordinate of
-the softmax, not the distribution.
