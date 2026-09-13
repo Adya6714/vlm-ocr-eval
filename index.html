@@ -899,6 +899,14 @@
   }
   .null-banner p{margin:0; font-size:0.95rem;}
   .pdf-link{font-size:0.88rem; margin:10px 0 0;}
+  .gloss{
+    border-bottom:1px dotted var(--ink-soft);
+    cursor:help;
+  }
+  .story p, .story .lede{max-width:66ch;}
+  .story .follow{margin-top:28px;}
+  .fig-rail{grid-template-columns:1fr;}
+  .fig-num{display:none !important;}
 </style>
 </head>
 <body data-mode="paper">
@@ -908,13 +916,15 @@
   <div class="topbar-inner">
     <div class="brand">vlm-ocr-eval <span class="dim paper-only">/ preprint</span><span class="dim walk-only">/ Extract audit</span></div>
     <nav class="navlinks">
-      <a href="#hero-paper" class="paper-only">Claim</a>
-      <a href="#findings" class="paper-only">Results</a>
-      <a href="#method" class="paper-only">Method</a>
-      <a href="#open" class="paper-only">Open</a>
-      <a href="#hero" class="walk-only">Question</a>
-      <a href="#extract-numbers" class="walk-only">Numbers</a>
-      <a href="#extract-why" class="walk-only">Instrument</a>
+      <a href="#question" class="paper-only">Question</a>
+      <a href="#instrument" class="paper-only">Instrument</a>
+      <a href="#headline" class="paper-only">Finding</a>
+      <a href="#follow" class="paper-only">Follow-ups</a>
+      <a href="#regime" class="paper-only">Where it works</a>
+      <a href="#open" class="paper-only">What’s left</a>
+      <a href="#extract-q" class="walk-only">Question</a>
+      <a href="#extract-numbers" class="walk-only">The gap</a>
+      <a href="#extract-why" class="walk-only">Why an instrument</a>
       <a href="paper/main.pdf">PDF</a>
       <a href="https://github.com/Adya6714/vlm-ocr-eval">GitHub</a>
       <span class="mode-toggle" role="group" aria-label="Reading mode">
@@ -927,193 +937,159 @@
 
 <div class="mode-root">
 
-<header class="hero paper-hero mode-item paper-only" id="hero-paper" style="--paper-order:1; --walk-order:0">
+<!-- PAPER: 1 question -->
+<header class="hero paper-hero mode-item paper-only" id="question" style="--paper-order:1; --walk-order:0">
   <div class="hero-inner">
     <div class="hero-layout">
       <div class="hero-copy hero-rise">
         <div class="hero-kicker">Preprint · <em>Reading Without Looking</em></div>
-        <p class="not-product">A from-scratch OCR instrument · Hindi · three seeds</p>
         <h1>Reading Without Looking</h1>
-        <p class="hero-sub">Decoder confidence is used to decide what a human should check. On this model it tracks how language-like the generated string is, not whether the image supports it. The model does not read its held-out images.</p>
-        <p class="pdf-link"><a href="paper/main.pdf">Read the PDF</a> · this page is a short guide, not a substitute.</p>
-        <div class="null-banner">
-          <p><strong>Held-out grapheme CER ≈ 1</strong> on text-bearing Hindi (0.985) and on blank white pages (0.949). After clustering by seed the difference is not significant. Evaluation images are GlotOCR renders, not photographs.</p>
-        </div>
+        <p class="hero-sub">When a document OCR system is unsure, pipelines often send that prediction to a human. That only works if the system’s confidence actually tracks whether it is reading the page. This project asks whether it does, on a small model we can open up — not on a closed API. The PDF is canonical; this page is a reading aid.</p>
+        <p class="pdf-link"><a href="paper/main.pdf">Read the preprint PDF</a></p>
       </div>
       <aside class="hero-visual">
         <div class="gap-panel">
-          <div class="gap-panel-label">Position 0 · first generated token</div>
-          <div class="dissoc-grid">
-            <div class="dissoc-cell">
-              <div class="d-cond">p(correct)</div>
-              <div class="d-num">10⁻¹¹</div>
-              <div class="d-sub">geometric mean</div>
-            </div>
-            <div class="dissoc-cell flat">
-              <div class="d-cond">Self-confidence</div>
-              <div class="d-num">0.90</div>
-              <div class="d-sub">max-softmax</div>
-            </div>
-            <div class="dissoc-cell">
-              <div class="d-cond">GT is argmax</div>
-              <div class="d-num">0/180</div>
-              <div class="d-sub">never</div>
-            </div>
-          </div>
-          <p class="gap-footnote">That probability is more than eight orders below a text-only n-gram that never sees an image. We do not compare it to a uniform vocabulary prior.</p>
+          <div class="gap-panel-label">What “confidence” is being asked to do</div>
+          <p class="gap-footnote" style="border-top:none;padding-top:0;margin-top:0;">A high score is treated as “the image supports this text.” A low score is treated as “check this.” If the score stays high on a blank page, that routing rule is wrong.</p>
         </div>
       </aside>
     </div>
   </div>
 </header>
 
-<header class="hero mode-item walk-only" id="hero" style="--walk-order:1; --paper-order:0">
+<!-- EXTRACT: 1 question, no numbers first -->
+<header class="hero mode-item walk-only" id="extract-q" style="--walk-order:1; --paper-order:0">
   <div class="hero-inner">
     <div class="hero-layout">
       <div class="hero-copy hero-rise">
-        <div class="hero-kicker">Sarvam Vision · Extract API</div>
-        <p class="not-product">A product question · not in the preprint</p>
-        <h1>Does Extract confidence track the published accuracy gap?</h1>
-        <p class="hero-sub">Sarvam already publishes a large Hindi–Kashmiri accuracy gap. On 35 cached Extract pages, confidence barely moves. Blank pages score 0, so the meter can go to zero — it just does not on the scripts the same bench calls hard.</p>
-        <p class="pdf-link">The mechanism work is the other tab and <a href="paper/main.pdf">paper/main.pdf</a>. The PDF does not name this product.</p>
+        <div class="hero-kicker">Extract API · not in the preprint</div>
+        <h1>Does the API’s confidence move when published accuracy drops?</h1>
+        <p class="hero-sub">Sarvam Vision already publishes that some Indic languages are much harder for OCR than others. If Extract confidence were a useful review signal, it should fall on the languages the same bench calls hard. This tab asks whether it does. The PDF does not name this product; the mechanism work lives on the Paper tab.</p>
+        <p class="pdf-link"><a href="paper/main.pdf">Paper PDF</a> · <a href="docs/sarvam_vision_confidence.md">Extract write-up</a></p>
       </div>
       <aside class="hero-visual">
         <div class="gap-panel">
-          <div class="gap-panel-label">Published word accuracy vs Extract confidence</div>
-          <div class="gap-row">
-            <div class="gap-meta"><span class="g-name">Hindi accuracy</span><span class="g-val">95.91</span></div>
-            <div class="gap-track"><div class="gap-fill hi" style="--w:95.91%"></div></div>
-          </div>
-          <div class="gap-row">
-            <div class="gap-meta"><span class="g-name">Kashmiri accuracy</span><span class="g-val">55.93</span></div>
-            <div class="gap-track"><div class="gap-fill ka" style="--w:55.93%"></div></div>
-          </div>
-          <div class="gap-row">
-            <div class="gap-meta"><span class="g-name">Hindi confidence</span><span class="g-val">0.9997</span></div>
-            <div class="gap-track"><div class="gap-fill conf conf-hi" style="--w:99.97%"></div></div>
-          </div>
-          <div class="gap-row">
-            <div class="gap-meta"><span class="g-name">Kashmiri confidence</span><span class="g-val">0.9970</span></div>
-            <div class="gap-track"><div class="gap-fill conf conf-ka" style="--w:99.70%"></div></div>
-          </div>
-          <div class="gap-row">
-            <div class="gap-meta"><span class="g-name">Blank control</span><span class="g-val">0.0000</span></div>
-            <div class="gap-track"><div class="gap-fill blank" style="--w:2%"></div></div>
-          </div>
-          <p class="gap-footnote">Accuracy gap <strong>39.98 pp</strong>. Confidence delta <strong>0.0027</strong>.</p>
+          <div class="gap-panel-label">What would count as tracking the gap</div>
+          <p class="gap-footnote" style="border-top:none;padding-top:0;margin-top:0;">Accuracy can drop by tens of points while a confidence meter stays near one. Blank pages are the check that the meter is not stuck: they can score zero.</p>
         </div>
       </aside>
     </div>
   </div>
 </header>
 
-<section id="findings" class="mode-item paper-only" style="--paper-order:2; --walk-order:0">
+<section id="instrument" class="mode-item paper-only story" style="--paper-order:2; --walk-order:0">
   <div class="fig-rail">
-    <div class="fig-num paper-num">1</div>
     <div class="fig-body">
-      <div class="section-kicker">Results</div>
-      <h2 class="section-title">What the measurements show</h2>
-      <p class="lede">Numbers below follow <a href="paper/main.pdf">paper/main.pdf</a> and <a href="docs/paper_defensibility_stats.md">docs/paper_defensibility_stats.md</a>. Do not treat this page as a second table of record.</p>
+      <div class="section-kicker">The instrument</div>
+      <h2 class="section-title">Built from scratch so “does it read?” is answerable</h2>
+      <p class="lede">A production vision–language model has already seen Indic text. If it transcribes a page, you cannot tell whether the pixels did the work or a language prior did. So this project trains a small encoder–decoder with no Indic pretraining, then probes it.</p>
+      <p>About 19.6 million parameters, grapheme-cluster vocabulary of 367 symbols, 2,538 Hindi line crops, three independent seeds. Scoring applies encoding equivalence before residual error is counted. Evaluation images are GlotOCR renders, not photographs. The model was trained on the full manifest: 19 of 60 teacher-forced evaluation strings appear as training lines. That can only have <em>helped</em> position 0; it still fails there. Mid-sequence likelihood and the synthetic ranking result below are not held-out-string results.</p>
+      <div class="flow-box">
+        <p class="flow-caption">Pipeline</p>
+        <pre>GlotOCR pages → Tesseract / Surya / PaddleOCR (encoding-aware scores)
+             → renderer → train.py → probes → paper figures</pre>
+      </div>
+    </div>
+  </div>
+</section>
 
-      <div class="finding-callout">
-        <div class="fc-label">The model is not reading</div>
-        <p>Held-out grapheme CER is 0.985 on text-bearing Hindi and 0.949 on blank (t = 0.257, p = 0.822 after seed clustering). Confidence stays near ceiling on Hindi, blank, Ol Chiki, and Perso-Arabic.</p>
+<section id="headline" class="mode-item paper-only story" style="--paper-order:3; --walk-order:0">
+  <div class="fig-rail">
+    <div class="fig-body">
+      <div class="section-kicker">The headline</div>
+      <h2 class="section-title">The instrument does not read its held-out images, and the first generated token is where that shows</h2>
+      <div class="null-banner">
+        <p>Held-out grapheme character-error rate is 0.985 on text-bearing Hindi and 0.949 on blank white pages. After clustering by seed the difference is not significant (t = 0.257, p = 0.822). Confidence stays near ceiling on Hindi, blank, Ol Chiki, and Perso-Arabic. There is no reading ability to dissociate from confidence. Numbers follow <a href="paper/main.pdf">paper/main.pdf</a> and <a href="docs/paper_defensibility_stats.md">docs/paper_defensibility_stats.md</a>.</p>
       </div>
-      <div class="finding-callout">
-        <div class="fc-label">Failure is localised at position 0</div>
-        <p>Teacher-forced p(ground truth) at the first token is 2.2×10⁻¹¹ (text-bearing) and 6.3×10⁻¹¹ (blank) — 19.8 nats below a text-only n-gram. Median rank of the correct symbol among 367 candidates is 70.5. Self-generated max-softmax is still ≈0.90. Ground truth is never the argmax (0/180).</p>
-      </div>
+      <p>The failure is localised at generation position 0 — the first symbol, before any prefix the model wrote itself. Under teacher forcing, the geometric-mean probability of the correct first symbol is 2.2×10⁻¹¹ on text-bearing images and 6.3×10⁻¹¹ on blank: more than eight orders of magnitude below a text-only n-gram that never sees an image (19.8 nats). We do not compare this to a uniform vocabulary prior; the decoder is peaked, not uniform. The median rank of the correct symbol among 367 candidates is 70.5, with 35.0% of sequences ranking it below position 100. Ground truth is never the <span class="gloss" title="The symbol the model assigns the highest probability.">argmax</span> (0 of 180 sequences). Self-generated max-softmax confidence at that same step is still approximately 0.90.</p>
       <figure class="pub-fig">
         <img src="docs/figures/fig1_position_dissociation.png" alt="Position-resolved log p(GT): collapse at 0, n-gram-like mid sequence, second collapse past 40.">
-        <figcaption>Figure 1. Mid-sequence (positions 2–39) recovers to a 4- to 5-gram grapheme prior, identical with and without the image.</figcaption>
+        <figcaption>Figure 1. Teacher-forced log probability of the true symbol by position, with self-generated confidence underneath. Mid-sequence (positions 2–39) recovers toward a 4- to 5-gram grapheme prior, with and without the image.</figcaption>
       </figure>
-      <div class="finding-callout">
-        <div class="fc-label">Mid-sequence the decoder is a 5-gram</div>
-        <p>Pooled KL(model ‖ 5-gram) at positions 2–9 / 10–19 / 20–39 is 0.32 / 0.27 / 0.28 nats, with argmax agreement 93.5% / 91.2% / 90.7%. At 0, 1, and 40+ both KL and agreement collapse the other way. Three seeds agree. The exclusive “it is that language model” claim is supported.</p>
+    </div>
+  </div>
+</section>
+
+<section id="follow" class="mode-item paper-only story" style="--paper-order:4; --walk-order:0">
+  <div class="fig-rail">
+    <div class="fig-body">
+      <div class="section-kicker">Follow-up questions</div>
+      <h2 class="section-title">What the headline raises, and what we measured</h2>
+
+      <div class="follow">
+        <h3 class="story-q" style="margin-top:0;">If it is not reading, is the decoder just a grapheme language model?</h3>
+        <p>From position 2 to 39, teacher-forced log probability sits in the same band as a 4- to 5-gram. A distributional check, replicated on three seeds, supports treating that as more than a mean match. Pooled <span class="gloss" title="How different two probability distributions are; here, the model versus a text-only 5-gram.">KL divergence</span> (model versus 5-gram) at positions 2–9 / 10–19 / 20–39 is 0.32 / 0.27 / 0.28 nats, with argmax agreement 93.5% / 91.2% / 90.7%. At positions 0, 1, and 40+ both KL and agreement move the other way. We regard the exclusive claim as supported.</p>
+        <figure class="pub-fig">
+          <img src="docs/figures/fig7_ngram_kl.png" alt="KL and argmax agreement by position bucket versus a 5-gram.">
+          <figcaption>Working figure: KL(model ‖ 5-gram) and argmax agreement by position bucket (bars pooled, points are seeds). Not yet wired into the PDF.</figcaption>
+        </figure>
       </div>
-      <div class="finding-callout">
-        <div class="fc-label">Noise and scramble do not open a visual gap</div>
-        <p>Gaussian-noise and patch-scrambled images have whole-sequence mean log p(GT) −1.756 and −1.730, against −1.783 text-bearing and −1.751 blank. All four sit within 0.05 nats. The position-0 collapse repeats on noise (−23.7) and scrambled (−24.1). That is evidence for bypass over a rendering-domain story, not a proof that a visual representation never existed.</p>
+
+      <div class="follow">
+        <h3 class="story-q">Could this just be a rendering-domain mismatch, not visual bypass?</h3>
+        <p>We ran Gaussian-noise images and patch-scrambled real images — visual variation of any kind, not only blank versus text. Pooled whole-sequence mean log p(GT) is −1.756 on noise and −1.730 on scrambled, against −1.783 text-bearing and −1.751 blank: all four within 0.05 nats. Position 0 still collapses (−23.7 noise, −24.1 scrambled). Pure noise has no structure a domain-shift account would expect the model to treat differently from a familiar-but-shifted rendering. This is evidence for bypass over domain shift, not proof: an instrument that never learned to use images under any condition is consistent with both a total bypass failure and a domain-shift failure severe enough to leave no residual sensitivity to any visual input at all.</p>
+        <figure class="pub-fig">
+          <img src="docs/figures/fig6_noise_scrambled.png" alt="Four conditions of mean log p(GT) sitting in a tight band.">
+          <figcaption>Working figure: whole-sequence and position-0 log p(GT) for text-bearing, blank, noise, and scrambled. Not yet wired into the PDF.</figcaption>
+        </figure>
       </div>
-      <figure class="pub-fig">
-        <img src="docs/figures/fig2_ablation_kl.png" alt="Almost all ablation KL sits in the 8.2% of steps where the argmax flips.">
-        <figcaption>Figure 2. Zeroing the encoder flips 8.2% of argmaxes (mean KL 1.075 nats) but leaves agreeing steps at confidence 0.998.</figcaption>
-      </figure>
-      <div class="finding-callout">
-        <div class="fc-label">AUROC 0.838 is memorised-text only</div>
-        <p>On synthetic lines sampled from the training manifest, line accuracy is 18.3% and confidence ranks correctness at AUROC 0.838, while mean confidence is 0.994 (ECE ≈ 0.81). Every one of the 300 evaluation instances is in the training manifest. There is no held-out arm to split. On held-out images, accuracy is zero and the signal is useless for review.</p>
+
+      <div class="follow">
+        <h3 class="story-q">Does zeroing the encoder at least move the peak?</h3>
+        <p>Deleting encoder memory changes the output distribution (mean KL 1.075 nats; argmax flips at 8.2% of decoding steps) but leaves the peak near unity: 96.7% of the divergence sits at those flipped positions, while agreeing positions retain mean confidence 0.998. The scalar used as confidence is the part ablation does not move.</p>
+        <figure class="pub-fig">
+          <img src="docs/figures/fig2_ablation_kl.png" alt="Almost all ablation KL sits in the 8.2% of steps where the argmax flips.">
+          <figcaption>Figure 2. Shape versus peak: most of the KL from encoder ablation is in the minority of steps that flip.</figcaption>
+        </figure>
       </div>
+    </div>
+  </div>
+</section>
+
+<section id="regime" class="mode-item paper-only story" style="--paper-order:5; --walk-order:0">
+  <div class="fig-rail">
+    <div class="fig-body">
+      <div class="section-kicker">Where the signal does something</div>
+      <h2 class="section-title">Confidence can rank successes on memorised lines. It cannot be read as generalisation.</h2>
+      <p>On synthetic lines drawn entirely from the training manifest, the model attains 18.3% line accuracy. Confidence ranks correct versus incorrect transcriptions at <span class="gloss" title="How well a score ranks positives above negatives; 0.5 is chance, 1.0 is perfect ranking.">AUROC</span> 0.838, while remaining badly miscalibrated at mean confidence 0.994 (<span class="gloss" title="How far reported confidence is from actual accuracy, in probability points.">ECE</span> ≈ 0.81). On held-out images, accuracy is zero and the signal carries no usable correctness information.</p>
+      <p>All 300 Probe 5 evaluation instances (100 strings × 3 seeds) are sampled from the training manifest. There is no non-matching subset. The memorisation-versus-correctness split cannot be run on this evaluation set. The 0.838 figure is an in-training-manifest result, not evidence of generalisation. A confidence signal that ranks memorised successes highly may be tracking memorisation rather than correctness; the two hypotheses produce the same AUROC here by construction.</p>
       <figure class="pub-fig">
         <img src="docs/figures/fig3_confidence_distributions.png" alt="Confidence near ceiling on text-bearing, blank, and unseen scripts.">
         <figcaption>Figure 3. Held-out confidence means sit in a ~0.004-wide window.</figcaption>
       </figure>
       <figure class="pub-fig">
         <img src="docs/figures/fig4_regime_contrast.png" alt="AUROC on synthetic memorised lines versus held-out Hindi.">
-        <figcaption>Figure 4. Discrimination on training-manifest lines vs no usable signal on held-out images.</figcaption>
+        <figcaption>Figure 4. Ranking on training-manifest lines versus no usable signal on held-out images.</figcaption>
       </figure>
+      <p>Because visual dependence is concentrated at the start of the sequence, a confidence score averaged uniformly over generated tokens dilutes the one position that carries it.</p>
     </div>
   </div>
 </section>
 
-<section id="method" class="mode-item paper-only" style="--paper-order:3; --walk-order:0">
+<section id="open" class="mode-item paper-only story" style="--paper-order:6; --walk-order:0">
   <div class="fig-rail">
-    <div class="fig-num paper-num">2</div>
     <div class="fig-body">
-      <div class="section-kicker">Method</div>
-      <h2 class="section-title">A blank instrument, then probes</h2>
-      <p class="lede">≈19.6M-parameter encoder–decoder, grapheme-cluster vocabulary (|V|≈367), trained from scratch on 2,538 Hindi line crops. No Indic pretraining. Three independent seeds. Scoring applies encoding equivalence before residual error is counted.</p>
-      <div class="flow-box">
-        <p class="flow-caption">Pipeline</p>
-        <pre>GlotOCR pages → Tesseract / Surya / PaddleOCR (encoding-aware scores)
-             → renderer (natural / flattened / inverted)
-             → train.py → probes → paper figures</pre>
-      </div>
-      <p class="prose" style="margin-top:18px;max-width:66ch;color:var(--ink-soft);">The instrument was trained on the full manifest (19 of 60 teacher-forced eval strings appear as training lines). Position 0 still fails at floor; contamination can only have helped there. Mid-sequence likelihood and the synthetic AUROC are not held-out-string results.</p>
-    </div>
-  </div>
-</section>
-
-<section id="open" class="mode-item paper-only" style="--paper-order:4; --walk-order:0">
-  <div class="fig-rail">
-    <div class="fig-num paper-num">3</div>
-    <div class="fig-body">
-      <div class="section-kicker">What remains</div>
-      <h2 class="section-title">Two open items, not a laundry list</h2>
-      <div class="scope-grid">
-        <div class="scope-row">
-          <div class="scope-tag"><span class="stage">Need new data</span>AUROC</div>
-          <div class="scope-why">
-            <h4>Held-out synthetic lines</h4>
-            <p>The memorisation split cannot be run on the current Probe 5 set (non-match n=0). Testing whether AUROC tracks correctness vs memorisation needs lines whose text is withheld before training. No new GPU training required for the split itself — new renders, then a new eval.</p>
-          </div>
-        </div>
-        <div class="scope-row">
-          <div class="scope-tag"><span class="stage">Need a model</span>Control</div>
-          <div class="scope-why">
-            <h4>Positive control that actually reads</h4>
-            <p>Surya v0.22 has no exposed softmax. PaddleOCR’s Hindi rec head is CTC, not autoregressive — no teacher-forced p(gᵢ | g₍ᵢ, image). Both candidates failed for architecture, not for lack of trying.</p>
-          </div>
-        </div>
-      </div>
-      <p class="one-liner">Uniformly averaged token confidence dilutes the one position that carries visual dependence. Weight early tokens.</p>
+      <div class="section-kicker">What’s left</div>
+      <h2 class="section-title">A new held-out eval set, and a model that actually reads</h2>
+      <p>Testing whether AUROC tracks correctness rather than memorisation needs synthetic lines whose text is withheld before training. That is new rendered data, not a re-analysis of Probe 5 and not new GPU training for the split itself.</p>
+      <p>A positive control on a system that reads Devanagari remains open. Surya v0.22 has no exposed softmax. PaddleOCR’s Hindi recognition head is CTC, not autoregressive: there is no teacher-forced p(gᵢ | g₍ᵢ, image) to extract. Both candidates failed for architecture, not for lack of trying.</p>
       <div class="docs-list">
         <div class="doc-row primary"><span class="doc-name"><a href="paper/main.pdf">paper/main.pdf</a></span><span class="doc-desc">canonical preprint</span></div>
         <div class="doc-row"><span class="doc-name"><a href="docs/RESULTS.md">docs/RESULTS.md</a></span><span class="doc-desc">claim → jsonl map</span></div>
         <div class="doc-row"><span class="doc-name"><a href="BOOK.md">BOOK.md</a></span><span class="doc-desc">full project reference</span></div>
-        <div class="doc-row"><span class="doc-name"><a href="docs/sarvam_vision_confidence.md">Extract write-up</a></span><span class="doc-desc">other tab; not in the PDF</span></div>
       </div>
     </div>
   </div>
 </section>
 
-<section id="extract-numbers" class="mode-item walk-only" style="--walk-order:2; --paper-order:0">
+<section id="extract-numbers" class="mode-item walk-only story" style="--walk-order:2; --paper-order:0">
   <div class="fig-rail">
-    <div class="fig-num walk-num">01</div>
     <div class="fig-body">
-      <div class="section-kicker">Stage 5a</div>
-      <h2 class="section-title">Published accuracy drops 40 points. Extract confidence does not.</h2>
+      <div class="section-kicker">The measurement</div>
+      <h2 class="section-title">Published accuracy drops about 40 points. Extract confidence does not.</h2>
+      <p class="lede">On 35 cached Extract pages the Hindi–Kashmiri published word-accuracy gap is 39.98 percentage points; Extract confidence moves by 0.0027. Blank pages score 0.0000, so the channel can go to zero — it just does not on the scripts the same bench calls hard. Digitise does not expose this field; the probe uses Extract on purpose.</p>
       <table class="data">
-        <caption>Sarvam Indic OCR Bench word accuracy vs Extract-API confidence (35 cached pages; Digitise does not expose this field)</caption>
+        <caption>Sarvam Indic OCR Bench word accuracy versus Extract-API confidence</caption>
         <thead><tr><th>Language</th><th>Published accuracy</th><th>Extract confidence (n=10)</th></tr></thead>
         <tbody>
           <tr><td>Hindi</td><td>95.91</td><td>0.9997</td></tr>
@@ -1122,37 +1098,58 @@
           <tr><td>Blank</td><td>—</td><td>0.0000</td></tr>
         </tbody>
       </table>
-      <p class="prose" style="margin-top:16px;color:var(--ink-soft);">Write-up: <a href="docs/sarvam_vision_confidence.md">docs/sarvam_vision_confidence.md</a>. Rank-correlation transfer (Stage 5b) is not run.</p>
+      <div class="gap-panel" style="margin-top:28px;">
+        <div class="gap-panel-label">Same numbers as bars</div>
+        <div class="gap-row">
+          <div class="gap-meta"><span class="g-name">Hindi accuracy</span><span class="g-val">95.91</span></div>
+          <div class="gap-track"><div class="gap-fill hi" style="--w:95.91%"></div></div>
+        </div>
+        <div class="gap-row">
+          <div class="gap-meta"><span class="g-name">Kashmiri accuracy</span><span class="g-val">55.93</span></div>
+          <div class="gap-track"><div class="gap-fill ka" style="--w:55.93%"></div></div>
+        </div>
+        <div class="gap-row">
+          <div class="gap-meta"><span class="g-name">Hindi confidence</span><span class="g-val">0.9997</span></div>
+          <div class="gap-track"><div class="gap-fill conf conf-hi" style="--w:99.97%"></div></div>
+        </div>
+        <div class="gap-row">
+          <div class="gap-meta"><span class="g-name">Kashmiri confidence</span><span class="g-val">0.9970</span></div>
+          <div class="gap-track"><div class="gap-fill conf conf-ka" style="--w:99.70%"></div></div>
+        </div>
+        <div class="gap-row">
+          <div class="gap-meta"><span class="g-name">Blank control</span><span class="g-val">0.0000</span></div>
+          <div class="gap-track"><div class="gap-fill blank" style="--w:2%"></div></div>
+        </div>
+      </div>
+      <p class="prose" style="margin-top:16px;color:var(--ink-soft);">Write-up: <a href="docs/sarvam_vision_confidence.md">docs/sarvam_vision_confidence.md</a>. Stage 5b rank-correlation transfer is not run.</p>
     </div>
   </div>
 </section>
 
-<section id="extract-why" class="mode-item walk-only" style="--walk-order:3; --paper-order:0">
+<section id="extract-why" class="mode-item walk-only story" style="--walk-order:3; --paper-order:0">
   <div class="fig-rail">
-    <div class="fig-num walk-num">02</div>
     <div class="fig-body">
-      <div class="section-kicker">Why an owned model</div>
+      <div class="section-kicker">Why we also own a model</div>
       <h2 class="section-title">A closed API cannot say why confidence stayed high</h2>
-      <p class="lede">We trained a ~19.6M reader from scratch (no Indic pretraining) so we can blank the page, zero the encoder, and teacher-force the true first grapheme. That instrument <em>does not read</em> its held-out images. That is what makes the position-0 test interpretable: there is no hidden reading skill, only a language prior that is still ~0.90 confident while p(correct) is ~10⁻¹¹.</p>
+      <p class="lede">The Extract numbers above are a product question. To ask <em>why</em> a decoder can be sure without reading, we trained a ~19.6M reader from scratch (no Indic pretraining) so we can blank the page, zero the encoder, and teacher-force the true first grapheme.</p>
+      <p>That instrument does not read its held-out images. That is what makes the first-token test interpretable: there is no hidden reading skill, only a language prior that is still about 0.90 confident while the probability of the correct symbol is about 10⁻¹¹. Switch to the Paper tab for the full position-resolved result, including noise and scramble, n-gram KL, and the memorisation finding. The PDF does not name this product.</p>
       <div class="signature" id="probe3-demo">
         <div class="signature-head">
-          <p class="signature-label">Synthetic Probe 3 · mean confidence</p>
-          <span class="tag-illustrative">Toy · not held-out</span>
+          <p class="signature-label">Interactive check · synthetic Probe 3</p>
         </div>
-        <p class="signature-explain">Click a condition. If vision mattered, blank and noise should drop. On this instrument they barely do.</p>
+        <p class="signature-explain">These three tiles replay mean confidence on <em>synthetic</em> natural lines, not held-out pages. If vision mattered, blank and noise should drop. On this instrument they barely do. Held-out character-error rate is still about 1.</p>
         <div class="glyph-row" id="glyphRow">
           <button type="button" class="glyph-tile invite" data-cond="real" aria-label="Text-bearing crop"><span class="glyph"></span><span class="glyph-caption">Text</span></button>
           <button type="button" class="glyph-tile invite" data-cond="blank" aria-label="Blank"><span class="glyph blank"></span><span class="glyph-caption">Blank</span></button>
           <button type="button" class="glyph-tile invite" data-cond="noise" aria-label="Noise"><span class="glyph noise"></span><span class="glyph-caption">Noise</span></button>
         </div>
         <div class="readout is-idle" id="readout">
-          <span class="cond">pick a tile</span>
+          <span class="cond">Choose a condition</span>
           <div class="conf-row"><span class="conf-num">—</span><span class="conf-unit">mean confidence</span></div>
           <div class="conf-meter"><div class="conf-meter-fill" id="confMeter"></div></div>
-          <span class="note">Synthetic natural lines (Probe 3), not held-out Probe 5b.</span>
+          <span class="note">Synthetic natural lines (Probe 3). Not the held-out Probe 5b set.</span>
         </div>
       </div>
-      <p class="one-liner">Switch to the Paper tab for the full position-resolved result, including noise/scramble, n-gram KL, and the memorisation finding.</p>
     </div>
   </div>
 </section>
@@ -1164,7 +1161,7 @@
     <div>
       <div class="fmark">vlm-ocr-eval</div>
       <p class="fnote paper-only"><em>Reading Without Looking</em> · <a href="paper/main.pdf">paper/main.pdf</a>. This URL also has an Extract-API tab; the preprint does not name that product. Site numbers follow the PDF and <code>docs/paper_defensibility_stats.md</code>.</p>
-      <p class="fnote walk-only">Extract confidence audit (Hindi–Kashmiri accuracy 39.98 pp vs confidence Δ 0.0027). Mechanism: Paper tab and PDF. The PDF does not name Sarvam.</p>
+      <p class="fnote walk-only">Extract confidence audit. Mechanism: Paper tab and PDF. The PDF does not name Sarvam.</p>
     </div>
     <div class="mono" style="font-size:0.8rem;color:var(--ink-soft);">GitHub Pages · index.html</div>
   </div>
@@ -1173,7 +1170,7 @@
 <script>
   (function(){
     const data = {
-      real:  { conf: '0.9940', pct: 99.40, flat:false, label:'Text-bearing · Probe 3 synthetic', note:'Near ceiling — as you would hope if it were reading. Held-out CER is still ≈1.' },
+      real:  { conf: '0.9940', pct: 99.40, flat:false, label:'Text-bearing crop · Probe 3 synthetic', note:'Near ceiling — as you would hope if it were reading. Held-out character-error rate is still about 1.' },
       blank: { conf: '0.9899', pct: 98.99, flat:true,  label:'Blank · Probe 3 synthetic', note:'No glyphs. Confidence barely moves.' },
       noise: { conf: '0.9904', pct: 99.04, flat:true,  label:'Matched noise · Probe 3 synthetic', note:'Texture without letters. Still near the text-bearing meter.' }
     };

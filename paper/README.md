@@ -41,6 +41,9 @@ Working PNGs (titles, grid) go to `docs/figures/` only. Figure 5 is working-only
 | `figures/fig3_confidence_distributions.pdf` | yes | |
 | `figures/fig4_regime_contrast.pdf` | yes | |
 | Fig 5 heatmap | no | `docs/figures/fig5_output_degeneracy.png` only |
+| `figures/fig6_noise_scrambled.pdf` | **no** (standalone; wire in tex) | Four-condition log p(GT); not an overlay on Fig 1 |
+| `figures/fig7_ngram_kl.pdf` | **no** (standalone; wire in tex) | KL + argmax agreement by bucket |
+| `figA_pos0_rank` | not generated | Needs `probe_pos0_null_*.jsonl`; ranks not in GT-likelihood jsonl |
 
 ## Corrections already in `main.tex`
 
@@ -56,7 +59,7 @@ These are in the committed source (do not re-apply as if missing):
 ## Still outstanding
 
 - **Positive control** (open-weights Devanagari-competent model) still needs GPU; stays future work.
-- **Mismatch TF, cross-attn norms, noise/scrambled** probes are authored; checkpoints are on Colab, not this laptop (`DECISIONS.md` #63).
+- **Mismatch TF and cross-attn norms** are authored; checkpoints are on Colab, not this laptop (`DECISIONS.md` #63). Noise/scrambled jsonl is in-tree (`fig6_noise_scrambled.pdf`).
 - **Bibliography:** some entries are still TODO/UNVERIFIED in `refs.bib` if Overleaf overwrote the filled versions; restore from `DECISIONS.md` #67 before camera-ready.
 - **Section 3 hyperparameters:** the short Instrument section may still omit layer/width/steps; the trained values are in `DECISIONS.md` #65–#66.
 

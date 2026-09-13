@@ -24,6 +24,15 @@ Figures produced:
     on synthetic natural, and flat discrimination on real scans (AUROC 0.570).
   - Figure 5 (fig5_output_degeneracy.png): 60x60 pairwise grapheme edit-distance
     heatmaps showing output degeneracy and blank mode collapse (working only).
+  - fig6_noise_scrambled.{pdf,png}: four-condition teacher-forced log p(GT)
+    (text-bearing, blank, noise, scrambled). Standalone — Figure 1 is already
+    two-series plus n-gram references; overlaying four more series would
+    hide the position-0 collapse.
+  - fig7_ngram_kl.{pdf,png}: two-panel KL(model || 5-gram) and argmax
+    agreement by position bucket, three seeds.
+  - figA_pos0_rank.{pdf,png}: appendix histogram of GT rank at position 0,
+    only if probe_pos0_null jsonl is present (per-sequence ranks are not in
+    the GT-likelihood files).
 
 Entry point:
   src/analysis/make_paper_figures.py
@@ -88,6 +97,8 @@ COLOR_REF_UNIFORM = "#555555"
 COLOR_REF_TRIGRAM = "#222222"
 COLOR_REF_4GRAM = "#7f7f7f"
 COLOR_REF_5GRAM = "#8c564b"
+COLOR_NOISE = "#e07b00"     # ochre, distinct from crimson blank
+COLOR_SCRAM = "#6a3d9a"     # purple, distinct from steel blue real
 
 
 # ==============================================================================
@@ -958,6 +969,222 @@ def make_fig5_output_degeneracy(
 
 
 # ==============================================================================
+# FIGURE 6: Noise / scrambled vs text-bearing / blank (standalone)
+# ==============================================================================
+
+_FOUR_COND = (
+    ("real", "text-bearing", COLOR_REAL, "o"),
+    ("blank", "blank", COLOR_BLANK, "s"),
+    ("noise", "Gaussian noise", COLOR_NOISE, "D"),
+    ("scrambled", "patch-scrambled", COLOR_SCRAM, "^"),
+)
+
+
+def _four_condition_logp(results_root: Path, seeds: list[int]) -> dict:
+    """
+    Per-seed whole-sequence mean log p(GT) and position-0 mean, from the
+    extra jsonl (real+blank+noise+scrambled on the same 60 images).
+
+    Why extra rather than mixing original GT-likelihood with extras: the
+    four-way claim in the paper is a same-run comparison. Mixing files
+    would silently pair different sessions.
+    """
+    out = {c: {"seq": [], "pos0": []} for c, *_ in _FOUR_COND}
+    for s in seeds:
+        path = results_root / f"probe_gt_likelihood_extra_hindi_natural_seed{s}.jsonl"
+        if not path.exists():
+            raise FileNotFoundError(path)
+        acc = {c: {"seq": [], "pos0": []} for c, *_ in _FOUR_COND}
+        for r in load_jsonl(path):
+            c = r.get("condition")
+            if c not in acc:
+                continue
+            acc[c]["seq"].append(float(r["mean_log_p_gt"]))
+            steps = r.get("step_log_p_gt") or []
+            if steps:
+                acc[c]["pos0"].append(float(steps[0]))
+        for c in acc:
+            out[c]["seq"].append(float(np.mean(acc[c]["seq"])))
+            out[c]["pos0"].append(float(np.mean(acc[c]["pos0"])))
+    return out
+
+
+def make_fig6_noise_scrambled(
+    results_root: Path,
+    seeds: list[int],
+    mode: Literal["paper", "working"] = "paper",
+) -> plt.Figure:
+    """
+    Compact four-condition comparison: whole-sequence mean log p(GT) and
+    the position-0 collapse.
+
+    Chosen instead of adding series to Figure 1 because Figure 1 already
+    carries two conditions, four LM references, a 2–39 inset, and a 40+
+    marker. Four extra overlays would not show that all four means sit
+    within 0.05 nats.
+    """
+    data = _four_condition_logp(results_root, seeds)
+    fig, (ax1, ax2) = plt.subplots(
+        1, 2, figsize=(5.5, 2.35),
+        gridspec_kw={"wspace": 0.32},
+    )
+    xs = np.arange(len(_FOUR_COND))
+    for ax, key, ylabel in (
+        (ax1, "seq", "Mean $\\log p(\\mathrm{GT})$"),
+        (ax2, "pos0", "Position-0 $\\log p(\\mathrm{GT})$"),
+    ):
+        pooled = [float(np.mean(data[c][key])) for c, *_ in _FOUR_COND]
+        ax.scatter(
+            xs, pooled, s=28, zorder=3, c=[col for _, _, col, _ in _FOUR_COND],
+            marker="o", edgecolors="black", linewidths=0.4,
+        )
+        for i, (c, _lab, col, mk) in enumerate(_FOUR_COND):
+            jitter = (np.arange(len(seeds)) - (len(seeds) - 1) / 2.0) * 0.08
+            ax.scatter(
+                np.full(len(seeds), i) + jitter,
+                data[c][key],
+                marker=mk, s=16, color=col, alpha=0.85, zorder=4,
+                edgecolors="black", linewidths=0.25,
+            )
+        ax.set_xticks(xs)
+        ax.set_xticklabels([lab for _, lab, *_ in _FOUR_COND], rotation=18, ha="right")
+        ax.set_ylabel(ylabel)
+        ax.axhline(
+            float(np.mean(data["real"][key])),
+            color=COLOR_REAL, linestyle=":", linewidth=0.7, alpha=0.6,
+        )
+    ax1.set_ylim(-1.95, -1.45)
+    ax2.set_ylim(-28, 0)
+    if mode == "working":
+        ax1.set_title("Whole-sequence mean (per-seed points)", fontsize=8)
+        ax2.set_title("Position 0 (same images)", fontsize=8)
+        fig.suptitle(
+            "Noise / scramble sit with text-bearing and blank",
+            fontsize=9, y=1.04,
+        )
+        ax1.grid(True, axis="y", alpha=0.25)
+        ax2.grid(True, axis="y", alpha=0.25)
+    return fig
+
+
+def make_fig7_ngram_kl(
+    results_root: Path,
+    seeds: list[int],
+    mode: Literal["paper", "working"] = "paper",
+) -> plt.Figure:
+    """
+    Two-panel: mean KL(model || 5-gram) and argmax agreement by Table-6
+    position buckets. Per-seed points over pooled bars.
+    """
+    buckets = [
+        ("0", 0, 0),
+        ("1", 1, 1),
+        ("2–9", 2, 9),
+        ("10–19", 10, 19),
+        ("20–39", 20, 39),
+        ("40+", 40, 10**9),
+    ]
+    seed_kl = {s: {b[0]: [] for b in buckets} for s in seeds}
+    seed_ag = {s: {b[0]: [] for b in buckets} for s in seeds}
+    for s in seeds:
+        path = results_root / f"probe_ngram_kl_hindi_natural_seed{s}.jsonl"
+        for r in load_jsonl(path):
+            cond = r.get("condition")
+            if cond is not None and cond != "real":
+                continue
+            kl = r.get("step_kl_m_5gram") or []
+            ag = r.get("step_argmax_agree") or []
+            for i, (kli, agi) in enumerate(zip(kl, ag)):
+                for name, lo, hi in buckets:
+                    if lo <= i <= hi:
+                        seed_kl[s][name].append(float(kli))
+                        seed_ag[s][name].append(1.0 if agi else 0.0)
+                        break
+    names = [b[0] for b in buckets]
+    xs = np.arange(len(names))
+    fig, (ax1, ax2) = plt.subplots(
+        1, 2, figsize=(5.5, 2.35),
+        gridspec_kw={"wspace": 0.30},
+    )
+    pooled_kl, pooled_ag = [], []
+    per_kl = np.full((len(seeds), len(names)), np.nan)
+    per_ag = np.full((len(seeds), len(names)), np.nan)
+    for j, name in enumerate(names):
+        all_kl, all_ag = [], []
+        for i, s in enumerate(seeds):
+            if seed_kl[s][name]:
+                per_kl[i, j] = float(np.mean(seed_kl[s][name]))
+                per_ag[i, j] = float(np.mean(seed_ag[s][name]))
+                all_kl.extend(seed_kl[s][name])
+                all_ag.extend(seed_ag[s][name])
+        pooled_kl.append(float(np.mean(all_kl)) if all_kl else np.nan)
+        pooled_ag.append(float(np.mean(all_ag)) if all_ag else np.nan)
+
+    ax1.bar(xs, pooled_kl, width=0.62, color=COLOR_REAL, edgecolor="black", linewidth=0.4)
+    for i, s in enumerate(seeds):
+        jitter = (i - (len(seeds) - 1) / 2.0) * 0.12
+        ax1.scatter(xs + jitter, per_kl[i], s=14, color="black", zorder=3)
+    ax1.set_ylabel("Mean KL(model $\\|$ 5-gram)")
+    ax1.set_xticks(xs)
+    ax1.set_xticklabels(names)
+    ax1.set_xlabel("Position bucket")
+
+    ax2.bar(xs, pooled_ag, width=0.62, color="#cccccc", edgecolor="black", linewidth=0.4, hatch="//")
+    for i, s in enumerate(seeds):
+        jitter = (i - (len(seeds) - 1) / 2.0) * 0.12
+        ax2.scatter(xs + jitter, per_ag[i], s=14, color="black", zorder=3)
+    ax2.set_ylabel("Argmax agreement")
+    ax2.set_ylim(0, 1.05)
+    ax2.set_xticks(xs)
+    ax2.set_xticklabels(names)
+    ax2.set_xlabel("Position bucket")
+
+    if mode == "working":
+        ax1.set_title("KL vs 5-gram (bars = pooled, points = seeds)", fontsize=7.5)
+        ax2.set_title("Same token as 5-gram?", fontsize=7.5)
+        ax1.grid(True, axis="y", alpha=0.25)
+        ax2.grid(True, axis="y", alpha=0.25)
+    return fig
+
+
+def make_figA_pos0_rank(
+    results_root: Path,
+    seeds: list[int],
+    mode: Literal["paper", "working"] = "paper",
+) -> plt.Figure | None:
+    """
+    Histogram of GT rank at position 0. Needs probe_pos0_null jsonl
+    (gt_rank per sequence). Committed GT-likelihood files store only
+    scalar p(GT), which cannot recover rank among 367 candidates.
+    """
+    ranks: list[float] = []
+    missing = []
+    for s in seeds:
+        path = results_root / f"probe_pos0_null_hindi_natural_seed{s}.jsonl"
+        if not path.exists():
+            missing.append(str(path.name))
+            continue
+        for r in load_jsonl(path):
+            if r.get("gt_rank") is None:
+                continue
+            ranks.append(float(r["gt_rank"]))
+    if missing or not ranks:
+        return None
+    fig, ax = plt.subplots(figsize=(5.5, 2.2))
+    ax.hist(ranks, bins=np.arange(1, 368, 8), color=COLOR_REAL, edgecolor="black", linewidth=0.3)
+    med = float(np.median(ranks))
+    ax.axvline(med, color=COLOR_BLANK, linestyle="--", linewidth=1.2, label=f"median {med:.1f}")
+    ax.set_xlabel("Rank of ground-truth symbol at position 0 (1 = highest $p$)")
+    ax.set_ylabel("Sequences")
+    ax.set_xlim(1, 367)
+    ax.legend(frameon=False, loc="upper right")
+    if mode == "working":
+        ax.set_title(f"Position-0 GT rank, n={len(ranks)}", fontsize=8)
+        ax.grid(True, axis="y", alpha=0.25)
+    return fig
+
+
+# ==============================================================================
 # Main Orchestrator
 # ==============================================================================
 
@@ -1082,6 +1309,50 @@ def main() -> None:
     fig5.savefig(fig5_png_path, dpi=150)
     plt.close(fig5)
     print(f"  -> Wrote {fig5_png_path}")
+
+    print("Generating Figure 6: Noise / scrambled four-condition...")
+    fig6_pub = make_fig6_noise_scrambled(args.results_root, args.seeds, mode="paper")
+    fig6_pdf = args.paper_dir / "fig6_noise_scrambled.pdf"
+    fig6_pub.savefig(fig6_pdf)
+    plt.close(fig6_pub)
+    print(f"  -> Wrote {fig6_pdf}")
+    fig6_work = make_fig6_noise_scrambled(args.results_root, args.seeds, mode="working")
+    fig6_png = args.out_dir / "fig6_noise_scrambled.png"
+    fig6_work.savefig(fig6_png, dpi=150)
+    plt.close(fig6_work)
+    print(f"  -> Wrote {fig6_png}")
+
+    print("Generating Figure 7: n-gram KL / argmax agreement...")
+    fig7_pub = make_fig7_ngram_kl(args.results_root, args.seeds, mode="paper")
+    fig7_pdf = args.paper_dir / "fig7_ngram_kl.pdf"
+    fig7_pub.savefig(fig7_pdf)
+    plt.close(fig7_pub)
+    print(f"  -> Wrote {fig7_pdf}")
+    fig7_work = make_fig7_ngram_kl(args.results_root, args.seeds, mode="working")
+    fig7_png = args.out_dir / "fig7_ngram_kl.png"
+    fig7_work.savefig(fig7_png, dpi=150)
+    plt.close(fig7_work)
+    print(f"  -> Wrote {fig7_png}")
+
+    print("Generating appendix Figure A: position-0 GT rank histogram...")
+    figA = make_figA_pos0_rank(args.results_root, args.seeds, mode="paper")
+    if figA is None:
+        print(
+            "  -> SKIPPED: probe_pos0_null_hindi_natural_seed*.jsonl not in "
+            "results-root. Per-sequence gt_rank is not stored in "
+            "probe_gt_likelihood jsonl, so a histogram cannot be drawn from "
+            "committed files without inventing ranks."
+        )
+    else:
+        figA_pdf = args.paper_dir / "figA_pos0_rank.pdf"
+        figA.savefig(figA_pdf)
+        plt.close(figA)
+        print(f"  -> Wrote {figA_pdf}")
+        figA_w = make_figA_pos0_rank(args.results_root, args.seeds, mode="working")
+        figA_png = args.out_dir / "figA_pos0_rank.png"
+        figA_w.savefig(figA_png, dpi=150)
+        plt.close(figA_w)
+        print(f"  -> Wrote {figA_png}")
 
     print("\nAll paper figures generated successfully!")
 

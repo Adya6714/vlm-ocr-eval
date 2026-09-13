@@ -2728,6 +2728,36 @@ the uniform 1/367 baseline is in
 Code: `src/probes/probe_gt_likelihood.py`;
 `docs/gt_likelihood_analysis.md`.
 
+### Noise and patch-scrambled input — bypass versus domain shift
+
+Blank versus text-bearing can be dismissed as “the eval renderer is
+just too far from training.” Gaussian noise and patch-scrambled real
+images test whether the model responds to visual variation of any
+kind. Pooled whole-sequence mean log *p*(GT): noise **−1.756**,
+scrambled **−1.730**, against text-bearing **−1.783** and blank
+**−1.751** — all four within 0.05 nats. Position 0 still collapses
+(noise **−23.7**, scrambled **−24.1**). Pure noise has no structure a
+domain-shift account would expect the model to process differently
+from a familiar-but-shifted rendering. That is **evidence for bypass
+over domain shift, not proof** that a visual representation never
+existed: an instrument that never learned to use images under any
+condition is consistent with both a total bypass and a domain-shift
+failure with no residual visual sensitivity. Data:
+`probe_gt_likelihood_extra_hindi_natural_seed{N}.jsonl`;
+`docs/tier0d_noise_scrambled.md`. Figure files (not yet in the PDF):
+`paper/figures/fig6_noise_scrambled.pdf`.
+
+### Probe 5 AUROC is in-training-manifest only (split resolved, empty)
+
+Section 9 / Probe 5’s AUROC **0.838** is **not** an open question
+about held-out text. All 300 evaluation instances (100 strings × 3
+seeds) are drawn from `hindi_natural.jsonl`. The non-matching subset
+is n=0, so the memorisation-versus-correctness split **cannot be run**
+on this evaluation set. The figure is an in-training-manifest result,
+not evidence of generalisation. Details:
+`docs/memorisation_split.md`. Future work is a new eval set withheld
+before training, not a rerun of this probe.
+
 ### Offline defensibility battery and figures
 
 No new GPU passes: `src/analysis/paper_defensibility_stats.py` writes
@@ -3272,12 +3302,15 @@ Blank and matched-noise are good baselines. A sharper one is
 pixel-identical, permute their spatial arrangement, then feed it to
 the encoder. That destroys global structure while preserving local
 texture statistics exactly — stricter than noise, which has no texture
-at all. If confidence survives patch-shuffling too, the finding is
+at all. If likelihood survives patch-shuffling too, the finding is
 more specific: not just “isn’t reading,” but “isn’t even using local
-stroke shape, only global image statistics.”
+stroke shape.”
 
-**Still open as a run.** `probe_gt_likelihood.py --extra-conditions noise
-scrambled` is scaffolded; blocked on local checkpoints.
+**Now run.** `probe_gt_likelihood.py --extra-conditions noise scrambled`
+on three seeds (`docs/tier0d_noise_scrambled.md`; numbers in
+`paper/main.tex` and the Chapter 7 subsection above). Patch-shuffle
+here is the extra-condition scramble, not a separate Probe 3
+confidence tile.
 
 ### 4. Stop reporting one seed where Decision #14 already required three
 
