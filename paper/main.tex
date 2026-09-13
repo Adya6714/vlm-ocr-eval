@@ -348,6 +348,18 @@ shift, though we note it is evidence, not proof: an instrument that never learne
 under any condition is consistent with both a total bypass failure and a domain-shift failure
 severe enough to leave no residual sensitivity to any visual input at all.
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/fig6_noise_scrambled.pdf}
+\caption{Text-bearing, blank, Gaussian-noise, and patch-scrambled input compared. \textbf{Left:}
+whole-sequence mean $\log p(\mathrm{GT})$, per-seed points with the pooled mean (dashed).
+\textbf{Right:} $\log p(\mathrm{GT})$ at position 0 specifically, same layout. All four
+conditions cluster tightly on both measures; noise and patch-scrambled input are
+indistinguishable from text-bearing and blank rather than falling between them, which is the
+pattern a residual, domain-specific visual competence would predict and does not appear here.}
+\label{fig:noisescrambled}
+\end{figure}
+
 We also state the training budget plainly, because it bears on this and a reader will reach it
 in Appendix~\ref{app:config} otherwise: 2{,}538 rendered line crops, a single unrecorded font, no
 augmentation, 5{,}000 steps at a constant learning rate, and the final checkpoint taken without
@@ -779,6 +791,17 @@ rises sharply (4.98, 1.28 and 1.92 nats pooled) and argmax agreement collapses (
 61.5\%). The two measures move together exactly where the position profile changes shape,
 replicated at every seed, which is what a genuine 4-to-5-gram account predicts and a
 coincidental mean-matching would not. We regard the exclusive claim as supported.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/fig7_ngram_kl.pdf}
+\caption{Per-position-bucket $\mathrm{KL}(\text{model} \,\|\, \text{5-gram})$ (left) and argmax
+agreement rate between the model and the 5-gram reference (right), pooled bars with per-seed
+points overlaid. Both measures move together: low KL and high agreement in the
+recovered mid-sequence region, both collapsing sharply at positions 0, 1, and 40+ --- exactly
+where the position profile itself changes shape.}
+\label{fig:ngramkl}
+\end{figure}
 
 \paragraph{5. Outside that band the model is far worse than a text-only baseline.} The
 position-matched view makes the shape of the failure precise, and it is not the shape a
