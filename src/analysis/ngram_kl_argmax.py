@@ -30,13 +30,13 @@ _ROOT = Path(__file__).resolve().parents[2]
 if str(_ANALYSIS) not in sys.path:
     sys.path.insert(0, str(_ANALYSIS))
 
-from paper_defensibility_stats import load_jsonl  # noqa: E402
 from position_matched_ngrams import (  # noqa: E402
     ALPHA,
     BOS,
     BUCKETS,
     EOS,
     graphemes,
+    load_jsonl,
 )
 
 PROBE = "data/probe_results/probe_ngram_kl_hindi_natural_seed{}.jsonl"

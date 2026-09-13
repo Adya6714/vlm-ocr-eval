@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import json
 import math
-import sys
 from collections import Counter
 from pathlib import Path
 
@@ -26,11 +25,26 @@ import numpy as np
 import regex
 
 _ROOT = Path(__file__).resolve().parents[2]
-_ANALYSIS = Path(__file__).resolve().parent
-if str(_ANALYSIS) not in sys.path:
-    sys.path.insert(0, str(_ANALYSIS))
 
-from paper_defensibility_stats import load_jsonl  # noqa: E402
+
+def load_jsonl(path: Path) -> list[dict]:
+    """
+    Jsonl or a one-object file with a `records` list.
+
+    Local copy so Step 4a/4b never import paper_defensibility_stats
+    (that module pulls aksharamukha via transliteration_equivalence).
+    The Colab probe path does not install aksharamukha.
+    """
+    text = path.read_text(encoding="utf-8")
+    try:
+        rows = [json.loads(l) for l in text.splitlines() if l.strip()]
+        if rows and isinstance(rows[0], dict) and "records" not in rows[0]:
+            return rows
+    except json.JSONDecodeError:
+        pass
+    obj = json.loads(text)
+    return obj["records"] if isinstance(obj, dict) and "records" in obj else [obj]
+
 
 BOS, EOS = "<BOS>", "<EOS>"
 BUCKETS = [
