@@ -1,0 +1,7 @@
+{
+  "model_id": "ds4sd/SmolDocling-256M-preview",
+  "n_lines": 2538,
+  "max_steps": 100,
+  "lora_rank": 16
+}
+

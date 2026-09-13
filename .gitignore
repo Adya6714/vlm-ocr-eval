@@ -40,6 +40,11 @@ data/manifests/*.progress.json
 *.zip
 _local_archives/
 
+# Local demo adapter exports (large, not commit-worthy). These should be
+# copied into `checkpoints/demo/` (gitignored) for use, or zipped and
+# stored under `_local_archives/` for transport.
+Demo Adapter/
+
 # Checkpoints and probe smoke artifacts
 checkpoints/
 /tmp/
