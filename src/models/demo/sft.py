@@ -57,6 +57,16 @@ class LineCropDataset(Dataset):
             if not cand.exists():
                 cand = self.data_root.parent / path
             path = cand
+        if not path.exists():
+            raise FileNotFoundError(
+                f"missing line crop: {path}\n\n"
+                "This repo commits manifests under data/manifests/, but the rendered crop PNGs under\n"
+                "data/cache/line_crops/ are gitignored and must be copied from Drive or regenerated.\n\n"
+                "Fix (CPU, resumable):\n"
+                "  PYTHONPATH=src python src/data_pipeline/ensure_line_crops.py \\\n"
+                "    --script hindi --manifest data/manifests/hindi_natural.jsonl \\\n"
+                f"    --data-root {self.data_root}\n"
+            )
         image = Image.open(path).convert("RGB")
         return {"image": image, "text": row["text"], "image_path": str(path)}
 
@@ -85,6 +95,24 @@ def train(args) -> None:
     ds = LineCropDataset(Path(args.manifest), Path(args.data_root))
     if len(ds) == 0:
         raise SystemExit(f"empty manifest {args.manifest}")
+    # Fast fail with an actionable message: the most common demo SFT crash is that
+    # manifests were copied but `data/cache/line_crops/` was not.
+    missing = []
+    for i in range(min(25, len(ds))):
+        try:
+            _ = ds[i]
+        except FileNotFoundError as e:
+            missing.append(str(e).splitlines()[0])
+            if len(missing) >= 5:
+                break
+    if missing:
+        raise SystemExit(
+            "[sft] missing line_crops referenced by the manifest. Example missing files:\n- "
+            + "\n- ".join(missing)
+            + "\n\nRegenerate (CPU, resumable):\n"
+            + f"  PYTHONPATH=src python src/data_pipeline/ensure_line_crops.py --script hindi --manifest {args.manifest} --data-root {args.data_root}\n"
+            + "\nOr copy `data/cache/line_crops/` from Drive into the repo before running SFT.\n"
+        )
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr)
     meta = {
         "model_id": args.model_id,

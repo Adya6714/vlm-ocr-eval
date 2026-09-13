@@ -138,6 +138,30 @@ ckpt_src = find_checkpoint_dir()
 CKPT = copy_checkpoints(ckpt_src, REPO / "checkpoints")
 os.environ["OCR_DATA_ROOT"] = str(REPO / "data")
 os.environ["INSTRUMENT_CKPT"] = str(CKPT)
+
+# Also sync cached line crops if they already exist on Drive. Manifests are
+# committed, but `data/cache/line_crops/` is gitignored and must be present
+# for demo SFT and any training that reads line crops directly.
+import json, shutil
+
+drive_line_crops = Path("/content/drive/MyDrive/vlm-ocr-eval/data/cache/line_crops")
+local_line_crops = REPO / "data" / "cache" / "line_crops"
+if drive_line_crops.exists():
+    print("[drive] found line_crops:", drive_line_crops)
+    local_line_crops.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(drive_line_crops, local_line_crops, dirs_exist_ok=True)
+    print("[sync] copied line_crops to", local_line_crops)
+else:
+    print("[drive] no line_crops found on Drive; will regenerate if needed.")
+
+# Spot-check that a few manifest rows resolve to real files (do not assume).
+man = REPO / "data" / "manifests" / "hindi_natural.jsonl"
+if man.exists():
+    rows = [json.loads(l) for l in man.read_text(encoding="utf-8").splitlines() if l.strip()]
+    print("[manifest] hindi_natural rows:", len(rows))
+    for idx in (0, 1, 2, 100, 2000):
+        p = REPO / rows[idx]["image_path"]
+        print(f"[manifest] {idx:4d} exists={p.exists()} path={p}")
 print("[ok] checkpoints ready at", CKPT)
 print("Continue to Cell 3.")
 ''')
@@ -165,7 +189,16 @@ try:
             "--out", str(out),
         ]
         print("[run]", " ".join(cmd))
-        subprocess.check_call(cmd, env={**os.environ, "PYTHONPATH": str(REPO / "src")})
+        r = subprocess.run(
+            cmd,
+            env={**os.environ, "PYTHONPATH": str(REPO / "src")},
+            capture_output=True,
+            text=True,
+        )
+        print("[stdout]"); print(r.stdout or "(empty)")
+        print("[stderr]"); print(r.stderr or "(empty)")
+        if r.returncode != 0:
+            raise RuntimeError(f"command failed exit={r.returncode}")
     sys.path.insert(0, str(REPO / "src"))
     from colab.notebook_support import write_tier0a
     write_tier0a(REPO)
@@ -202,7 +235,16 @@ try:
             "--n-samples", "100", "--out", str(out),
         ]
         print("[run]", " ".join(cmd))
-        subprocess.check_call(cmd, env={**os.environ, "PYTHONPATH": str(REPO / "src")})
+        r = subprocess.run(
+            cmd,
+            env={**os.environ, "PYTHONPATH": str(REPO / "src")},
+            capture_output=True,
+            text=True,
+        )
+        print("[stdout]"); print(r.stdout or "(empty)")
+        print("[stderr]"); print(r.stderr or "(empty)")
+        if r.returncode != 0:
+            raise RuntimeError(f"command failed exit={r.returncode}")
     from colab.notebook_support import write_tier0b
     write_tier0b(REPO)
     print("Cell 4 done.")
@@ -234,7 +276,16 @@ try:
             "--n-samples", "100", "--out", str(out),
         ]
         print("[run]", " ".join(cmd))
-        subprocess.check_call(cmd, env={**os.environ, "PYTHONPATH": str(REPO / "src")})
+        r = subprocess.run(
+            cmd,
+            env={**os.environ, "PYTHONPATH": str(REPO / "src")},
+            capture_output=True,
+            text=True,
+        )
+        print("[stdout]"); print(r.stdout or "(empty)")
+        print("[stderr]"); print(r.stderr or "(empty)")
+        if r.returncode != 0:
+            raise RuntimeError(f"command failed exit={r.returncode}")
     from colab.notebook_support import write_tier0c
     write_tier0c(REPO)
     print("Cell 5 done.")
@@ -268,7 +319,16 @@ try:
             "--out", str(out),
         ]
         print("[run]", " ".join(cmd))
-        subprocess.check_call(cmd, env={**os.environ, "PYTHONPATH": str(REPO / "src")})
+        r = subprocess.run(
+            cmd,
+            env={**os.environ, "PYTHONPATH": str(REPO / "src")},
+            capture_output=True,
+            text=True,
+        )
+        print("[stdout]"); print(r.stdout or "(empty)")
+        print("[stderr]"); print(r.stderr or "(empty)")
+        if r.returncode != 0:
+            raise RuntimeError(f"command failed exit={r.returncode}")
     from colab.notebook_support import write_tier0d
     write_tier0d(REPO)
     print("Cell 6 done.")
@@ -291,12 +351,16 @@ import os, subprocess, sys, traceback
 REPO = Path("/content/vlm-ocr-eval")
 os.chdir(REPO)
 try:
-    rc = subprocess.call(
+    r = subprocess.run(
         [sys.executable, "src/probes/run_surya_positive_control.py"],
         env={**os.environ, "PYTHONPATH": str(REPO / "src")},
+        capture_output=True,
+        text=True,
     )
-    print(f"[surya] helper exit {rc}")
-    if rc != 0:
+    print("[stdout]"); print(r.stdout or "(empty)")
+    print("[stderr]"); print(r.stderr or "(empty)")
+    print(f"[surya] helper exit {r.returncode}")
+    if r.returncode != 0:
         print(
             "Surya positive control is NOT VIABLE on this runtime. "
             "See docs/tier1_surya_control.md. Not forcing a broken load. "
@@ -340,11 +404,20 @@ try:
     for mid in CANDIDATES:
         print(f"\n----- INSPECT {mid} -----")
         try:
-            subprocess.check_call(
-                [sys.executable, "src/models/demo/benchmark_base_models.py",
-                 "--model-id", mid, "--inspect"],
+            cmd = [
+                sys.executable, "src/models/demo/benchmark_base_models.py",
+                "--model-id", mid, "--inspect",
+            ]
+            r = subprocess.run(
+                cmd,
                 env={**os.environ, "PYTHONPATH": str(REPO / "src")},
+                capture_output=True,
+                text=True,
             )
+            print("[stdout]"); print(r.stdout or "(empty)")
+            print("[stderr]"); print(r.stderr or "(empty)")
+            if r.returncode != 0:
+                raise subprocess.CalledProcessError(r.returncode, cmd, r.stdout, r.stderr)
             inspect_ok[mid] = True
         except subprocess.CalledProcessError as e:
             print(f"INSPECT FAILED for {mid}: {e}")
@@ -366,13 +439,22 @@ try:
             continue
         print(f"\n----- LORA DUMMY {mid} targets={targets} -----")
         try:
-            subprocess.check_call(
-                [sys.executable, "src/models/demo/benchmark_base_models.py",
-                 "--model-id", mid, "--target-modules", *targets,
-                 "--batch-size", "1", "--steps", "3",
-                 "--json-out", str(vram_path)],
+            cmd = [
+                sys.executable, "src/models/demo/benchmark_base_models.py",
+                "--model-id", mid, "--target-modules", *targets,
+                "--batch-size", "1", "--steps", "3",
+                "--json-out", str(vram_path),
+            ]
+            r = subprocess.run(
+                cmd,
                 env={**os.environ, "PYTHONPATH": str(REPO / "src")},
+                capture_output=True,
+                text=True,
             )
+            print("[stdout]"); print(r.stdout or "(empty)")
+            print("[stderr]"); print(r.stderr or "(empty)")
+            if r.returncode != 0:
+                raise subprocess.CalledProcessError(r.returncode, cmd, r.stdout, r.stderr)
         except subprocess.CalledProcessError as e:
             print(f"VRAM DUMMY FAILED for {mid}: {e}")
         gc.collect()
@@ -453,7 +535,16 @@ else:
                 "--max-steps", "100", "--ckpt-every", "20",
             ]
             print("[run]", " ".join(cmd))
-            subprocess.check_call(cmd, env={**os.environ, "PYTHONPATH": str(REPO / "src")})
+            r = subprocess.run(
+                cmd,
+                env={**os.environ, "PYTHONPATH": str(REPO / "src")},
+                capture_output=True,
+                text=True,
+            )
+            print("[stdout]"); print(r.stdout or "(empty)")
+            print("[stderr]"); print(r.stderr or "(empty)")
+            if r.returncode != 0:
+                raise RuntimeError(f"command failed exit={r.returncode}")
             adapter = REPO / "checkpoints" / "demo" / "adapter_config.json"
             fail = REPO / "checkpoints" / "demo" / "sft_not_trained.json"
             if adapter.exists():
@@ -509,7 +600,16 @@ else:
             "--output-root", "checkpoints/demo_rlvr_nocov",
         ]
         print("[run]", " ".join(cmd))
-        subprocess.check_call(cmd, env={**os.environ, "PYTHONPATH": str(REPO / "src")})
+        r = subprocess.run(
+            cmd,
+            env={**os.environ, "PYTHONPATH": str(REPO / "src")},
+            capture_output=True,
+            text=True,
+        )
+        print("[stdout]"); print(r.stdout or "(empty)")
+        print("[stderr]"); print(r.stderr or "(empty)")
+        if r.returncode != 0:
+            raise RuntimeError(f"command failed exit={r.returncode}")
         summ = REPO / "checkpoints" / "demo_rlvr_nocov" / "rlvr_summary.json"
         body = "# Tier 2 — RLVR coverage ablation (Colab)\n\n"
         if summ.exists():
