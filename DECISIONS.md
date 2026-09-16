@@ -2094,3 +2094,26 @@ Stage 5a (₹0, underpowered). Stage 6 adds **₹0**.
 **Date:** 2026-09-13
 
 
+### 90. Site modes: Research / Production, BOOK-depth (not short elevator)
+
+**Decision:** GitHub Pages `index.html` keeps two top-bar modes labeled
+**Research** (default, scientific paper story) and **Production**
+(Sarvam-motivated transfer / call walkthrough). The Production button
+must not say “Sarvam”; Sarvam Vision is named in body copy as motivation
+and transfer reference only. Both modes stay BOOK-reflective — detailed
+plain-language sections with flowcharts/diagrams covering what / how /
+why / further work — not a shortened elevator-pitch rewrite.
+
+**Alternatives considered:** (a) Diagnosis / Sarvam tab labels; (b) a
+short “call-only” site that drops measurement and architecture depth;
+(c) a single linear page without mode toggle.
+
+**Why:** The site is a presentation tool for two audiences. Research
+needs the full instrument story (tiers, renderer, pos-0, profile,
+controls). Production needs to open on published Indic accuracy gaps and
+Stage 5–6 transfer without framing an accuracy bake-off. Explicit user
+override of any prior “short modes” preference: cutting detail made the
+page unusable as a BOOK stand-in.
+
+**Date:** 2026-09-16
+

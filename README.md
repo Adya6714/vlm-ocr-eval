@@ -9,7 +9,7 @@ Production pipelines often route on confidence. This repo asks what happens when
 | | |
 |---|---|
 | Preprint | [*Reading Without Looking*](paper/main.pdf) · [source](paper/main.tex) |
-| **Call walkthrough** | [adya6714.github.io/vlm-ocr-eval](https://adya6714.github.io/vlm-ocr-eval/) — **Diagnosis** / **Sarvam** tabs |
+| **Call walkthrough** | [adya6714.github.io/vlm-ocr-eval](https://adya6714.github.io/vlm-ocr-eval/) — **Research** / **Production** tabs |
 | Full reference | [`BOOK.md`](BOOK.md) — first principles, related work, Sarvam pitch, interview Q&A |
 | Measurements | [`docs/RESULTS.md`](docs/RESULTS.md) · [`docs/paper_defensibility_stats.md`](docs/paper_defensibility_stats.md) |
 | Training setup | [`docs/training_config.md`](docs/training_config.md) |
