@@ -113,7 +113,8 @@ not in the tree are labeled **reported**.
 |---|---|
 | The central finding from first principles | **First principles: the central finding** (before Chapter 0) |
 | What ran vs what we did not prove vs next steps | **Experiments done · Not proved · Roadmap** (after **Presenting to Sarvam**) |
-| A Sarvam call or product presentation | **Presenting to Sarvam** + **60-second story** |
+| A Sarvam call or product presentation | **Presenting to Sarvam** + site **Production** tab (default) + **60-second story** |
+| The scientific deep dive / preprint walkthrough | Site **Research** tab + **First principles** + Chapters 0–9 |
 | The 60-second interview pitch | **60-second story** (below) |
 | Defending the project in an interview | **Interview defense** (below) + **Appendix H — Interview Q&A** + **What not to claim** |
 | How this relates to published VLM/OCR work | **Related work** (before Chapter 0) |
@@ -244,6 +245,44 @@ Production transfer — Does this rhyme with Sarvam confidence?
 Triage — Can confidence route pages to a stronger system?
 ```
 
+```mermaid
+flowchart TB
+  P[Problem: how trustworthy is OCR confidence?] --> S0[Stage 0 · Indic-aware scoring<br/>Tier 0/1/2]
+  S0 --> S1[Stage 1 · Controlled renderer<br/>HarfBuzz · natural/flat/inverted]
+  S1 --> S2[Stage 2 · ~19.6M instrument<br/>encoder → bridge → decoder]
+  S2 --> PR[Stage 4 probes<br/>pos-0 · profile · blank/noise/scramble<br/>ablation · n-gram KL]
+  PR --> T5[Stage 5a/b · Sarvam transfer]
+  T5 --> T6[Stage 6 · triage cascade]
+```
+
+**What each stage is for (plain language):**
+
+| Stage | What we built | Why it exists | Main artifact |
+|---|---|---|---|
+| 0 | Tiered error scoring on baselines | So “wrong” means something for Indic Unicode | `docs/error_taxonomy.csv`, baseline jsonl |
+| 1 | HarfBuzz line renderer + exposure dial | So we control pixels and language-prior stress | `data/manifests/` |
+| 2a | ~19.6M from-scratch OCR | So we own every tensor (blank, ablate, teacher-force) | checkpoints · `docs/training_config.md` |
+| 4 | Mechanistic probe suite | So confidence can be separated from grounding | `data/probe_results/` |
+| 5a | Cached Sarvam Extract vs published accuracy | Language-level: does confidence move with difficulty? | `docs/sarvam_vision_confidence.md` |
+| 5b | Spearman instrument ↔ Sarvam CER | Page-level: does hardness ranking transfer? | `docs/stage5b_rank_correlation.md` |
+| 6 | Offline triage simulation | If you escalate by confidence, does residual CER fall? | `docs/stage6_triage_cascade.md` |
+
+```mermaid
+flowchart LR
+  subgraph own [What an API cannot do]
+    B[Blank / noise / scramble]
+    A[Zero encoder memory]
+    T[Teacher-force p GT @ pos 0]
+    N[Matched text-only n-gram]
+  end
+  subgraph api [What Extract gives]
+    O[OCR text]
+    C[Page confidence]
+  end
+  own --> Q[Does the diagnosis transfer?]
+  api --> Q
+```
+
 **Central discovery:** in this from-scratch instrument, the model can be
 extremely confident even when it demonstrably does not read the
 evaluation image — **not** a universal claim that models which can read
@@ -268,9 +307,40 @@ GROUNDING   — Did the image support that output?       → LOW
 CONFIDENCE  — How peaked is the output distribution?   → HIGH
 ```
 
+```mermaid
+flowchart TB
+  subgraph triad [Three quantities people conflate]
+    COR[Correctness · CER / exact match]
+    CON[Confidence · max softmax peak]
+    GRO[Grounding · p GT · blank Δ · ablation]
+  end
+  COR -.->|orthogonal| CON
+  CON -.->|orthogonal| GRO
+  CON -->|what dashboards show| ROUT[Routing / triage]
+  GRO -->|what we wish meters measured| ROUT
+```
+
 Max-softmax only answers the third. You might assume confidence ≈
 grounding ≈ correctness; this project shows they can separate. That is
 why the preprint is called *Reading Without Looking*.
+
+### How confidence is computed (one decoding step)
+
+```mermaid
+flowchart LR
+  I[Image + previous tokens] --> E[Encoder + bridge]
+  E --> D[Decoder logits over ~367 graphemes]
+  D --> S[Softmax]
+  S --> M["C_t = max P(v)  →  'confidence'"]
+  S --> A[argmax → predicted token]
+  S --> P["p(GT) if teacher-forced"]
+```
+
+If \(C_t = 0.90\), that means “the chosen token has 90% of the
+probability mass,” **not** “there is a 90% chance the OCR is correct.”
+At position 0 in this instrument, the true first grapheme can sit near
+\(10^{-11}\) while the peak is still ~0.90 — a peaked distribution on
+the **wrong** event.
 
 ### What the paper does and does not claim
 
@@ -785,6 +855,23 @@ genuine held-out synthetic train/eval split before training.
 ## How the results were built
 
 End-to-end data flow (same picture as `docs/RESULTS.md`):
+
+```mermaid
+flowchart TB
+  RAW[data/raw · GlotOCR images + GT] --> BASE[run_baselines.py<br/>predictions jsonl]
+  RAW --> REN[renderer + export_manifest_scaled]
+  BASE --> TAX[error_taxonomy · Tier 0/1/2]
+  REN --> MAN[data/manifests line crops]
+  MAN --> TR[instrument train.py · 3 seeds]
+  TR --> CK[checkpoints]
+  CK --> PR[probes · gt_likelihood · blank · ablation · n-gram]
+  PR --> DOC[docs/paper_defensibility_stats.md<br/>+ paper figures]
+  MAN --> SAR[cached Sarvam Extract · Stage 5a]
+  PR --> S5B[Stage 5b rank correlation]
+  SAR --> S5B
+  S5B --> S6[Stage 6 triage cascade]
+  DOC --> PDF[paper/main.pdf]
+```
 
 ```
 data/raw/{hindi,bengali,santhali,kashmiri}/     GlotOCR images + GT (gitignored)
@@ -1324,16 +1411,47 @@ when you can manipulate exposure and intervene on the visual pathway.**
 ## Presenting to Sarvam
 
 Use this order in a product or research call. Stage 5 is **not** "our
-20M model vs Sarvam accuracy."
+20M model vs Sarvam accuracy." The site’s **Production** tab follows the
+same beat sheet (default first tab on the project page).
+
+```mermaid
+flowchart TD
+  M[Motivation · published Indic accuracy gaps] --> I[Instrument · why APIs are not enough]
+  I --> R[Mechanism recap · pos-0 · blank/noise]
+  R --> T[Transfer · 5a gap · 5b null · 6 triage]
+  T --> P[Pitch · grounding-aware confidence next]
+```
 
 ### Motivation (production phenomenon)
 
 Sarvam Vision reports substantial language-wise spread on its Indic OCR
 benchmark — Hindi **95.91%**, Santhali **80.32%**, Kashmiri **55.93%**
 word accuracy ([sarvam.ai/blogs/sarvam-vision](https://www.sarvam.ai/blogs/sarvam-vision);
-Decisions #6, #60). Production pipelines still expose confidence for
-routing. The question: **does that confidence reflect difficulty regimes
-the benchmark already shows?**
+Decisions #6, #60). That is nearly **40 percentage points** from easiest
+to hardest — on the **same** product and the **same** published bench.
+
+Production pipelines still expose confidence for routing: send “easy”
+pages straight through, escalate “hard” ones. The question is not
+whether Kashmiri OCR is harder (the bench already says yes). The
+question is: **does the confidence field move when the model’s own
+accuracy already admits the page is harder?**
+
+```mermaid
+flowchart LR
+  subgraph published [Published word accuracy]
+    HI[Hindi 95.91%]
+    SA[Santhali 80.32%]
+    KA[Kashmiri 55.93%]
+  end
+  subgraph extract [Extract page confidence · Stage 5a]
+    CHI[Hindi 0.9997]
+    CSA[Santhali 0.9974]
+    CKA[Kashmiri 0.9970]
+    BL[Blank 0.0000]
+  end
+  HI -.-> CHI
+  KA -.-> CKA
+```
 
 ### What we built (instrument → mechanism)
 
@@ -1347,16 +1465,51 @@ Stage 2a — ~19.6M from-scratch instrument
 Stage 4 — probes (blank, unseen script, ablation, teacher forcing, n-gram)
 ```
 
-Main mechanistic result: max-softmax ≈ **0.90** while *p*(GT) at
-position 0 ≈ **2.2×10⁻¹¹**, GT never argmax — **in this instrument
-that does not read held-out images** (CER ≈ **0.985** text vs ≈ **0.949**
-blank — not meaningfully different; [`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md)).
+```mermaid
+flowchart TB
+  subgraph built [Owned stack]
+    S0[Stage 0 scoring]
+    S1[Stage 1 renderer]
+    S2[Stage 2 instrument]
+    S4[Stage 4 probes]
+  end
+  subgraph cannot [API cannot expose]
+    X1[Blank / scramble pixels]
+    X2[Zero cross-attention]
+    X3[Teacher-force true first grapheme]
+    X4[Compare to matched n-gram]
+  end
+  S2 --> S4
+  S4 --> X1
+  S4 --> X2
+  S4 --> X3
+  S4 --> X4
+```
+
+**Main mechanistic result (say this carefully):** max-softmax ≈ **0.90**
+while *p*(GT) at position 0 ≈ **2.2×10⁻¹¹**, GT never argmax —
+**in this instrument that does not read held-out images** (CER ≈
+**0.985** text vs ≈ **0.949** blank — not meaningfully different;
+[`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md)).
+
+We did **not** stop at position 0. The full position profile shows mid-
+sequence (positions 2–39) recovery toward a text-only 4–5-gram
+(KL ≈ 0.27–0.32 nats; ~91–94% argmax agreement). Fluent-looking OCR can
+happen from language statistics alone.
+
+Blank / noise confidence stays near ceiling (Probe 3: **0.9940** /
+**0.9899** / **0.9904**). Scramble / noise / blank / real teacher-forced
+log *p*(GT) sit within **0.053 nats** (Tier 0d). Ablation: confidence
+barely moves; KL ≈ **1.075** and ~**8%** argmax flips — vision can change
+*which* token wins sometimes; the max-softmax *scalar* does not track it.
 
 ### External validation (not proof about Sarvam's encoder)
 
 **Stage 5a:** Extract page confidence Hindi **0.9997** → Kashmiri
 **0.9970** (Δ **0.0027**) across a **39.98 pp** published accuracy gap;
 blanks **0.0000** ([`docs/sarvam_vision_confidence.md`](./docs/sarvam_vision_confidence.md)).
+The meter is not stuck — blanks go to zero — it just does not mirror
+language-wise difficulty in this sample.
 
 **Stage 5b:** Per-image instrument difficulty vs Sarvam CER on Hindi
 plains (n=60): Spearman ρ = **0.0293**, permutation p = **0.8267** —
@@ -1365,6 +1518,14 @@ pre-registered null ([`docs/stage5b_rank_correlation.md`](./docs/stage5b_rank_co
 **Stage 6:** At 20% escalation (k=12), instrument-confidence routing
 residual CER **0.0109** vs random **0.0095**, Tesseract **0.0079**
 ([`docs/stage6_triage_cascade.md`](./docs/stage6_triage_cascade.md)).
+
+```mermaid
+flowchart TD
+  S5a[5a · language gap Δ0.0027] --> N[No useful transfer in sample]
+  S5b[5b · Spearman ρ≈0.03] --> N
+  S6[6 · triage worse than random] --> N
+  N --> NEXT[Next: grounding-aware confidence metrics]
+```
 
 These show **no useful transfer** of our instrument's confidence/difficulty
 signal to Sarvam in this sample — not that Sarvam "doesn't read."
@@ -1396,6 +1557,8 @@ signal to Sarvam in this sample — not that Sarvam "doesn't read."
 2. Positive control — known-good Devanagari reader, same position-0 protocol.
 3. Grounding score: *p*(GT | image) − *p*(GT | blank), not max-softmax alone.
 4. Larger matched Sarvam evaluation (500–2000 pages), stratified by script.
+5. If Extract exposes per-field / token confidence, test those against
+   residual error — not page max alone.
 
 ---
 

@@ -2117,3 +2117,20 @@ page unusable as a BOOK stand-in.
 
 **Date:** 2026-09-16
 
+### 91. Site default tab is Production; Research is second
+
+**Decision:** GitHub Pages `index.html` shows **Production** as the left
+(first) toggle and the default `data-mode="walkthrough"`. **Research** is
+the second toggle (scientific deep dive). Mermaid diagrams render on the
+site for pipeline / transfer flows; figures use framed chart cards.
+
+**Alternatives considered:** (a) Research-first default (prior Decision
+#90 talk-first research scroll); (b) single page without tabs.
+
+**Why:** Explicit user request for Production-first presentation when
+showing Sarvam-interested audiences, with Research available as the
+full paper walkthrough. Research keeps talk-first internal scroll order
+(0.90 → pos0 → profile → controls → build).
+
+**Date:** 2026-09-16
+

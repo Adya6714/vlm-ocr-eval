@@ -407,6 +407,71 @@
     font-size:0.82rem; color:var(--ink-soft); margin-top:14px; max-width:60ch;
   }
 
+
+  /* ---- scramble glyph ---- */
+  .glyph.scramble{
+    background:
+      linear-gradient(90deg, transparent 45%, var(--hairline-strong) 45% 55%, transparent 55%),
+      linear-gradient(0deg, transparent 40%, var(--hairline) 40% 48%, transparent 48%),
+      repeating-conic-gradient(from 20deg, var(--paper) 0 12%, var(--hairline-strong) 0 18%);
+    border-color: var(--ink-soft);
+  }
+  .glyph.scramble::after, .glyph.scramble::before{display:none;}
+
+  /* ---- animated softmax peak viz ---- */
+  .soft-viz{
+    display:grid; grid-template-columns:1fr 1fr; gap:16px;
+    margin:22px 0 8px;
+  }
+  @media (max-width:720px){ .soft-viz{grid-template-columns:1fr;} }
+  .soft-viz-card{
+    border:1px solid var(--hairline-strong); border-radius:4px;
+    padding:16px 18px; background:var(--paper-raised);
+  }
+  .soft-viz-card h4{
+    margin:0 0 12px; font-size:0.78rem; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--ink-soft);
+    font-family:'IBM Plex Mono', monospace; font-weight:500;
+  }
+  .soft-viz-card.bad{border-color:color-mix(in srgb, var(--brick) 45%, var(--hairline-strong));}
+  .sbar{display:flex; align-items:center; gap:8px; margin:6px 0;}
+  .sbar-lab{width:1.6rem; font-family:'IBM Plex Mono', monospace; font-size:0.85rem;}
+  .sbar-track{flex:1; height:10px; background:var(--hairline); border-radius:2px; overflow:hidden;}
+  .sbar-fill{
+    height:100%; width:0; border-radius:2px; background:var(--ink-blue);
+    transition:width 900ms cubic-bezier(.2,.7,.2,1);
+  }
+  .soft-viz.in .sbar-fill{width:var(--w);}
+  .sbar-fill.peak{background:var(--ink-blue);}
+  .sbar-fill.truth{background:var(--brick);}
+  .sbar-fill.dim{background:color-mix(in srgb, var(--ink-soft) 55%, transparent);}
+  .sbar-val{width:4.2rem; text-align:right; font-family:'IBM Plex Mono', monospace; font-size:0.72rem; color:var(--ink-soft);}
+
+  /* ---- freq bars animate on scroll ---- */
+  .freq-grid .bar-fill{width:0 !important; transition:width 900ms cubic-bezier(.2,.7,.2,1);}
+  .freq-grid.in .bar-fill{width:var(--w) !important;}
+
+  /* ---- talk strip ---- */
+  .talk-strip{
+    display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center;
+    margin:18px 0 0; padding:12px 14px;
+    border:1px dashed var(--hairline-strong); border-radius:4px;
+    background:color-mix(in srgb, var(--paper-raised) 80%, transparent);
+    font-size:0.88rem; color:var(--ink-soft);
+  }
+  .talk-strip strong{color:var(--ink); font-weight:600;}
+  .talk-chip{
+    font-family:'IBM Plex Mono', monospace; font-size:0.68rem;
+    letter-spacing:0.06em; text-transform:uppercase;
+    padding:3px 8px; border-radius:999px;
+    border:1px solid var(--hairline-strong); color:var(--ink-blue);
+  }
+
+  /* ---- dual signature side by side ---- */
+  .demo-pair{display:grid; grid-template-columns:1fr; gap:18px; margin-top:22px;}
+  @media (min-width:900px){ .demo-pair{grid-template-columns:1fr 1fr;} }
+  .signature.alt::before{background:linear-gradient(180deg, var(--ink-blue), var(--brick));}
+
   /* ---- scroll reveal + light card motion ---- */
   .reveal{
     opacity:0; transform:translateY(16px);
@@ -883,14 +948,67 @@
     font-family:'Fraunces', serif; font-weight:500; font-size:1.05rem;
     margin:0 0 6px;
   }
-  .pub-fig{margin:22px 0 28px; max-width:100%;}
+
+  /* ---- chart presentation ---- */
+  .pub-fig{
+    margin:28px 0 36px; max-width:100%;
+    padding:14px 14px 12px;
+    border:1px solid var(--hairline-strong);
+    border-radius:6px;
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--paper-raised) 88%, #fff), var(--paper));
+    box-shadow:0 10px 28px rgba(28,24,20,0.04);
+  }
+  .pub-fig .fig-meta{
+    display:flex; flex-wrap:wrap; gap:8px 14px; align-items:baseline;
+    margin:0 0 12px;
+  }
+  .pub-fig .fig-tag{
+    font-family:'IBM Plex Mono', monospace; font-size:0.66rem;
+    letter-spacing:0.1em; text-transform:uppercase;
+    color:var(--ink-blue);
+    border:1px solid color-mix(in srgb, var(--ink-blue) 35%, var(--hairline));
+    border-radius:999px; padding:3px 9px;
+  }
+  .pub-fig .fig-title{
+    font-family:'Fraunces', serif; font-size:1.02rem; color:var(--ink); margin:0;
+  }
+  .pub-fig .fig-frame{
+    border:1px solid var(--hairline); border-radius:4px; overflow:hidden;
+    background:#fff; position:relative;
+  }
   .pub-fig img{
     width:100%; height:auto; display:block;
-    border:1px solid var(--hairline); background:#fff;
+    transition:transform 280ms ease;
   }
+  .pub-fig:hover img{transform:scale(1.012);}
   .pub-fig figcaption{
-    font-size:0.82rem; color:var(--ink-soft); margin:8px 0 0; max-width:72ch;
+    font-size:0.86rem; color:var(--ink-soft); margin:12px 2px 2px; max-width:78ch;
+    line-height:1.5;
   }
+  .pub-fig figcaption strong{color:var(--ink);}
+
+  /* ---- mermaid panels ---- */
+  .mermaid-wrap{
+    margin:26px 0 18px;
+    border:1px solid var(--hairline-strong);
+    border-radius:6px;
+    background:var(--paper-raised);
+    padding:16px 16px 8px;
+    overflow-x:auto;
+  }
+  .mermaid-wrap .flow-caption{margin-bottom:8px;}
+  .mermaid{
+    display:flex; justify-content:center;
+    background:transparent !important;
+  }
+  .mermaid svg{max-width:100%; height:auto;}
+  .flow-grid{
+    display:grid; grid-template-columns:1fr; gap:16px; margin:22px 0;
+  }
+  @media (min-width:960px){ .flow-grid{grid-template-columns:1fr 1fr;} }
+
+
   .regime{font-family:'IBM Plex Mono', monospace; font-size:0.68rem;
     letter-spacing:0.06em; text-transform:uppercase; color:var(--ochre);}
   .null-banner{
@@ -956,7 +1074,7 @@
     to{opacity:1; transform:none;}
   }
 </style>
-<body data-mode="paper">
+<body data-mode="walkthrough">
 <div class="progress-rail" id="progressRail" aria-hidden="true"></div>
 
 <div class="topbar">
@@ -965,14 +1083,15 @@
     <nav class="navlinks">
       <a href="#question" class="paper-only">Question</a>
       <a href="#why" class="paper-only">Why</a>
-      <a href="#build" class="paper-only">Build</a>
-      <a href="#measure" class="paper-only">Measure</a>
-      <a href="#renderer" class="paper-only">Render</a>
-      <a href="#architecture" class="paper-only">Arch</a>
       <a href="#confidence" class="paper-only">0.90</a>
       <a href="#pos0" class="paper-only">Pos&nbsp;0</a>
       <a href="#profile" class="paper-only">Profile</a>
       <a href="#controls" class="paper-only">Controls</a>
+      <a href="#say" class="paper-only">Say&nbsp;this</a>
+      <a href="#build" class="paper-only">Build</a>
+      <a href="#measure" class="paper-only">Measure</a>
+      <a href="#renderer" class="paper-only">Render</a>
+      <a href="#architecture" class="paper-only">Arch</a>
       <a href="#calibration" class="paper-only">Calib</a>
       <a href="#related" class="paper-only">Lit</a>
       <a href="#findings" class="paper-only">Findings</a>
@@ -990,8 +1109,8 @@
       <a href="BOOK.md">Book</a>
       <a href="https://github.com/Adya6714/vlm-ocr-eval">GitHub</a>
       <span class="mode-toggle" role="group" aria-label="Reading mode">
-        <button type="button" id="modePaper" aria-pressed="true">Research</button>
-        <button type="button" id="modeWalk" aria-pressed="false">Production</button>
+        <button type="button" id="modeWalk" aria-pressed="true">Production</button>
+        <button type="button" id="modePaper" aria-pressed="false">Research</button>
       </span>
     </nav>
   </div>
@@ -1012,28 +1131,28 @@
   <div class="hero-inner">
     <div class="hero-layout">
       <div class="hero-copy hero-rise">
-        <div class="hero-kicker">Research · <em>Reading Without Looking</em></div>
-        <h1>Does OCR confidence track <em>visual evidence</em>?</h1>
-        <p class="hero-sub">This is a controlled science project, not a product bake-off. We built a small from-scratch OCR instrument (~19.6M parameters) so we could ask a precise question: when the decoder says it is ~90% sure, is that because the image supports the text — or because the output looks linguistically plausible?</p>
+        <div class="hero-kicker">Research · scroll this like a talk</div>
+        <h1>What does OCR confidence actually measure?</h1>
+        <p class="hero-sub">We built a small from-scratch OCR instrument (~19.6M parameters) to ask one narrow question: when the decoder says it is ~90% sure, is that because the <em>image</em> supports the text — or because the output just looks like language?</p>
+        <div class="talk-strip">
+          <span class="talk-chip">Live walkthrough</span>
+          <span>Scroll down for the story · <strong>0.90 → pos&nbsp;0 → full profile → blank/noise</strong> · then how we built it</span>
+        </div>
         <div class="abstract-box">
-          <p><strong>Two questions drive everything.</strong> <em>Question A:</em> can we measure when Indic OCR is hard? <em>Question B:</em> does max-softmax confidence track visual grounding, or only decoder peakedness?</p>
-          <p>The preprint answers B inside the instrument. The Production tab asks what transfers to Sarvam Vision — without claiming our toy model competes on accuracy.</p>
+          <p><strong>Two questions drive everything.</strong> <em>A:</em> can we tell when Indic OCR is hard? <em>B:</em> does confidence track visual evidence, or only how peaked the softmax is?</p>
+          <p>This Research tab is the scientific deep dive — figures, flowcharts, and demos for Question B. Flip back to <strong>Production</strong> for the Indic OCR transfer story (without claiming our toy model competes on accuracy).</p>
         </div>
-        <div class="finding-callout">
-          <div class="fc-label">Eval images</div>
-          <p>All core instrument probes use <strong>GlotOCR-sourced synthetic line renders</strong> — not camera photos. That choice improves control and paired n-grams; it limits claims about skew, blur, and document layout stress until photo eval exists.</p>
-        </div>
-        <p class="pdf-link"><a href="paper/main.pdf">Preprint PDF</a> · <a href="BOOK.md">BOOK.md · first principles</a> · <a href="docs/paper_defensibility_stats.md">defensible numbers</a></p>
+        <p class="pdf-link"><a href="paper/main.pdf">Preprint PDF</a> · <a href="BOOK.md">BOOK.md</a> · <a href="docs/paper_defensibility_stats.md">defensible numbers</a></p>
       </div>
       <aside class="hero-visual">
         <div class="gap-panel">
           <div class="gap-panel-label">Say this first</div>
-          <p class="gap-footnote" style="border-top:none;padding-top:0;margin-top:0;">We are <strong>not</strong> proving that readable production models hallucinate. We show that in <em>this</em> instrument, confidence stays extremely high even when the model demonstrably does not read held-out evaluation images. Eval images are <strong>GlotOCR renders</strong>, not phone photos.</p>
+          <p class="gap-footnote" style="border-top:none;padding-top:0;margin-top:0;">We are <strong>not</strong> claiming that production readers ignore images. We show that in <em>this</em> instrument, confidence stays sky-high even when the model does not read its held-out lines (CER ≈ 0.985). Eval images are <strong>GlotOCR renders</strong>, not phone photos.</p>
         </div>
-        <div class="evidence-grid" style="margin-top:18px;">
-          <div class="evidence-card"><div class="ev-tag">Instrument</div><h3>~19.6M params</h3><p class="ev-num">|V| ≈ 367 graphemes · 3 seeds</p></div>
-          <div class="evidence-card"><div class="ev-tag">Pos 0</div><h3>0 / 180 argmax</h3><p class="ev-num">p(GT) ≈ 2.2×10⁻¹¹ · C ≈ 0.902</p></div>
-          <div class="evidence-card"><div class="ev-tag">Held-out CER</div><h3>~0.985</h3><p class="ev-num">blank ~0.949 · confidence still ~0.99</p></div>
+        <div class="dissoc-grid" style="margin-top:18px;">
+          <div class="dissoc-cell"><div class="d-cond">Max-softmax</div><div class="d-num">0.902</div><div class="d-sub">“looks sure”</div></div>
+          <div class="dissoc-cell flat"><div class="d-cond">p(GT) @ pos 0</div><div class="d-num">10⁻¹¹</div><div class="d-sub">truth almost never preferred</div></div>
+          <div class="dissoc-cell flat"><div class="d-cond">GT is argmax</div><div class="d-num">0/180</div><div class="d-sub">held-out synthetic</div></div>
         </div>
       </aside>
     </div>
@@ -1043,7 +1162,7 @@
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">Why this research exists</div>
-      <h2 class="section-title">Indic OCR is hard — and confidence routing is dangerous if miscalibrated</h2>
+      <h2 class="section-title">Indic OCR is hard — and confidence routing only works if the meter is honest</h2>
       <p class="lede">Production systems expose confidence for triage: send easy pages straight through, escalate hard ones. That only works if confidence tracks difficulty. Indic scripts add layers of measurement pain before you even get to the model.</p>
       <p>Unicode code points are not user-perceived characters. Hindi <span class="mono">क्ष</span> can be one grapheme cluster built from multiple code points. Character Error Rate (CER) on raw Unicode can punish correct output. We normalize and cluster graphemes so metrics mean something — but the deeper issue is semantic: <strong>correctness, confidence, and visual grounding are three different quantities.</strong></p>
       <p>A model can be wrong while sounding fluent. A model can be confident while the true first symbol sits at rank ~70 in a 367-way softmax. A model can read aggregate accuracy on Hindi while Kashmiri collapses — and still report page confidence near 1.0.</p>
@@ -1083,12 +1202,64 @@ HOPE                         TEST (this project)
     </div>
   </div>
 </section>
-<section id="build" class="mode-item paper-only story" style="--paper-order:3; --walk-order:0">
+<section id="build" class="mode-item paper-only story" style="--paper-order:8; --walk-order:0">
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">What we built · why · how</div>
       <h2 class="section-title">A full research chain from pages to probes — instrument separate from demo</h2>
       <p class="lede">Nothing here is a single script. Each stage exists because a later probe would be uninterpretable without it. The ~19.6M model is a measurement instrument; a separate demo stack (LoRA/SFT on a VLM) lives in the Colab notebook but is not the preprint claim.</p>
+
+      <div class="mermaid-wrap">
+        <div class="flow-caption">Research pipeline · Stages 0 → 6</div>
+        <div class="mermaid">flowchart TB
+  subgraph measure [Measure hardness]
+    S0[Stage 0 · Tier 0/1/2 taxonomy]
+  end
+  subgraph control [Control the pixels]
+    S1[Stage 1 · HarfBuzz + exposure dial — natural / flat / inverted]
+  end
+  subgraph instrument [Owned instrument]
+    S2[Stage 2 · ~19.6M encoder→bridge→decoder — |V| ≈ 367 graphemes · 3 seeds]
+  end
+  subgraph probes [Mechanistic probes]
+    P0[Pos-0 p GT vs max-softmax]
+    PF[Full position profile]
+    BL[Blank · noise · scramble]
+    AB[Encoder ablation]
+    NG[Matched n-gram KL]
+  end
+  subgraph transfer [Production transfer]
+    T5a[5a language gap]
+    T5b[5b Spearman]
+    T6[6 triage]
+  end
+  S0 --> S1 --> S2 --> P0
+  S2 --> PF
+  S2 --> BL
+  S2 --> AB
+  S2 --> NG
+  P0 --> T5a --> T5b --> T6</div>
+      </div>
+      <div class="flow-grid">
+        <div class="mermaid-wrap">
+          <div class="flow-caption">Three quantities (do not conflate)</div>
+          <div class="mermaid">flowchart LR
+  C[Correctness — CER vs GT] -.->|orthogonal| F[Confidence — max softmax]
+  F -.->|orthogonal| G[Grounding — p GT · blank Δ]
+  F -->|what users see| M[Routing meter]
+  G -->|what we want| M</div>
+        </div>
+        <div class="mermaid-wrap">
+          <div class="flow-caption">Position profile story</div>
+          <div class="mermaid">flowchart LR
+  P0[pos 0 — −24.54] --> P1[pos 1 — −8.12]
+  P1 --> MID[pos 2–39 — n-gram-like]
+  MID --> TAIL[pos 40+ — worse again]
+  P0 -.->|vision must dominate| FAIL[FAIL]
+  MID -.->|language prior| OK[Looks competent]</div>
+        </div>
+      </div>
+
       <div class="flow-box">
         <div class="flow-caption">End-to-end pipeline (Stages 0 → 6)</div>
         <pre>
@@ -1161,7 +1332,7 @@ Stage 0   ERROR TAXONOMY          Tier 0/1/2 on Tesseract + baselines
     </div>
   </div>
 </section>
-<section id="measure" class="mode-item paper-only story" style="--paper-order:4; --walk-order:0">
+<section id="measure" class="mode-item paper-only story" style="--paper-order:9; --walk-order:0">
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">Stage 0 · how we score errors</div>
@@ -1230,27 +1401,27 @@ normalize(pred) vs normalize(gt)
     </div>
   </div>
 </section>
-<section id="renderer" class="mode-item paper-only story" style="--paper-order:5; --walk-order:0">
+<section id="renderer" class="mode-item paper-only story" style="--paper-order:10; --walk-order:0">
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">Stage 1 · controlled renderer</div>
       <h2 class="section-title">HarfBuzz shaping, exposure dial, and the naturalness confound</h2>
       <p class="lede">We do not evaluate on phone photos in the core instrument path. Lines are rendered from GlotOCR-sourced text with HarfBuzz so glyph shapes match real Devanagari/Bengali typography. Three exposure regimes stress how much "natural" bigram statistics the model saw during training.</p>
-      <div class="freq-grid">
+      <div class="freq-grid" id="freqGrid">
         <div class="freq-card">
           <h3>Natural</h3>
           <p class="freq-why">Total variation vs natural: <span class="mono">0</span>. Training distribution — real frequency-shaped line synthesis.</p>
           <div class="bar-row">
             <span>g1</span>
-            <div class="bar-track"><div class="bar-fill" style="width:80%"></div></div>
+            <div class="bar-track"><div class="bar-fill" style="--w:80%"></div></div>
           </div>
           <div class="bar-row">
             <span>g2</span>
-            <div class="bar-track"><div class="bar-fill dim" style="width:45%"></div></div>
+            <div class="bar-track"><div class="bar-fill dim" style="--w:45%"></div></div>
           </div>
           <div class="bar-row">
             <span>g3</span>
-            <div class="bar-track"><div class="bar-fill dim" style="width:25%"></div></div>
+            <div class="bar-track"><div class="bar-fill dim" style="--w:25%"></div></div>
           </div>
         </div>
         <div class="freq-card">
@@ -1258,15 +1429,15 @@ normalize(pred) vs normalize(gt)
           <p class="freq-why">Total variation vs natural: <span class="mono">~0.047</span>. Glyphs resampled toward uniform — breaks natural bigram prior.</p>
           <div class="bar-row">
             <span>g1</span>
-            <div class="bar-track"><div class="bar-fill dim" style="width:35%"></div></div>
+            <div class="bar-track"><div class="bar-fill dim" style="--w:35%"></div></div>
           </div>
           <div class="bar-row">
             <span>g2</span>
-            <div class="bar-track"><div class="bar-fill dim" style="width:35%"></div></div>
+            <div class="bar-track"><div class="bar-fill dim" style="--w:35%"></div></div>
           </div>
           <div class="bar-row">
             <span>g3</span>
-            <div class="bar-track"><div class="bar-fill dim" style="width:35%"></div></div>
+            <div class="bar-track"><div class="bar-fill dim" style="--w:35%"></div></div>
           </div>
         </div>
         <div class="freq-card">
@@ -1274,15 +1445,15 @@ normalize(pred) vs normalize(gt)
           <p class="freq-why">Total variation vs natural: <span class="mono">~0.005</span>. Rare glyphs boosted — extreme exposure stress test.</p>
           <div class="bar-row">
             <span>g1</span>
-            <div class="bar-track"><div class="bar-fill dim" style="width:20%"></div></div>
+            <div class="bar-track"><div class="bar-fill dim" style="--w:20%"></div></div>
           </div>
           <div class="bar-row">
             <span>g2</span>
-            <div class="bar-track"><div class="bar-fill dim" style="width:55%"></div></div>
+            <div class="bar-track"><div class="bar-fill dim" style="--w:55%"></div></div>
           </div>
           <div class="bar-row">
             <span>g3</span>
-            <div class="bar-track"><div class="bar-fill" style="width:75%"></div></div>
+            <div class="bar-track"><div class="bar-fill" style="--w:75%"></div></div>
           </div>
         </div>
       </div>
@@ -1327,13 +1498,14 @@ Random sentence from corpus          Controlled line renderer
         <p>Bigram synthesis during training means the decoder always saw locally plausible continuations. Probe 5 compares against a text-only n-gram that never sees pixels.</p>
       </div>
       <figure class="pub-fig">
-        <img src="docs/figures/fig4_regime_contrast.png" alt="Natural vs flattened vs inverted exposure regimes.">
+        <div class="fig-meta"><span class="fig-tag">Figure</span><p class="fig-title">Natural vs flattened vs inverted exposure regimes.</p></div>
+        <div class="fig-frame"><img src="docs/figures/fig4_regime_contrast.png" alt="Natural vs flattened vs inverted exposure regimes." loading="lazy"></div>
         <figcaption>Regime contrast — same architecture, different language-prior exposure.</figcaption>
       </figure>
     </div>
   </div>
 </section>
-<section id="architecture" class="mode-item paper-only story" style="--paper-order:6; --walk-order:0">
+<section id="architecture" class="mode-item paper-only story" style="--paper-order:11; --walk-order:0">
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">Stage 2 · the instrument</div>
@@ -1399,77 +1571,76 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
     </div>
   </div>
 </section>
-<section id="confidence" class="mode-item paper-only story" style="--paper-order:7; --walk-order:0">
+<section id="confidence" class="mode-item paper-only story" style="--paper-order:3; --walk-order:0">
   <div class="fig-rail">
     <div class="fig-body">
-      <div class="section-kicker">What the number on the meter means</div>
-      <h2 class="section-title">0.90 is the peak of 367 probabilities — not "90% correct"</h2>
-      <p class="lede">At each decoding step the model assigns a score to every vocabulary item, softmax turns scores into probabilities, and reported confidence is the largest probability. If that max is 0.90, we say "90% confident in the chosen token."</p>
+      <div class="section-kicker">Step 1 · what “0.90” means</div>
+      <h2 class="section-title">Confidence is the peak of ~367 probabilities — not “probability of correct”</h2>
+      <p class="lede">At every decoding step the model scores every vocabulary item (~367 grapheme tokens). Softmax turns those scores into probabilities. The number people call “confidence” is simply the largest one.</p>
       <div class="soft-card">
         <p><span class="mono">C<sub>t</sub> = max<sub>v</sub> P(v | image, previous tokens)</span></p>
-        <p>Token A is not one fixed grapheme — it is whatever wins on that image at that step. The shock is not "the model likes क." The shock is: <em>whatever wins is almost never the correct first grapheme on held-out lines.</em></p>
+        <p>If that max is 0.90, we say “90% confident in its selected token.” That is <em>not</em> the same as “90% chance the OCR is right.”</p>
+      <div class="mermaid-wrap">
+        <div class="flow-caption">Softmax → confidence (one step)</div>
+        <div class="mermaid">flowchart LR
+  IMG[Image + prefix] --> ENC[Encoder + bridge]
+  ENC --> DEC[Decoder logits — ~367 graphemes]
+  DEC --> SM[Softmax]
+  SM --> MX[max = confidence]
+  SM --> AR[argmax = prediction]
+  SM --> GT[p GT if teacher-forced]
+  MX -.->|can be 0.90| HI[Looks sure]
+  GT -.->|can be 10⁻¹¹| LO[Truth buried]</div>
+      </div>
+
+      </div>
+      <p><strong>Token A is not one fixed grapheme.</strong> It is whatever wins on that image at that step — maybe <span class="mono">क</span> on one line, <span class="mono">स</span> on another. The shock is not “the model likes क.” The shock is: <em>whatever wins is almost never the correct first grapheme.</em></p>
+
+      <div class="soft-viz" id="softViz" aria-label="Softmax peak versus truth">
+        <div class="soft-viz-card">
+          <h4>Uncertain (reasonable failure)</h4>
+          <div class="sbar"><span class="sbar-lab">क</span><div class="sbar-track"><div class="sbar-fill dim" style="--w:55%"></div></div><span class="sbar-val">0.10</span></div>
+          <div class="sbar"><span class="sbar-lab">म</span><div class="sbar-track"><div class="sbar-fill dim" style="--w:44%"></div></div><span class="sbar-val">0.08</span></div>
+          <div class="sbar"><span class="sbar-lab">भ</span><div class="sbar-track"><div class="sbar-fill dim" style="--w:38%"></div></div><span class="sbar-val">0.07</span></div>
+          <p style="margin:12px 0 0;font-size:0.9rem;color:var(--ink-soft);">Flat — “I don’t know.”</p>
+        </div>
+        <div class="soft-viz-card bad">
+          <h4>Confidently wrong (what we see)</h4>
+          <div class="sbar"><span class="sbar-lab">क</span><div class="sbar-track"><div class="sbar-fill peak" style="--w:90%"></div></div><span class="sbar-val">0.90 ←</span></div>
+          <div class="sbar"><span class="sbar-lab">म</span><div class="sbar-track"><div class="sbar-fill dim" style="--w:18%"></div></div><span class="sbar-val">0.04</span></div>
+          <div class="sbar"><span class="sbar-lab">भ</span><div class="sbar-track"><div class="sbar-fill truth" style="--w:3%"></div></div><span class="sbar-val">~10⁻¹¹</span></div>
+          <p style="margin:12px 0 0;font-size:0.9rem;color:var(--ink-soft);">Peaky — “I’m sure” — without evidence. Truth is deep in the tail.</p>
+        </div>
       </div>
 
       <div class="step-rail">
-        <div class="step">
-          <div class="step-n">1</div>
-          <div>
-            <h3>Logits</h3>
-            <p>Raw scores over ~367 grapheme types at this step — unbounded real numbers.</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-n">2</div>
-          <div>
-            <h3>Softmax</h3>
-            <p>Exponentiate and normalize to a simplex — everything positive, sums to 1.</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-n">3</div>
-          <div>
-            <h3>Argmax → prediction</h3>
-            <p>The token we would emit if greedy-decoding — often wrong at pos 0.</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-n">4</div>
-          <div>
-            <h3>Max → confidence</h3>
-            <p>The number users see — peak probability, not P(correct).</p>
-          </div>
-        </div>
+        <div class="step"><div class="step-n">1</div><div><h3>Logits</h3><p>Raw scores over ~367 grapheme types — unbounded real numbers.</p></div></div>
+        <div class="step"><div class="step-n">2</div><div><h3>Softmax</h3><p>Turn scores into probabilities that sum to 1.</p></div></div>
+        <div class="step"><div class="step-n">3</div><div><h3>Argmax → prediction</h3><p>The token we would emit if greedy-decoding — often wrong at position 0.</p></div></div>
+        <div class="step"><div class="step-n">4</div><div><h3>Max → confidence</h3><p>The number users see — peak probability, not P(correct).</p></div></div>
       </div>
-      <p class="follow">Predictive entropy at position 0 ≈ <strong>0.333 nats</strong> tells you the distribution is sharp — low entropy means peaked. That sounds like "certainty" in everyday language. Rank statistics tell the other half: median rank of truth ≈ <strong>70.5</strong>, and <strong>35%</strong> of sequences bury truth below rank 100. Sharpness on the wrong event is worse than a flat uncertain distribution for routing — you skip review precisely when the model is confidently off.</p>
-
-      <div class="compare-grid">
-        <div class="compare-col">
-          <h3>Uncertain (reasonable failure)</h3>
-          <p class="mono" style="font-size:0.85rem;line-height:1.7;">क 0.10<br>म 0.08<br>भ 0.07<br>… flat tail</p>
-          <p style="margin-top:10px;">Spread mass — "I am not sure."</p>
-        </div>
-        <div class="compare-col wrong">
-          <h3>Confidently wrong (what we measure)</h3>
-          <p class="mono" style="font-size:0.85rem;line-height:1.7;">क 0.90 ← chosen<br>म 0.04<br>भ ~10⁻¹¹ ← truth</p>
-          <p style="margin-top:10px;">Peaky softmax — "I am sure" — without evidence.</p>
-        </div>
-      </div>
-      <p>Position-0 predictive entropy ≈ <strong>0.333 nats</strong> (sharp, not flat). Median rank of the true grapheme ≈ <strong>70.5 / 367</strong>; <strong>35%</strong> of sequences put truth below rank 100. The correct symbol is not "almost argmax" — it is deep in the tail.</p>
+      <p class="follow">Position-0 predictive entropy ≈ <strong>0.333 nats</strong> (sharp, not soft). Median rank of the true grapheme ≈ <strong>70.5 / 367</strong>; <strong>35%</strong> of sequences put truth below rank 100. Sharpness on the wrong event is worse than a flat “I don’t know” for routing — you skip review precisely when the model is confidently off.</p>
       <figure class="pub-fig">
-        <img src="docs/figures/fig3_confidence_distributions.png" alt="Confidence distributions vs controls.">
+        <div class="fig-meta"><span class="fig-tag">Figure</span><p class="fig-title">Confidence distributions vs controls.</p></div>
+        <div class="fig-frame"><img src="docs/figures/fig3_confidence_distributions.png" alt="Confidence distributions vs controls." loading="lazy"></div>
         <figcaption>Figure — max-softmax stays high across conditions; shape differs more than the scalar.</figcaption>
       </figure>
     </div>
   </div>
 </section>
-<section id="pos0" class="mode-item paper-only story" style="--paper-order:8; --walk-order:0">
+<section id="pos0" class="mode-item paper-only story" style="--paper-order:4; --walk-order:0">
   <div class="fig-rail">
     <div class="fig-body">
-      <div class="section-kicker">Position 0 · no prefix confound</div>
-      <h2 class="section-title">Before any generated text, the image must carry the signal</h2>
-      <p class="lede">Later tokens can lean on language priors: after <span class="mono">भा</span>, next is probably <span class="mono">र</span>. At position 0 there is only <span class="mono">&lt;BOS&gt;</span>. If vision works, p(GT) at step 0 should be high. We measure teacher-forced log p(GT) and argmax hits across 180 image×seed evaluations.</p>
+      <div class="section-kicker">Step 2 · why position 0</div>
+      <h2 class="section-title">No previous text — so the image has to do the work</h2>
+      <p class="lede">Later tokens can lean on language: after <span class="mono">भा</span>, next is probably <span class="mono">र</span>. At position&nbsp;0 there is only <span class="mono">&lt;BOS&gt;</span>. If vision is working, the correct first grapheme should be easy. We check that with teacher-forced <em>p</em>(GT) across 180 image×seed runs.</p>
       <div class="null-banner">
-        <p>Ground truth is the argmax <strong>0 / 180</strong> times. Teacher-forced <em>p</em>(GT) ≈ <strong>2.2×10⁻¹¹</strong>. Self-generated max-softmax ≈ <strong>0.902</strong>. Blank control is qualitatively similar — not a collapse you would expect if confidence measured "letters present."</p>
+        <p>Across <span class="num-pop">180</span> evaluations: ground truth is the argmax <strong>0 / 180</strong> times · teacher-forced <em>p</em>(GT) ≈ <strong>2.2×10⁻¹¹</strong> · max-softmax ≈ <strong>0.902</strong>. Blank looks the same qualitatively.</p>
+      </div>
+      <div class="dissoc-grid">
+        <div class="dissoc-cell"><div class="d-cond">Max-softmax</div><div class="d-num">0.902</div><div class="d-sub">chosen token · “sure”</div></div>
+        <div class="dissoc-cell flat"><div class="d-cond">p(GT) teacher-forced</div><div class="d-num">2.2×10⁻¹¹</div><div class="d-sub">truth almost never preferred</div></div>
+        <div class="dissoc-cell flat"><div class="d-cond">GT is argmax</div><div class="d-num">0/180</div><div class="d-sub">never the top choice</div></div>
       </div>
       <table class="data">
         <caption>Position 0 dissociation (text vs blank)</caption>
@@ -1482,7 +1653,7 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
           <tr><td>Median rank of GT</td><td>≈ 70.5</td><td>≈ 68.2</td></tr>
         </tbody>
       </table>
-      <p class="follow">A text-only n-gram (never sees the image) scores the correct first symbol ≈ <strong>−4.73 nats</strong> at position 0. The instrument scores ≈ <strong>−24.54 nats</strong> — about 20 nats worse than language prior alone.</p>
+      <p class="follow">A text-only n-gram (never sees the image) scores the correct first symbol ≈ <strong>−4.73 nats</strong>. The instrument scores ≈ <strong>−24.54 nats</strong> — nearly <strong>20 nats</strong> worse. If your vision–language decoder is worse than “language prior only” at the first step, the image channel is not carrying the load — no matter what max-softmax says.</p>
 
       <div class="compare-grid">
         <div class="compare-col">
@@ -1513,18 +1684,19 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
         <p>High confidence and near-zero p(GT) can coexist at the first step. That is a <em>dissociation</em>, not a quirk of one image.</p>
       </div>
       <figure class="pub-fig">
-        <img src="docs/figures/fig1_position_dissociation.png" alt="Position-resolved dissociation between confidence and p(GT).">
+        <div class="fig-meta"><span class="fig-tag">Figure</span><p class="fig-title">Position-resolved dissociation between confidence and p(GT).</p></div>
+        <div class="fig-frame"><img src="docs/figures/fig1_position_dissociation.png" alt="Position-resolved dissociation between confidence and p(GT)." loading="lazy"></div>
         <figcaption>Position profile overview — collapse at start; confidence stays high underneath.</figcaption>
       </figure>
     </div>
   </div>
 </section>
-<section id="profile" class="mode-item paper-only story" style="--paper-order:9; --walk-order:0">
+<section id="profile" class="mode-item paper-only story" style="--paper-order:5; --walk-order:0">
   <div class="fig-rail">
     <div class="fig-body">
-      <div class="section-kicker">Full position profile</div>
-      <h2 class="section-title">The story is not only position 0 — mid-sequence looks text-only</h2>
-      <p class="lede">Teacher-forced log p(GT) across the sequence: closer to zero is better. Position 0 is catastrophic; positions 2–9 recover; 10–39 look almost language-model-like; 40+ degrades again in a smaller bucket.</p>
+      <div class="section-kicker">Step 3 · we did not stop at position 0</div>
+      <h2 class="section-title">The interesting story is the whole position profile</h2>
+      <p class="lede">An interviewer can ask: “Okay, position&nbsp;0 is weird — what happens once the model has context?” We measured teacher-forced log <em>p</em>(GT) across the sequence. Closer to zero is better.</p>
       <div class="pos-profile" id="posProfile" aria-label="Position profile bars">
         <div class="pos-row">
           <span class="pos-label">pos 0</span>
@@ -1580,92 +1752,121 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
 
       <p>Mid-sequence behavior is <strong>language prior</strong>, not world knowledge — matched n-grams never saw pixels. Probe 5 synthetic eval uses training-manifest lines by design (it tests "does decoder match n-gram statistics given prefix," not generalization).</p>
       <figure class="pub-fig">
-        <img src="docs/figures/fig7_ngram_kl.png" alt="KL between instrument and matched n-gram by position.">
+        <div class="fig-meta"><span class="fig-tag">Figure</span><p class="fig-title">KL between instrument and matched n-gram by position.</p></div>
+        <div class="fig-frame"><img src="docs/figures/fig7_ngram_kl.png" alt="KL between instrument and matched n-gram by position." loading="lazy"></div>
         <figcaption>Mid-sequence KL dips — decoder overlaps text-only baseline.</figcaption>
       </figure>
     </div>
   </div>
 </section>
-<section id="controls" class="mode-item paper-only story" style="--paper-order:10; --walk-order:0">
+<section id="controls" class="mode-item paper-only story" style="--paper-order:6; --walk-order:0">
   <div class="fig-rail">
     <div class="fig-body">
-      <div class="section-kicker">Competing explanations · controls</div>
-      <h2 class="section-title">Blank, noise, scramble, ablation — phrase each claim carefully</h2>
-      <p class="lede">Every control attacks a different excuse: "maybe it reads but confidence is miscalibrated," "maybe vision is used but not for confidence," "maybe it is undertrained," "maybe script coverage is wrong."</p>
+      <div class="section-kicker">Step 4 · blank, noise, scramble</div>
+      <h2 class="section-title">If vision drove the meter, these should drop. They don’t.</h2>
+      <p class="lede">Every control attacks a different excuse. Tap the tiles below — this is the part people remember in a call.</p>
+
+      <div class="demo-pair">
+        <div class="signature" id="probe3-demo" data-demo="conf">
+          <div class="signature-head">
+            <p class="signature-label">Interactive · Probe 3 mean confidence</p>
+          </div>
+          <p class="signature-explain">Text vs blank vs noise on synthetic natural lines. If vision drove the meter, blank and noise should <em>drop</em>.</p>
+          <div class="glyph-row">
+            <button type="button" class="glyph-tile invite" data-cond="real" aria-label="Text-bearing"><span class="glyph"></span><span class="glyph-caption">Text</span></button>
+            <button type="button" class="glyph-tile invite" data-cond="blank" aria-label="Blank"><span class="glyph blank"></span><span class="glyph-caption">Blank</span></button>
+            <button type="button" class="glyph-tile invite" data-cond="noise" aria-label="Noise"><span class="glyph noise"></span><span class="glyph-caption">Noise</span></button>
+          </div>
+          <div class="readout is-idle">
+            <span class="cond">Choose a condition</span>
+            <div class="conf-row"><span class="conf-num">—</span><span class="conf-unit">mean confidence</span></div>
+            <div class="conf-meter"><div class="conf-meter-fill" style="width:0%"></div></div>
+            <span class="note">Synthetic Probe 3 — three-seed aggregate. Held-out CER is still ~0.985.</span>
+          </div>
+        </div>
+
+        <div class="signature alt" id="scramble-demo" data-demo="llp">
+          <div class="signature-head">
+            <p class="signature-label">Interactive · Tier 0d log p(GT)</p>
+          </div>
+          <p class="signature-explain">Same idea, different meter: teacher-forced log <em>p</em>(GT). Real, blank, noise, and <em>scrambled</em> patches sit in a tiny band.</p>
+          <div class="glyph-row">
+            <button type="button" class="glyph-tile invite" data-cond="real" aria-label="Text-bearing"><span class="glyph"></span><span class="glyph-caption">Text</span></button>
+            <button type="button" class="glyph-tile invite" data-cond="blank" aria-label="Blank"><span class="glyph blank"></span><span class="glyph-caption">Blank</span></button>
+            <button type="button" class="glyph-tile invite" data-cond="noise" aria-label="Noise"><span class="glyph noise"></span><span class="glyph-caption">Noise</span></button>
+            <button type="button" class="glyph-tile invite" data-cond="scrambled" aria-label="Scrambled"><span class="glyph scramble"></span><span class="glyph-caption">Scramble</span></button>
+          </div>
+          <div class="readout is-idle">
+            <span class="cond">Choose a condition</span>
+            <div class="conf-row"><span class="conf-num">—</span><span class="conf-unit">mean log p(GT)</span></div>
+            <div class="conf-meter"><div class="conf-meter-fill" style="width:0%"></div></div>
+            <span class="note">Pooled n=180. Whole-sequence means within 0.053 nats of each other.</span>
+          </div>
+        </div>
+      </div>
+
       <div class="follow">
-        <h3 class="story-q" style="margin-top:0;">Blank / noise / scramble</h3>
-        <p>Removing or destroying visual content does not collapse max-softmax. Mean confidence on synthetic Probe 3: text <strong>0.9940</strong>, blank <strong>0.9899</strong>, noise <strong>0.9904</strong> (three-seed aggregate). That supports: <em>confidence is not measuring visual grounding in this instrument.</em></p>
-        <p>It does <strong>not</strong> prove the model learned vision and then ignored it. It may never have learned a useful visual representation. We keep that alternative alive in the paper.</p>
+        <h3 class="story-q">What this does — and does not — prove</h3>
+        <p>Removing or destroying visual content does not collapse the confidence peak (Probe 3: text <strong>0.9940</strong>, blank <strong>0.9899</strong>, noise <strong>0.9904</strong>). Teacher-forced log p(GT) for real / blank / noise / scrambled also sits in a <strong>0.053-nat</strong> band. That supports: <em>these scalars are not measuring visual grounding here.</em></p>
+        <p>It does <strong>not</strong> prove the model learned vision and then ignored it. It may never have learned a useful visual representation. We keep that alternative alive in the paper — which is why a positive-control reader is Priority 1.</p>
       </div>
       <figure class="pub-fig">
-        <img src="docs/figures/fig6_noise_scrambled.png" alt="Noise and scrambled controls vs text.">
-        <figcaption>Visual destruction — scalar confidence barely moves.</figcaption>
+        <div class="fig-meta"><span class="fig-tag">Figure</span><p class="fig-title">Noise and scrambled controls vs text.</p></div>
+        <div class="fig-frame"><img src="docs/figures/fig6_noise_scrambled.png" alt="Noise and scrambled controls vs text." loading="lazy"></div>
+        <figcaption>Visual destruction — the readout barely moves.</figcaption>
       </figure>
+
       <div class="follow">
         <h3 class="story-q">Encoder ablation (zero visual memory)</h3>
-        <p>Zeroing cross-attention memory: confidence <strong>0.986 → 0.989</strong> (barely moves). Distribution shape changes: KL ≈ <strong>1.075</strong>; ~<strong>8%</strong> of steps flip argmax. Better sentence: <strong>vision can change which token wins sometimes; the max-softmax scalar is largely insensitive.</strong></p>
-        <p>Do not say "the model doesn't use vision." Say "the confidence meter doesn't track the ablation."</p>
+        <p>Zeroing cross-attention memory: confidence <strong>0.986 → 0.989</strong> (barely moves). Distribution shape changes: KL ≈ <strong>1.075</strong>; ~<strong>8%</strong> of steps flip argmax.</p>
+        <p><strong>Say this:</strong> vision can change which token wins sometimes; the max-softmax scalar is largely insensitive. <strong>Don’t say:</strong> “the model doesn’t use vision.”</p>
       </div>
       <figure class="pub-fig">
-        <img src="docs/figures/fig2_ablation_kl.png" alt="Ablation KL concentrates where argmax flips.">
+        <div class="fig-meta"><span class="fig-tag">Figure</span><p class="fig-title">Ablation KL concentrates where argmax flips.</p></div>
+        <div class="fig-frame"><img src="docs/figures/fig2_ablation_kl.png" alt="Ablation KL concentrates where argmax flips." loading="lazy"></div>
         <figcaption>Shape vs peak — KL tells you more than confidence alone.</figcaption>
       </figure>
+
       <div class="follow">
-        <h3 class="story-q">Undertraining &amp; unseen scripts</h3>
-        <p>Held-out CER ~<strong>0.985</strong> vs blank ~<strong>0.949</strong> — the model is not reading held-out lines in any useful sense, yet confidence stays ~0.99. Unseen-script control: <strong>0</strong> target-script characters generated on 360 evaluations — vocabulary coverage is not the whole story.</p>
-        <p>Training curve (Probe 3b): loss falls; real-vs-blank confidence gap stays ~0. We do not claim the architecture cannot read — we claim this training regime did not produce reading with calibrated confidence.</p>
+        <h3 class="story-q">Undertrained? Unseen scripts?</h3>
+        <p>Held-out CER ~<strong>0.985</strong> vs blank ~<strong>0.949</strong> — the model is not reading held-out lines in any useful sense, yet confidence stays ~0.99. Unseen-script control: <strong>0</strong> target-script characters generated on 360 evaluations. Probe 3b: loss falls (3.21 → 0.18); real-vs-blank confidence gap stays ~0.</p>
+        <p>We do not claim the architecture cannot read. We claim this training regime did not produce reading with a useful confidence meter.</p>
       </div>
 
-      <div class="evidence-grid">
-        <div class="evidence-card">
-          <div class="ev-tag">Scramble</div>
-          <h3>Visual permute</h3>
-          <p>Destroy spatial letter order while keeping texture — confidence stays high; readout does not behave like "missing text."</p>
-        </div>
-        <div class="evidence-card">
-          <div class="ev-tag">Unseen script</div>
-          <h3>0 / 360</h3>
-          <p>Target-script characters in generation on unseen-script eval — not a pure vocab miss artifact.</p>
-        </div>
-        <div class="evidence-card">
-          <div class="ev-tag">Probe 3b curve</div>
-          <h3>Loss ↓ conf flat</h3>
-          <p>Training loss 3.21 → 0.18; real-vs-blank confidence gap stays ~0 across steps.</p>
-        </div>
-      </div>
       <div class="flow-box">
-        <div class="flow-caption">Alternative explanations → probe mapping</div>
+        <div class="flow-caption">Excuse → which control answers it</div>
         <pre>
-  "Maybe it's miscalibrated but still uses vision"     →  blank/noise (conf flat)
-  "Maybe vision matters for token choice not conf"     →  ablation (KL↑, conf flat)
-  "Maybe it just needs more training"                  →  Probe 3b curve + held-out CER
-  "Maybe vocab doesn't cover eval"                     →  unseen-script control
-  "Maybe only pos 0 is weird"                          →  full profile + n-gram KL
+  "Maybe it's miscalibrated but still uses vision"  →  blank / noise (conf flat)
+  "Maybe vision matters for token choice, not conf" →  ablation (KL↑, conf flat)
+  "Maybe it just needs more training"               →  Probe 3b + held-out CER
+  "Maybe vocab doesn't cover eval"                  →  unseen-script (0/360)
+  "Maybe only position 0 is weird"                  →  full profile + n-gram KL
+  "Maybe scramble is a weird domain shift"          →  4-condition 0.053-nat band
         </pre>
-      </div>
-      <p class="follow">Phrase scramble/noise carefully: we show the scalar does not drop when visual information is removed or destroyed. We do not claim a causal story about internal representations without a positive-control reader.</p>
-
-      <div class="signature" id="probe3-demo">
-        <div class="signature-head">
-          <p class="signature-label">Interactive · Probe 3 synthetic confidence</p>
-        </div>
-        <p class="signature-explain">Tap a condition. If vision drove the meter, blank and noise should <em>drop</em> sharply. They do not.</p>
-        <div class="glyph-row" id="glyphRow">
-          <button type="button" class="glyph-tile invite" data-cond="real" aria-label="Text-bearing"><span class="glyph"></span><span class="glyph-caption">Text</span></button>
-          <button type="button" class="glyph-tile invite" data-cond="blank" aria-label="Blank"><span class="glyph blank"></span><span class="glyph-caption">Blank</span></button>
-          <button type="button" class="glyph-tile invite" data-cond="noise" aria-label="Noise"><span class="glyph noise"></span><span class="glyph-caption">Noise</span></button>
-        </div>
-        <div class="readout is-idle" id="readout">
-          <span class="cond">Choose a condition</span>
-          <div class="conf-row"><span class="conf-num">—</span><span class="conf-unit">mean confidence</span></div>
-          <div class="conf-meter"><div class="conf-meter-fill" id="confMeter"></div></div>
-          <span class="note">Synthetic Probe 3 — not held-out pages. CER still ~1.</span>
-        </div>
       </div>
     </div>
   </div>
 </section>
-<section id="calibration" class="mode-item paper-only story" style="--paper-order:11; --walk-order:0">
+
+<section id="say" class="mode-item paper-only story" style="--paper-order:7; --walk-order:0">
+  <div class="fig-rail">
+    <div class="fig-body">
+      <div class="section-kicker">Step 5 · 60-second answer</div>
+      <h2 class="section-title">If they ask about position 0 — say this</h2>
+      <details class="say-this" open>
+        <summary>Open in a call</summary>
+        <div class="say-body">
+          <p>Position&nbsp;0 removes the language-prefix confound. Across 180 evaluations the correct first grapheme was never the argmax, yet max probability was around 0.90 and ground-truth probability around 2×10⁻¹¹.</p>
+          <p>We didn’t stop there. Position&nbsp;1 is still poor; from positions 2–39 the model recovers to a regime very close to a text-only 4–5-gram, with 91–94% argmax agreement. So the decoder can generate predictable text from linguistic regularities even when the image isn’t providing useful grounding.</p>
+          <p>Blank and noise don’t collapse confidence — and scramble doesn’t collapse teacher-forced log p(GT) either. I wouldn’t claim we proved “learned vision, then ignored it.” The model may simply be undertrained. That’s why a positive-control reader is the next experiment.</p>
+        </div>
+      </details>
+      <p class="follow">Scroll on for how we built the instrument (renderer, architecture, tiers). Or flip to <strong>Production</strong> for the Indic-OCR transfer story.</p>
+    </div>
+  </div>
+</section>
+
+<section id="calibration" class="mode-item paper-only story" style="--paper-order:12; --walk-order:0">
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">Calibration · Probe 1</div>
@@ -1721,7 +1922,7 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
     </div>
   </div>
 </section>
-<section id="related" class="mode-item paper-only story" style="--paper-order:12; --walk-order:0">
+<section id="related" class="mode-item paper-only story" style="--paper-order:13; --walk-order:0">
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">Related work · brief</div>
@@ -1741,7 +1942,7 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
     </div>
   </div>
 </section>
-<section id="findings" class="mode-item paper-only story" style="--paper-order:13; --walk-order:0">
+<section id="findings" class="mode-item paper-only story" style="--paper-order:14; --walk-order:0">
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">Findings summary</div>
@@ -1788,7 +1989,7 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
     </div>
   </div>
 </section>
-<section id="limits" class="mode-item paper-only story" style="--paper-order:14; --walk-order:0">
+<section id="limits" class="mode-item paper-only story" style="--paper-order:15; --walk-order:0">
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">Limits · honest boundaries</div>
@@ -1863,7 +2064,7 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
     </div>
   </div>
 </section>
-<section id="next" class="mode-item paper-only story" style="--paper-order:15; --walk-order:0">
+<section id="next" class="mode-item paper-only story" style="--paper-order:16; --walk-order:0">
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">Research roadmap</div>
@@ -1902,10 +2103,14 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
   <div class="hero-inner">
     <div class="hero-layout">
       <div class="hero-copy hero-rise">
-        <div class="hero-kicker">Production motivation · not an accuracy bake-off</div>
+        <div class="hero-kicker">Production · why this should interest an Indic OCR team</div>
         <h1>Can confidence tell us when Indic OCR is hard?</h1>
-        <p class="hero-sub"><strong>Sarvam Vision</strong> publishes large language-wise gaps on its Indic OCR benchmark — Hindi <strong>95.91%</strong> word accuracy, Santhali <strong>80.32%</strong>, Kashmiri <strong>55.93%</strong>. That is nearly 40 percentage points from easiest to hardest. Production systems still expose a confidence field for routing. Does that field move when the model itself admits (via accuracy) that Kashmiri is harder?</p>
-        <p class="hero-sub">We built a controlled instrument (Research tab) to decompose confidence under counterfactuals APIs cannot run. Stage 5–6 ask what transfers to Sarvam — not whether our ~20M model beats their stack.</p>
+        <p class="hero-sub"><strong>Sarvam Vision</strong> publishes a nearly 40‑point spread on its own Indic bench — Hindi <strong>95.91%</strong>, Santhali <strong>80.32%</strong>, Kashmiri <strong>55.93%</strong>. Page-level confidence is supposed to help route hard scripts. Does that field actually move?</p>
+        <div class="talk-strip">
+          <span class="talk-chip">Not a bake-off</span>
+          <span>We are not comparing our ~20M CER to their stack. We built a microscope for counterfactuals, then asked what transfers.</span>
+        </div>
+        <p class="hero-sub" style="margin-top:16px;">Stage 5a: confidence Δ across that accuracy cliff is only <strong>0.0027</strong>. Stage 5b/6: difficulty ranking does not transfer, and triage on instrument confidence loses to random. The constructive ask is better grounding-aware confidence — not “your model is broken.”</p>
         <p class="pdf-link"><a href="https://www.sarvam.ai/blogs/sarvam-vision">Sarvam Vision blog</a> · <a href="docs/sarvam_vision_confidence.md">Extract write-up</a> · <a href="BOOK.md">BOOK · Presenting to Sarvam</a></p>
       </div>
       <aside class="hero-visual">
@@ -1981,6 +2186,47 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
       <div class="section-kicker">Why an owned instrument</div>
       <h2 class="section-title">APIs cannot run the counterfactuals — and we are not competing on accuracy</h2>
       <p class="lede">Sarvam Extract tells you what it outputs on a page. It does not let you remove the image, zero cross-attention, teacher-force the true first grapheme, or compare to a matched text-only n-gram. Those experiments require an owned forward pass.</p>
+
+      <div class="mermaid-wrap">
+        <div class="flow-caption">What we built · end-to-end (Production view)</div>
+        <div class="mermaid">flowchart LR
+  A[GlotOCR pages] --> B[Stage 0 — Indic scoring]
+  B --> C[Stage 1 — HarfBuzz renderer]
+  C --> D[Stage 2 — ~19.6M instrument]
+  D --> E[Stage 4 probes — pos-0 · blank · ablation]
+  E --> F[Stage 5a/b — Sarvam transfer]
+  F --> G[Stage 6 — triage cascade]
+  style D fill:#e8eef8,stroke:#2b3a67
+  style F fill:#f7efe6,stroke:#a66b3d
+  style G fill:#f7efe6,stroke:#a66b3d</div>
+      </div>
+      <div class="flow-grid">
+        <div class="mermaid-wrap">
+          <div class="flow-caption">Why an owned instrument exists</div>
+          <div class="mermaid">flowchart TB
+  API[Production OCR API] -->|outputs text + confidence| BLACK[Black box]
+  BLACK -.->|cannot| X1[Blank the page]
+  BLACK -.->|cannot| X2[Zero encoder]
+  BLACK -.->|cannot| X3[Teacher-force p GT]
+  INST[~19.6M instrument] -->|owned forward pass| OPEN[Full softmax + ablations]
+  OPEN --> P0[Position-0 dissociation]
+  OPEN --> BL[Blank / noise / scramble]
+  OPEN --> NG[Text-only n-gram KL]
+  P0 --> ASK[Does diagnosis transfer?]
+  ASK --> S5[Stage 5–6 on cached Extract]</div>
+        </div>
+        <div class="mermaid-wrap">
+          <div class="flow-caption">Transfer questions (5a → 5b → 6)</div>
+          <div class="mermaid">flowchart TD
+  Q1[5a · Language level — Does mean confidence drop — Hindi → Kashmiri?] -->|Δ 0.0027| A1[Near-invariant]
+  Q2[5b · Page level — Does instrument hard — rank ↔ Sarvam CER?] -->|ρ ≈ 0.03| A2[Null]
+  Q3[6 · Routing — Escalate bottom 20% — by confidence?] -->|0.0109 vs 0.0095| A3[Worse than random]
+  A1 --> TAKE[Max-softmax ≠ grounding meter]
+  A2 --> TAKE
+  A3 --> TAKE</div>
+        </div>
+      </div>
+
       <p>That is the whole reason this repo exists as research infrastructure, not as “another Indic OCR model.” A production API is excellent for measuring real-world accuracy. It is a poor place to ask: <em>when confidence is high, was the image doing the work?</em></p>
       <div class="flow-box">
         <div class="flow-caption">Instrument → transfer → Sarvam (relationship)</div>
@@ -2036,6 +2282,24 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
       <div class="section-kicker">Mechanism recap · link to Research</div>
       <h2 class="section-title">Position 0 is the headline — mid-sequence is the mechanism</h2>
       <p class="lede">If you only remember one Research result for a production conversation: at position 0, max-softmax ≈ 0.90 while p(GT) ≈ 2.2×10⁻¹¹, 0/180 argmax — on held-out synthetic lines. Blank looks the same. That pattern means the scalar confidence field can be high without evidence the image supports the text.</p>
+      <div class="signature" id="probe3-prod" data-demo="conf" style="margin:22px 0;">
+        <div class="signature-head">
+          <p class="signature-label">Try it · same Probe 3 meter</p>
+        </div>
+        <p class="signature-explain">If vision drove confidence, blank and noise should drop. Tap a tile — this is the Research finding in one gesture.</p>
+        <div class="glyph-row">
+          <button type="button" class="glyph-tile invite" data-cond="real" aria-label="Text-bearing"><span class="glyph"></span><span class="glyph-caption">Text</span></button>
+          <button type="button" class="glyph-tile invite" data-cond="blank" aria-label="Blank"><span class="glyph blank"></span><span class="glyph-caption">Blank</span></button>
+          <button type="button" class="glyph-tile invite" data-cond="noise" aria-label="Noise"><span class="glyph noise"></span><span class="glyph-caption">Noise</span></button>
+        </div>
+        <div class="readout is-idle">
+          <span class="cond">Choose a condition</span>
+          <div class="conf-row"><span class="conf-num">—</span><span class="conf-unit">mean confidence</span></div>
+          <div class="conf-meter"><div class="conf-meter-fill" style="width:0%"></div></div>
+          <span class="note">Same synthetic Probe 3 numbers as the Research tab.</span>
+        </div>
+      </div>
+
       <p>Why position 0 matters in a product conversation: later tokens can lean on language. After a few correct-looking graphemes, the next token is often predictable from text alone. At the first step there is only <span class="mono">&lt;BOS&gt;</span> — so if vision works, the image must carry the signal. Our instrument does not: teacher-forced log p(GT) ≈ −24.54 nats vs a text-only n-gram at ≈ −4.73 nats.</p>
       <table class="data">
         <caption>Position 0 — say this on a call</caption>
@@ -2215,7 +2479,7 @@ For each page i:
   </div>
 </section>
 
-<section id="appendix" class="mode-item paper-only story" style="--paper-order:16; --walk-order:0">
+<section id="appendix" class="mode-item paper-only story" style="--paper-order:17; --walk-order:0">
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">Appendix · interview depth</div>
@@ -2388,29 +2652,81 @@ For each page i:
   </div>
 </footer>
 
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    securityLevel: 'loose',
+    themeVariables: {
+      primaryColor: '#e8eef8',
+      primaryTextColor: '#1c1814',
+      primaryBorderColor: '#2b3a67',
+      lineColor: '#6b645c',
+      secondaryColor: '#f7efe6',
+      tertiaryColor: '#f7f3ec',
+      fontFamily: 'IBM Plex Sans, sans-serif',
+      fontSize: '14px'
+    },
+    flowchart: { curve: 'basis', htmlLabels: true, padding: 12 }
+  });
+  async function renderMermaid(){
+    const nodes = Array.from(document.querySelectorAll('div.mermaid')).filter(el => {
+      if (el.getAttribute('data-processed') === 'true') return false;
+      const host = el.closest('.paper-only, .walk-only, .mode-item');
+      if (host && getComputedStyle(host).display === 'none') return false;
+      return true;
+    });
+    if (!nodes.length) return;
+    try {
+      await mermaid.run({ nodes });
+    } catch (e) { console.warn('mermaid', e); }
+  }
+  window.__renderMermaid = renderMermaid;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => renderMermaid());
+  } else {
+    renderMermaid();
+  }
+</script>
+
 <script>
   (function(){
-    const data = {
-      real:  { conf: '0.9940', pct: 99.40, flat:false, label:'Text-bearing crop · Probe 3 synthetic', note:'Near ceiling — held-out CER still ~0.985.' },
-      blank: { conf: '0.9899', pct: 98.99, flat:true,  label:'Blank · Probe 3 synthetic', note:'No glyphs. Confidence barely moves.' },
-      noise: { conf: '0.9904', pct: 99.04, flat:true,  label:'Matched noise · Probe 3 synthetic', note:'Texture without letters. Still near text-bearing.' }
+    const confData = {
+      real:  { conf: '0.9940', pct: 99.40, flat:false, label:'Text-bearing crop · Probe 3 synthetic', note:'Near ceiling — as you would hope if it were reading. Held-out CER is still ~0.985.', unit:'mean confidence' },
+      blank: { conf: '0.9899', pct: 98.99, flat:true,  label:'Blank · Probe 3 synthetic', note:'No glyphs on the page. Confidence barely moves.', unit:'mean confidence' },
+      noise: { conf: '0.9904', pct: 99.04, flat:true,  label:'Matched noise · Probe 3 synthetic', note:'Texture without letters. Still near text-bearing.', unit:'mean confidence' }
     };
-    const readout = document.getElementById('readout');
-    const tiles = document.querySelectorAll('.glyph-tile');
-    function fire(el){
-      tiles.forEach(g=>{ g.classList.remove('selected','invite'); });
-      el.classList.add('selected');
-      const c = data[el.dataset.cond];
-      readout.classList.remove('is-idle');
-      readout.innerHTML =
-        `<span class="cond">${c.label}</span>
-         <div class="conf-row"><span class="conf-num ${c.flat?'flat':''}">${c.conf}</span><span class="conf-unit">mean confidence</span></div>
-         <div class="conf-meter"><div class="conf-meter-fill ${c.flat?'flat':''}" id="confMeter" style="width:0%"></div></div>
-         <span class="note">${c.note}</span>`;
-      const fill = document.getElementById('confMeter');
-      requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ fill.style.width = c.pct + '%'; }); });
+    /* Tier 0d pooled mean log p(GT); meter maps how close to 0 (higher bar = less bad). */
+    const llpData = {
+      real:      { conf: '−1.783', pct: 72, flat:false, label:'Text-bearing · Tier 0d', note:'Whole-sequence mean log p(GT). Closer to zero is better.', unit:'mean log p(GT)' },
+      blank:     { conf: '−1.751', pct: 74, flat:true,  label:'Blank · Tier 0d', note:'No letters — still in the same band as text.', unit:'mean log p(GT)' },
+      noise:     { conf: '−1.756', pct: 73, flat:true,  label:'Noise · Tier 0d', note:'Matched noise texture. Still ~same as text.', unit:'mean log p(GT)' },
+      scrambled: { conf: '−1.730', pct: 75, flat:true,  label:'Scrambled patches · Tier 0d', note:'Spatial letter order destroyed. Still within 0.053 nats of the others.', unit:'mean log p(GT)' }
+    };
+    function bindDemo(root){
+      const kind = root.getAttribute('data-demo') || 'conf';
+      const data = kind === 'llp' ? llpData : confData;
+      const tiles = root.querySelectorAll('.glyph-tile');
+      const readout = root.querySelector('.readout');
+      function fire(el){
+        tiles.forEach(g=>{ g.classList.remove('selected','invite'); });
+        el.classList.add('selected');
+        const c = data[el.dataset.cond];
+        if (!c || !readout) return;
+        readout.classList.remove('is-idle');
+        readout.innerHTML =
+          `<span class="cond">${c.label}</span>
+           <div class="conf-row"><span class="conf-num ${c.flat?'flat':''}">${c.conf}</span><span class="conf-unit">${c.unit}</span></div>
+           <div class="conf-meter"><div class="conf-meter-fill ${c.flat?'flat':''}" style="width:0%"></div></div>
+           <span class="note">${c.note}</span>`;
+        const fill = readout.querySelector('.conf-meter-fill');
+        requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ if (fill) fill.style.width = c.pct + '%'; }); });
+      }
+      tiles.forEach(el=> el.addEventListener('click', ()=> fire(el)));
     }
-    tiles.forEach(el=> el.addEventListener('click', ()=> fire(el)));
+    document.querySelectorAll('.signature[data-demo]').forEach(bindDemo);
   })();
 </script>
 <script>
@@ -2433,14 +2749,15 @@ For each page i:
       }
       try { localStorage.setItem('vlm-ocr-eval-mode', mode); } catch(e){}
       if (typeof window.__revealRefresh === 'function') window.__revealRefresh();
+      if (typeof window.__renderMermaid === 'function') window.setTimeout(() => window.__renderMermaid(), 40);
     }
     walkBtn.addEventListener('click', ()=> setMode('walkthrough', true));
     paperBtn.addEventListener('click', ()=> setMode('paper', true));
     try {
       const saved = localStorage.getItem('vlm-ocr-eval-mode');
       if (saved === 'paper' || saved === 'walkthrough') setMode(saved, false);
-      else setMode('paper', false);
-    } catch(e){ setMode('paper', false); }
+      else setMode('walkthrough', false);
+    } catch(e){ setMode('walkthrough', false); }
   })();
 </script>
 <script>
@@ -2478,18 +2795,20 @@ For each page i:
     }
     window.__revealRefresh = revealRefresh;
     revealRefresh();
-    const pos = document.getElementById('posProfile');
-    if (pos){
-      if (reduce){ pos.classList.add('in'); }
-      else {
-        const pio = new IntersectionObserver((entries)=>{
-          entries.forEach(e=>{
-            if (e.isIntersecting){ e.target.classList.add('in'); pio.unobserve(e.target); }
-          });
-        }, {threshold:0.25});
-        pio.observe(pos);
-      }
+    function watchIn(id, thr){
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (reduce){ el.classList.add('in'); return; }
+      const io = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{
+          if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+        });
+      }, {threshold: thr || 0.25});
+      io.observe(el);
     }
+    watchIn('posProfile', 0.25);
+    watchIn('softViz', 0.3);
+    watchIn('freqGrid', 0.2);
   })();
 </script>
 </body>
