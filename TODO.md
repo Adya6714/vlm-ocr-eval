@@ -1,7 +1,8 @@
 # TODO.md
 
-Stages 2b, 3, 5, and 6 were deliberately not executed in this phase —
-see README.md § Future Work for the reasoning behind each.
+Stages 2b (RLVR policy) and Stage 3 demo curves were deliberately not
+executed in this phase — see README / BOOK for scope. Stage 5b and
+Stage 6 **are** computed offline (not in the preprint).
 
 Sequenced task list. Work top to bottom within a stage; stages are mostly
 sequential but Stage 0 has zero dependency on anything and should happen

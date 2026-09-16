@@ -1,118 +1,86 @@
 # vlm-ocr-eval
 
-Diagnostic evaluation of **decoder confidence** in Indic document OCR.
+This was **not primarily an OCR-model-building project**. It is a controlled investigation into whether OCR decoder confidence reflects **visual evidence** — or only whether the generated text looks linguistically plausible.
 
-Production systems use per-token or per-page confidence to decide what a human should review. This repository asks whether that signal tracks **whether the image supports the text**, or only **whether the generated string looks like language**.
+**Critical framing:** The paper does **not** prove that a model that can read is hallucinating. It shows that, in this particular ~19.6M from-scratch **instrument**, confidence stays extremely high even when the model demonstrably does **not** read the evaluation image. Never claim “VLMs don’t look at images.”
+
+Production pipelines often route on confidence. This repo asks what happens when confidence stays near ceiling while teacher-forced *p*(ground truth) at position 0 is ~10⁻¹¹.
 
 | | |
 |---|---|
 | Preprint | [*Reading Without Looking*](paper/main.pdf) · [source](paper/main.tex) |
-| Project page | [adya6714.github.io/vlm-ocr-eval](https://adya6714.github.io/vlm-ocr-eval/) |
+| **Call walkthrough** | [adya6714.github.io/vlm-ocr-eval](https://adya6714.github.io/vlm-ocr-eval/) — **Diagnosis** / **Sarvam** tabs |
+| Full reference | [`BOOK.md`](BOOK.md) — first principles, related work, Sarvam pitch, interview Q&A |
 | Measurements | [`docs/RESULTS.md`](docs/RESULTS.md) · [`docs/paper_defensibility_stats.md`](docs/paper_defensibility_stats.md) |
 | Training setup | [`docs/training_config.md`](docs/training_config.md) |
-| Sarvam Vision / Extract | [`docs/sarvam_vision_confidence.md`](docs/sarvam_vision_confidence.md) |
+| Sarvam Extract (not in PDF) | [`docs/sarvam_vision_confidence.md`](docs/sarvam_vision_confidence.md) |
 
-The instrument is a ~19.6M-parameter encoder–decoder trained **from scratch** (no Indic pretraining) on rendered Hindi line crops. It is a measurement device, not a deployed OCR engine.
-
----
-
-## Overview
-
-Autoregressive OCR emits a symbol and a confidence at every step. If that confidence stays high on blank pages, unseen scripts, or pages the model cannot read, review queues based on it are miscalibrated.
-
-Indic documents add two complications: multiple valid Unicode encodings of the same reading (so exact-match error rates are noisy), and published systems that fail **non-silently**—high confidence when the script in the image is one the model cannot read.
-
-A closed API cannot explain *why*. This project therefore:
-
-1. Normalizes encodings **before** counting residual errors (Tier 1 / Tier 2).
-2. Trains a small reader with a known, empty Indic pretraining history.
-3. Probes blank input, unseen scripts, encoder ablation, and teacher-forced likelihood **by generation position**.
-
-The informative test is **position 0**: there is no generated prefix, so any probability on the correct first grapheme has to come from the image.
+The probe model is a **measurement instrument** (19,607,104 params at |V|≈367), trained from scratch with no Indic pretraining — not a production OCR engine and not a Sarvam competitor.
 
 ---
 
-## Findings
+## One picture
 
-Headline numbers are computed from committed probe outputs in `data/probe_results/`. Full tables and code paths: [`docs/paper_defensibility_stats.md`](docs/paper_defensibility_stats.md), [`docs/RESULTS.md`](docs/RESULTS.md).
-
-- **The instrument does not read its held-out images.** Grapheme CER is near 1 on both text-bearing Hindi pages and blank white images (pooled ~0.985 vs ~0.949). After clustering by seed the difference is not significant. Evaluation images are GlotOCR **renders**, not photographs.
-- **Confidence stays near ceiling** on text-bearing Hindi, blank pages, Ol Chiki, and Perso-Arabic (condition means within ~0.005).
-- **Position 0:** geometric-mean *p*(ground truth) is on the order of 10⁻¹¹ while self-generated max-softmax is ~0.90. The comparison is to a **text-only grapheme *n*-gram**, not to a uniform vocabulary prior. Ground truth is never the argmax at position 0 (0/180 sequences).
-- **Encoder ablation** changes mean confidence by ~−0.003. About 8% of decoding steps flip the argmax and account for ~97% of the KL; agreeing steps keep a near-unit peak.
-- **Mid-sequence** teacher-forced log *p*(GT) sits in the same band as a 4- to 5-gram grapheme language model. Full-softmax KL vs that 5-gram is low there (~0.27–0.32 nats) with ~91–94% argmax agreement; positions 0, 1, and 40+ diverge (`docs/ngram_kl_argmax.md`).
-- **Noise and patch-scrambled** images do not open a visual gap: whole-sequence mean log *p*(GT) stays within 0.05 nats of text-bearing and blank (`docs/tier0d_noise_scrambled.md`).
-- The instrument was trained on the **full** 2,538-line manifest (19 of 60 evaluation strings appear as training lines). Probe 5's AUROC 0.838 is **in-training-manifest only**: every synthetic eval string is in that file (`docs/memorisation_split.md`).
-- **PaddleOCR** as an instrument-matched positive control is **not viable** (CTC rec head, not autoregressive; `docs/paddleocr_feasibility.md`). Table 1 still uses it as an off-the-shelf engine (n=420).
-
-Figures 1–4: `paper/figures/` (PDF) and `docs/figures/` (PNG).
-
----
-
-## Method
-
-```
-GlotOCR pages
-    ├── baseline engines (Tesseract, Surya, PaddleOCR)
-    │       encoding-aware scoring → residual taxonomy
-    └── renderer (natural / flattened / inverted glyph frequencies)
-            line crops (height 70 px) → manifests
-                    train.py (fp16) → checkpoints
-                            probes → data/probe_results/*.jsonl
-                                    analysis → docs/ + paper figures
+```text
+PROBLEM — How trustworthy is OCR confidence?
+   ↓
+Stage 0 — Indic-aware evaluation (what counts as “wrong”?)
+   ↓
+Stage 1 — Controlled renderer (exposure dial)
+   ↓
+Stage 2 — From-scratch instrument (empty Indic history)
+   ↓
+Probes — blank/noise · unseen scripts · ablation · position-0 p(GT) · n-gram
+   ↓
+Sarvam — Does confidence track published difficulty? Does ranking transfer?
+   ↓
+Triage — Can confidence route pages? (worse than random at 20%)
 ```
 
-| Stage | Role |
+**Headline (instrument):** position 0 — max-softmax ≈ 0.90 while *p*(correct first grapheme) ≈ 2.2×10⁻¹¹; GT never argmax (0/180); blank similar. **Full profile:** pos 1 still poor; positions 2–39 recover toward a text-only 4–5-gram (~91–94% argmax agreement). Cite [`docs/paper_defensibility_stats.md`](docs/paper_defensibility_stats.md) · [`docs/position_matched_ngrams.md`](docs/position_matched_ngrams.md).
+
+**Sarvam framing:** production reference for “does confidence track difficulty?” — not an accuracy bake-off. Published bench: Hindi 95.91% / Santhali 80.32% / Kashmiri 55.93% ([sarvam.ai/blogs/sarvam-vision](https://www.sarvam.ai/blogs/sarvam-vision)).
+
+---
+
+## Correctness ≠ confidence ≠ grounding
+
+```text
+CORRECTNESS — right text?                         → often LOW here
+GROUNDING   — did the image support the output? → LOW
+CONFIDENCE  — how peaked is the softmax?        → HIGH
+```
+
+Max-softmax only measures the third.
+
+---
+
+## Findings (orientation only — cite docs)
+
+| Claim | Result |
 |---|---|
-| Scoring | `src/eval/equivalence_tables.py`, `transliteration_equivalence.py` |
-| Data | `src/renderer/`, `src/data_pipeline/export_manifest_scaled.py` |
-| Model | `src/models/instrument/` — ViT encoder, grapheme-cluster decoder, `train.py` |
-| Probes | `src/probes/` — blank/noise, calibration, ablation, GT-likelihood, held-out transfer |
-| Analysis | `src/analysis/` — statistics and figures |
-
-Training: 5,000 steps, constant learning rate, last checkpoint, three seeds, vocabulary size ≈ 367. Flattened and inverted frequency conditions did not yield a usable reader (~0% line accuracy); mechanistic results use the three **natural** checkpoints.
+| Position 0 | *p*(GT) ~10⁻¹¹ vs max-softmax ~0.90; 0/180 argmax |
+| Ablation | Δ conf ≈ −0.003; ~8% flips carry ~97% of KL |
+| Mid-sequence | ≈ 4–5-gram text-only LM |
+| Probe 1 | Dial worked; flat/inverted at floor → β withheld |
+| Calibration | ECE ≈ 0.811; AUROC 0.838 **in-manifest only**; held-out graded ≈ 0.570 |
+| Sarvam 5a | ~40 pp accuracy gap; confidence Δ 0.0027 |
+| Transfer 5b | ρ = 0.0293, p = 0.8267 (null) |
+| Triage 6 | Instrument confidence worse than random at 20% |
 
 ---
 
-## Probes
+## What not to claim
 
-| Probe | Question |
+| Don’t say | Say instead |
 |---|---|
-| Blank / noise | Does confidence drop when there is nothing to read? |
-| Training curve | Does a text-bearing vs blank gap appear as loss falls? |
-| Calibration | Does confidence rank correctness on synthetic lines? |
-| Zero-shot scripts | Same measurements on Ol Chiki and Perso-Arabic? |
-| Encoder ablation | Does zeroing visual memory move the confidence peak? |
-| GT-likelihood | Teacher-forced log *p*(GT) by position vs *n*-gram references |
-| Held-out transfer | Does the pattern hold on held-out GlotOCR pages? |
+| “We proved VLMs don’t look at images.” | Confidence without grounding in **this** instrument. |
+| “We trained production OCR.” | ~19.6M research instrument. |
+| “18.3% held-out accuracy.” | Training-manifest synthetic regime. |
+| “GlotOCR = real scans.” | Eval images are **renders**. |
+| “Sarvam doesn’t look at images.” | Page-level confidence didn’t track published language spread; ranking didn’t predict Sarvam CER. |
 
-Implementations: `src/probes/`. Per-probe write-ups: `docs/`. Interactive figures: the [project page](https://adya6714.github.io/vlm-ocr-eval/).
-
----
-
-## Production OCR confidence
-
-How this work relates to **Sarvam Vision** and Doc-AI Extract (published language accuracies vs Extract confidence, and why the from-scratch probes exist): [`docs/sarvam_vision_confidence.md`](docs/sarvam_vision_confidence.md). That evaluation is not part of the preprint.
-
----
-
-## Repository layout
-
-```
-paper/                   Preprint (LaTeX + PDF)
-index.html               Project page
-src/eval/                Engines, encoding metrics, API client
-src/renderer/            Controlled line rendering
-src/data_pipeline/       Fetch and manifests
-src/models/instrument/   Encoder, decoder, training, generation
-src/probes/              Diagnostic probes
-src/analysis/            Statistics and figures
-data/manifests/          Training line lists
-data/probe_results/      Probe outputs (committed)
-docs/                    Analyses and measurement logs
-```
-
-Weights, raw page images, engine dumps, and API caches are gitignored. Training and OCR batches are intended for a single GPU (e.g. Colab T4); see `COLAB_RUNS.md`.
+Biggest gap: **positive control** (known-good AR Devanagari reader under the same position-0 protocol).
 
 ---
 
@@ -121,55 +89,11 @@ Weights, raw page images, engine dumps, and API caches are gitignored. Training 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-make smoke-test    # architecture only; no findings
+make smoke-test
 pytest -q
 ```
 
-Rebuild paper figures from committed jsonl (no GPU):
-
-```bash
-PYTHONPATH=src/eval python3 src/analysis/make_paper_figures.py \
-  --results-root data/probe_results \
-  --out-dir docs/figures --paper-dir paper/figures
-```
-
-Compile the preprint:
-
-```bash
-tectonic -X compile paper/main.tex
-```
-
-Train (GPU recommended; checkpoints are not in git):
-
-```bash
-python src/models/instrument/train.py \
-  --manifest data/manifests/hindi_natural.jsonl \
-  --script hindi --condition natural --seed 0 \
-  --output-root checkpoints
-```
-
-Further documentation: [`BOOK.md`](BOOK.md) (full project reference: questions, pipeline, findings, decisions, status), [`IMPLEMENTATION.md`](IMPLEMENTATION.md) (module checkboxes), [`docs/training_config.md`](docs/training_config.md) (hyperparameters).
-
----
-
-## Follow-up measurements
-
-Several items that used to sit here are **in the preprint**: noise /
-patch-scrambled teacher-forcing, n-gram KL vs 5-gram, Probe 5 overlap
-(empty held-out arm), PaddleOCR feasibility stop.
-
-Still **inference-only** and still blocked on checkpoints in this
-checkout: position-0 rank (jsonl not written), shuffled image–text
-pairing, cross-attention contribution norms. A viable autoregressive
-positive control is still open (Surya and PaddleOCR failed for
-architecture).
-
-Status: [`docs/remaining_measurements.md`](docs/remaining_measurements.md).
-A larger demo model (LoRA SFT ran; RLVR policy did not —
-[`docs/rlvr_scoping.md`](docs/rlvr_scoping.md)) is out of scope for the
-current preprint.
-
----
+Further: [`BOOK.md`](BOOK.md) · [`IMPLEMENTATION.md`](IMPLEMENTATION.md)
 
 ## Citation
 
@@ -183,4 +107,4 @@ current preprint.
 }
 ```
 
-Raw GlotOCR pages are not redistributed here; obtain them from the upstream benchmark. This repository is not an OCR leaderboard.
+Raw GlotOCR pages are not redistributed. This repository is not an OCR leaderboard.

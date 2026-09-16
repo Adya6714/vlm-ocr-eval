@@ -4,6 +4,23 @@ This file is the **single project reference**: the research questions,
 how every result was produced, what the numbers mean, which stages are
 built, and why the non-obvious design choices won.
 
+> **This was not primarily an OCR-model-building project.** It was a
+> controlled scientific investigation into whether an OCR model's
+> confidence actually reflects **visual evidence** — or whether the
+> decoder can be highly confident simply because the generated text
+> looks linguistically plausible.
+>
+> **Critical framing:** The paper does **not** prove that a model that
+> can read is hallucinating. It shows that, in this particular
+> from-scratch instrument, confidence remains extremely high even when
+> the model demonstrably does **not** read the evaluation image. Never
+> claim "VLMs don't look at images" or "we proved OCR hallucinates."
+>
+> The ~19.6M-parameter model in the probes is a **measurement
+> instrument**, not production OCR (19,607,104 params at |V|≈367;
+> Decision #65). That distinction matters enormously when presenting
+> this work to Sarvam or in a research interview.
+
 Companion files still exist and stay authoritative for their jobs:
 
 | File | Job |
@@ -41,33 +58,52 @@ apparatus, which scripts produced which artifacts, what the probes
 actually showed, which stages were deferred on purpose, and which
 decision IDs lock those choices.
 
-The chapters follow the order the work unfolded: first “how do you even
-measure whether OCR got something right?”, then “how do you control what
-a model sees?”, then “how do you open a model up and ask whether it is
-reading or guessing?” After the teaching chapters, the appendices are a
-lookup: every decision ID, built-vs-not, reproduce commands.
+The intellectual center is **Question B** (below): does decoder
+confidence track whether the image supports the text, or only whether
+the output looks like language? The ~19.6M from-scratch model exists
+so we can inspect full softmaxes, ablate the encoder, and run
+position-resolved teacher forcing — things a closed API cannot do. It
+is deliberately **not** a production OCR engine.
 
-A short orientation:
+**Why Sarvam cares.** Production Indic OCR (including Sarvam Vision)
+exposes confidence for routing and review, yet published per-language
+accuracy varies widely (Hindi **95.91%**, Santhali **80.32%**,
+Kashmiri **55.93%** word accuracy on Sarvam's Indic OCR benchmark —
+re-verified on [sarvam.ai/blogs/sarvam-vision](https://www.sarvam.ai/blogs/sarvam-vision),
+Decisions #6, #60). Stage 5 is **not** an accuracy competition against
+Sarvam; it asks whether confidence signals track difficulty. See
+**Presenting to Sarvam** (before Chapter 0) for the pitch.
 
-- **Executed in this phase:** Stage 0 (error taxonomy), Stage 1
-  (controlled renderer + line manifests), Stage 2a (from-scratch
-  instrument), Stage 4 probes on that instrument, Stage 5a (Sarvam
-  Extract confidence vs published accuracy), Stage 5b (rank-correlation
-  transfer, offline), Stage 6 (triage cascade, offline).
-- **Engineering that makes the science runnable:** resume-by-default
-  baselines, hand-review suggestions, line-crop export, `make smoke-test`,
-  Colab `--data-root` + zip export.
-- **Specified, taught, not executed:** RLVR **policy** training
-  (coverage ablation still untrained; `docs/rlvr_scoping.md`), Stage 2b **SFT**
-  ran on Colab T4 (Decision #84). Noise/scramble, n-gram KL, and the
-  Probe 5 overlap check are in the preprint.
+Read **First principles: the central finding** before the teaching
+chapters if you want the mechanistic story step-by-step without code.
+
+**Preprint vs later extensions.** [`paper/main.pdf`](./paper/main.pdf)
+covers Stage 0–2 and the mechanistic probes (Stage 4). **Stage 5b**
+(rank-correlation transfer) and **Stage 6** (offline triage cascade) were
+computed and documented afterward in `docs/stage5b_rank_correlation.md`
+and `docs/stage6_triage_cascade.md`; they are **not** in the preprint.
+When presenting the work, say: *the preprint focuses on the instrument;
+we subsequently extended with production-confidence transfer and offline
+triage analysis.*
+
+**Executed in this phase:** Stage 0 (error taxonomy), Stage 1 (controlled
+renderer + line manifests), Stage 2a (from-scratch instrument), Stage 4
+probes, Stage 5a (Sarvam Extract confidence vs published accuracy),
+Stage 5b (rank-correlation transfer, offline), Stage 6 (triage cascade,
+offline).
+
+**Engineering that makes the science runnable:** resume-by-default
+baselines, hand-review suggestions, line-crop export, `make smoke-test`,
+Colab `--data-root` + zip export.
+
+**Specified, taught, not executed:** RLVR **policy** training (coverage
+ablation still untrained; `docs/rlvr_scoping.md`); Stage 2b **SFT** ran
+on Colab T4 (Decision #84). Noise/scramble, n-gram KL, and the Probe 5
+overlap check are in the preprint.
 
 Numbers recomputed from this checkout are labeled **measured**. Numbers
 that appear on the site or in older write-ups but whose result files are
 not in the tree are labeled **reported**.
-
-> **What this book is for.** One document you can open for the science,
-> the build path, and the interpretation.
 
 ---
 
@@ -75,17 +111,26 @@ not in the tree are labeled **reported**.
 
 | If you want… | Start here |
 |---|---|
+| The central finding from first principles | **First principles: the central finding** (before Chapter 0) |
+| What ran vs what we did not prove vs next steps | **Experiments done · Not proved · Roadmap** (after **Presenting to Sarvam**) |
+| A Sarvam call or product presentation | **Presenting to Sarvam** + **60-second story** |
+| The 60-second interview pitch | **60-second story** (below) |
+| Defending the project in an interview | **Interview defense** (below) + **Appendix H — Interview Q&A** + **What not to claim** |
+| How this relates to published VLM/OCR work | **Related work** (before Chapter 0) |
 | A quick repo map + what runs where | **Start here (15 minutes)** |
-| The research questions and what we concluded | **Research questions and answers** (next) |
+| The research chain in one diagram | **The entire project in one picture** |
+| The core conceptual distinction | **Correctness ≠ confidence ≠ grounding** · **What the paper does and does not claim** |
+| The research questions and what we concluded | **Research questions and answers** · **What we concluded** |
 | How data flowed from GlotOCR pages to paper figures | **How the results were built** |
 | What exists vs what is still a checkbox | **Implementation status** |
 | Why a weird-looking choice exists | **Decision catalog** or Appendix A → `DECISIONS.md` |
-| Computer vision / Indic scripts from zero | Chapter 0 |
+| Computer vision / Indic scripts from zero | Chapter 0 (after **First principles**) |
 | Why Indic CER is a measurement problem | Chapter 1 |
 | The renderer and exposure dial | Chapter 2 |
 | The instrument architecture and training | Chapter 3 |
 | The probe findings in detail | Chapter 7 |
 | Production API vs owned model | Chapter 8 |
+| Interview attack questions | **Appendix H — Interview Q&A** |
 | Commands to regenerate headlines | Appendix E |
 
 Teaching chapters keep this shape:
@@ -97,6 +142,151 @@ Teaching chapters keep this shape:
 5. What the evidence shows, or what is still missing.
 6. One sentence to keep.
 
+### 60-second story
+
+> Modern Indic OCR can achieve high aggregate accuracy while performance
+> varies substantially across scripts. Sarvam's published benchmark shows
+> Hindi **95.91%**, Santhali **80.32%**, and Kashmiri **55.93%** word
+> accuracy — a **39.98 pp** spread — yet production systems still expose
+> a confidence scalar for routing. The practical question is not only
+> whether OCR is wrong, but whether confidence tells us **when** it is
+> wrong and **why**.
+>
+> I could not answer that with a production API alone — I needed
+> counterfactuals: blank images, unseen scripts, encoder ablation, and
+> full token distributions. So I built a ~19.6M-parameter encoder-decoder
+> **from scratch** as a measurement instrument (not a competitor to
+> Sarvam), plus Indic-aware grapheme scoring and a controlled renderer.
+>
+> The sharpest finding: at **generation position 0** (no text prefix yet),
+> the instrument assigns teacher-forced *p*(correct first grapheme) ≈
+> **2.2×10⁻¹¹** while self-generated max-softmax ≈ **0.90**; ground truth
+> is never the argmax (**0/180**). Blank images behave similarly. This
+> does **not** prove that models which can read are hallucinating — it
+> shows confidence without visual grounding in **this** undertrained
+> instrument. Mid-sequence behavior matches a 4–5-gram text-only LM
+> (KL ≈ **0.27–0.32** nats; [`docs/ngram_kl_argmax.md`](./docs/ngram_kl_argmax.md)).
+>
+> External validation on Sarvam Extract: page-level confidence moved only
+> **0.0027** across the published language gap (Stage 5a); per-image
+> difficulty did not predict Sarvam CER (Stage 5b: ρ = **0.0293**,
+> p = **0.8267**); instrument-confidence routing was worse than random at
+> 20% escalation (Stage 6). The lesson for production: **max-softmax is
+> not the same as visual grounding** — the next step is a
+> grounding-aware confidence signal.
+
+Numbers: [`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md).
+Do not copy tables into slides from memory.
+
+### Interview defense
+
+Use this spine when someone asks you to walk through the methodology.
+Each step was designed to eliminate a competing explanation — not merely
+to accumulate plots.
+
+1. **Measurement** — grapheme-cluster alignment and Tier-1 encoding
+   equivalence before counting errors (Stage 0).
+2. **Controlled data** — renderer with natural / flattened / inverted
+   exposure; TV dial verified (natural **0**, flat ≈ **0.047**, inv ≈
+   **0.005** — [`docs/RESULTS.md`](./docs/RESULTS.md)).
+3. **Controlled model** — from-scratch encoder-decoder so pretraining
+   cannot confound exposure (Stage 2a; 19,607,104 params —
+   [`docs/training_config.md`](./docs/training_config.md)).
+4. **Instrumentation** — full softmax, teacher forcing, encoder ablation.
+5. **Behavioral tests** — text-bearing vs blank vs noise vs unseen scripts
+   (Probe 3, 5b).
+6. **Mechanistic test** — zero encoder memory: pooled mean confidence
+   full **0.9861** vs zero **0.9891** (Δ **−0.0030**); mean KL **1.075**
+   nats; top-1 agree ≈ **0.879**; prior sufficiency **0.8827**
+   ([`docs/attention_ablation_analysis.md`](./docs/attention_ablation_analysis.md)).
+7. **Position-resolved test** — position 0 isolates vision; mid-sequence
+   ≈ 4/5-gram LM (position-0 instrument **−24.54** nats vs n-gram first
+   symbol **−4.73** — [`docs/position_matched_ngrams.md`](./docs/position_matched_ngrams.md)).
+8. **Exposure experiment (Probe 1)** — dial worked; causal β withheld
+   (natural **18.3%** vs flattened **0.33%** / inverted **0.67%** line
+   accuracy — [`docs/probe1_fixed_effects.md`](./docs/probe1_fixed_effects.md)).
+9. **External validation** — Sarvam Extract vs published language spread
+   (Stage 5a); per-image rank transfer (Stage 5b: null ρ).
+10. **Operational test** — triage cascade (Stage 6: instrument worse than
+    random at k=12 / 20%).
+11. **Limitation** — no positive control (known-good AR Devanagari reader
+    under the same position-0 diagnostic); no genuine held-out synthetic
+    train/eval split before training; AUROC **0.838** is in-manifest only
+    (held-out-image AUROC(conf→CER<median) ≈ **0.5698** —
+    [`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md)).
+
+**If they say "your model barely reads":** accuracy was not the objective;
+the instrument exists so we can inspect distributions and run
+counterfactuals a closed API cannot. See **Appendix H**.
+
+**If they say "why not just Sarvam":** Sarvam is the external production
+reference; the instrument is the mechanistic lab. Stage 5 tests transfer,
+not numerical comparability of confidence semantics.
+
+---
+
+## The entire project in one picture
+
+```text
+PROBLEM — How trustworthy is OCR confidence?
+   ↓
+Stage 0 — Indic-aware evaluation (what counts as "wrong"?)
+   ↓
+Stage 1 — Controlled renderer (control what the model sees)
+   ↓
+Stage 2 — From-scratch OCR instrument (known empty history)
+   ↓
+Probes — exposure · confusion · blank/noise · calibration ·
+         unseen scripts · encoder ablation · teacher-forced p(GT) by position
+   ↓
+Production transfer — Does this rhyme with Sarvam confidence?
+   ↓
+Triage — Can confidence route pages to a stronger system?
+```
+
+**Central discovery:** in this from-scratch instrument, the model can be
+extremely confident even when it demonstrably does not read the
+evaluation image — **not** a universal claim that models which can read
+are hallucinating. The sharpest case is **generation position 0** (no
+prefix yet — only the image can supply input-dependent information):
+
+- self-generated max-softmax ≈ **0.90**
+- teacher-forced *p*(correct first grapheme) ≈ **2.2 × 10⁻¹¹**
+- ground truth is the argmax in **0 / 180** sequences
+- text-bearing and blank behave similarly
+
+Numbers: [`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md).
+Do not treat chat summaries as canonical.
+
+---
+
+## Correctness ≠ confidence ≠ grounding
+
+```text
+CORRECTNESS — Did the model output the right text?     → often LOW
+GROUNDING   — Did the image support that output?       → LOW
+CONFIDENCE  — How peaked is the output distribution?   → HIGH
+```
+
+Max-softmax only answers the third. You might assume confidence ≈
+grounding ≈ correctness; this project shows they can separate. That is
+why the preprint is called *Reading Without Looking*.
+
+### What the paper does and does not claim
+
+| Does claim (in this instrument + sample) | Does **not** claim |
+|---|---|
+| Max-softmax can stay near ceiling when *p*(GT) at position 0 is ~10⁻¹¹ and GT is never argmax (0/180) | That VLMs or production OCR "don't look at images" in general |
+| Blank, unseen-script, and ablation controls are consistent with a language-prior-dominated confidence peak | That Sarvam's encoder can be blank-ablated or that their confidence is "broken" |
+| Mid-sequence teacher-forced behavior matches a 4–5-gram text-only LM (KL ~0.27–0.32 nats mid-sequence) | That exposure **causes** better OCR (Probe 1 causal β withheld) |
+| Sarvam Extract page confidence moved **0.0027** across a **39.98 pp** published accuracy gap (Stage 5a, n=35) | That our 20M instrument should match Sarvam accuracy |
+| Per-image instrument difficulty did not predict Sarvam CER (ρ = **0.0293**, p = **0.8267**, Stage 5b) | That AUROC **0.838** generalizes (in-training-manifest only) |
+| Instrument-confidence routing left higher residual CER than random at 20% escalation (Stage 6) | That max-softmax is useless everywhere — blanks scored 0.0 on Sarvam Extract |
+
+> **Repeat this framing early and often:** the paper shows **confidence
+> without visual grounding in a controlled from-scratch instrument**, then
+> tests weak/external transfer to production — not universal hallucination.
+
 ---
 
 ## Start here (15 minutes)
@@ -104,47 +294,64 @@ Teaching chapters keep this shape:
 If you are reading this repo for the first time, the fastest way to get
 oriented is to separate three things:
 
-- **The paper narrative** (`paper/main.pdf`) — what we claim and why.
-- **The committed evidence** (`data/probe_results/*.jsonl`, plus `docs/*_analysis.md`)
-  — what you can regenerate from this checkout.
-- **The heavy compute** (Colab checkpoints, `data/raw/*`, `data/cache/*`) — what is
-  intentionally *not* in git.
+- **The paper narrative** (`paper/main.pdf`) — what we claim and why
+  (instrument + mechanistic probes only).
+- **The committed evidence** (`data/probe_results/*.jsonl`, plus
+  `docs/*_analysis.md`) — what you can regenerate from this checkout.
+- **The heavy compute** (Colab checkpoints, `data/raw/*`, `data/cache/*`)
+  — what is intentionally *not* in git.
 
-If you plan to modify the repo, read `AGENTS.md` first — it defines the stage order,
-what “done” means, and the Colab/resume rules this project treats as non-negotiable.
+The ~19.6M model is a **measurement instrument** for probing decoder
+confidence — not something you deploy for OCR accuracy. If you plan to
+modify the repo, read `AGENTS.md` first — it defines the stage order,
+what "done" means, and the Colab/resume rules this project treats as
+non-negotiable.
 
 ### Glossary (terms used everywhere)
 
-- **Instrument vs demo**: the “instrument” is the from-scratch model used for probes
-  (it has deliberately empty pretraining exposure); the “demo” is the LoRA-adapted VLM
-  whose job is to resemble a production system’s components (Decision #1).
-- **Tier 0/1/2 (scoring)**: Tier 0 = whitespace normalization; Tier 1 = deterministic
-  encoding equivalence; Tier 2 = phonetic equivalence via transliteration (Decisions
-  #4, #7, #8).
-- **Tier A/B/C (data realism)**: Tier A = clean controlled renders; Tier B = degraded
-  controlled renders; Tier C = held-out GlotOCR evaluation images (Decision #74:
-  they are renders, not “real scans”).
-- **Teacher forcing**: score \(p(\mathrm{GT})\) on the ground-truth next token under the
-  ground-truth prefix, instead of letting the model follow its own argmax path.
-- **Position 0**: the first generated token. There is no prefix yet, so any high
-  probability on the correct first grapheme must come from the image, not a language prior.
+- **Instrument vs demo**: the "instrument" is the from-scratch model used
+  for probes (it has deliberately empty pretraining exposure); the "demo"
+  is the LoRA-adapted VLM whose job is to resemble a production system's
+  components (Decision #1). The scientific confidence question is
+  answered by the instrument, not the demo.
+- **Tier 0/1/2 (scoring)**: Tier 0 = whitespace normalization; Tier 1 =
+  deterministic encoding equivalence; Tier 2 = phonetic equivalence via
+  transliteration (Decisions #4, #7, #8).
+- **Tier A/B/C (data realism)**: Tier A = clean controlled renders; Tier
+  B = degraded controlled renders; Tier C = held-out GlotOCR evaluation
+  images (Decision #74: they are **renders**, not photographs or scans).
+- **Teacher forcing**: score \(p(\mathrm{GT})\) on the ground-truth next
+  token under the ground-truth prefix, instead of letting the model follow
+  its own argmax path.
+- **Position 0**: the first generated token. There is no prefix yet, so
+  any high probability on the correct first grapheme must come from the
+  image, not a language prior.
 
 ### What you can run on a laptop (no GPU)
 
 - **Architecture proof (fake data, no `data/raw/`)**: `make smoke-test`  
-  This is the “does the pipeline wire together?” check. It does not produce findings.
-- **Recompute offline paper tables from committed jsonl**: `python3 src/analysis/paper_defensibility_stats.py`  
+  This is the "does the pipeline wire together?" check. It does not
+  produce findings.
+- **Recompute offline paper tables from committed jsonl**:
+  `python3 src/analysis/paper_defensibility_stats.py`  
   Writes/overwrites `docs/paper_defensibility_stats.md`.
-- **Regenerate figures from committed jsonl**: `python3 src/analysis/make_paper_figures.py`  
-  Writes `paper/figures/*.pdf` and `docs/figures/*.png` (see Decision #64).
+- **Regenerate figures from committed jsonl**:
+  `python3 src/analysis/make_paper_figures.py`  
+  Writes `paper/figures/*.pdf` and `docs/figures/*.png` (see Decision
+  #64).
+- **Stage 5b / Stage 6 reports** (offline, no API): already in
+  `docs/stage5b_rank_correlation.md` and `docs/stage6_triage_cascade.md`.
 
 ### What requires Colab T4 (checkpoints live off-repo)
 
-- **Training the instrument**: `src/models/instrument/train.py` (fp16 on free Colab T4; resumable by default — see hard constraints in `AGENTS.md`)
-- **Probes that forward-pass the trained instrument**: most of `src/probes/`  
+- **Training the instrument**: `src/models/instrument/train.py` (fp16 on
+  free Colab T4; resumable by default — see hard constraints in
+  `AGENTS.md`)
+- **Probes that forward-pass the trained instrument**: most of
+  `src/probes/`  
   These write committed JSONL outputs under `data/probe_results/`.
 
-`COLAB_RUNS.md` is the short “what ran where” ledger.
+`COLAB_RUNS.md` is the short "what ran where" ledger.
 
 ### Repo structure (what lives where)
 
@@ -156,8 +363,8 @@ src/
   eval/                 Stage 0: baselines + Tier 0/1/2 scoring + taxonomy + hand review
   renderer/             Stage 1: layout bank + degradation + HarfBuzz render + glyph-frequency dial
   models/
-    instrument/         Stage 2a: from-scratch OCR model used for probes (the “instrument”)
-    demo/               Stage 2b: LoRA + SFT + RLVR reward scaffolding (the “demo”)
+    instrument/         Stage 2a: from-scratch OCR model used for probes (the "instrument")
+    demo/               Stage 2b: LoRA + SFT + RLVR reward scaffolding (the "demo")
   probes/               Stage 4/5: runs that emit `data/probe_results/*.jsonl`
   analysis/             scripts that turn jsonl into `docs/*_analysis.md` + figures
 
@@ -173,7 +380,8 @@ paper/                  LaTeX + publication figures + compiled PDF
 
 ### Pipeline at a glance
 
-Two pictures: one for **data flow**, one for **what to touch** when you want a new result.
+Two pictures: one for **data flow**, one for **what to touch** when you
+want a new result.
 
 ```mermaid
 flowchart LR
@@ -196,82 +404,142 @@ flowchart TD
   DOCS --> FIGS
 ```
 
-### Where to find “the results” (links, not duplicated tables)
+### Where to find "the results" (links, not duplicated tables)
 
 This book explains. These files *are the evidence*:
 
 - **Canonical result index**: [`docs/RESULTS.md`](./docs/RESULTS.md)
-- **Regenerable paper tables**: [`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md)
+- **Regenerable paper tables**:
+  [`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md)
 - **Stage 0 measurement + validation**:
-  - [`docs/tier0e_paddleocr.md`](./docs/tier0e_paddleocr.md) (PaddleOCR corpus fill + taxonomy slice)
-  - [`docs/adjudication_analysis.md`](./docs/adjudication_analysis.md) (UNREVIEWED sample + what’s still provisional)
-  - [`docs/tier2_validation.md`](./docs/tier2_validation.md) (Tier 2 hand-checked pairs)
+  - [`docs/tier0e_paddleocr.md`](./docs/tier0e_paddleocr.md) (PaddleOCR
+    corpus fill + taxonomy slice)
+  - [`docs/adjudication_analysis.md`](./docs/adjudication_analysis.md)
+    (UNREVIEWED sample + what's still provisional)
+  - [`docs/tier2_validation.md`](./docs/tier2_validation.md) (Tier 2
+    hand-checked pairs)
 - **Probe write-ups**:
-  - [`docs/probe5b_analysis.md`](./docs/probe5b_analysis.md) (zero-shot floor)
-  - [`docs/attention_ablation_analysis.md`](./docs/attention_ablation_analysis.md) (encoder-memory ablation)
-  - [`docs/gt_likelihood_analysis.md`](./docs/gt_likelihood_analysis.md) (teacher-forced log \(p(\mathrm{GT})\) + entropy)
-  - [`docs/probe6_synthetic_real_analysis.md`](./docs/probe6_synthetic_real_analysis.md) (synthetic → held-out Tier C check)
-- **Production API audit**: [`docs/sarvam_vision_confidence.md`](./docs/sarvam_vision_confidence.md)
+  - [`docs/probe5b_analysis.md`](./docs/probe5b_analysis.md) (zero-shot
+    floor)
+  - [`docs/attention_ablation_analysis.md`](./docs/attention_ablation_analysis.md)
+    (encoder-memory ablation)
+  - [`docs/gt_likelihood_analysis.md`](./docs/gt_likelihood_analysis.md)
+    (teacher-forced log \(p(\mathrm{GT})\) + entropy)
+  - [`docs/probe6_synthetic_real_analysis.md`](./docs/probe6_synthetic_real_analysis.md)
+    (synthetic → held-out Tier C check)
+- **Production API audit**:
+  [`docs/sarvam_vision_confidence.md`](./docs/sarvam_vision_confidence.md)
+- **Stage 5b / Stage 6 (post-preprint, offline)**:
+  [`docs/stage5b_rank_correlation.md`](./docs/stage5b_rank_correlation.md),
+  [`docs/stage6_triage_cascade.md`](./docs/stage6_triage_cascade.md)
 - **Where runs happened**: [`COLAB_RUNS.md`](./COLAB_RUNS.md)
 - **The paper narrative**: [`paper/main.pdf`](./paper/main.pdf)
 
-### “Jump to evidence”: each research question → the backing artifact
+### "Jump to evidence": each research question → the backing artifact
 
 If you only have time for the defensible core, this is the fastest path.
 
-- **Q1 (what counts as an error?)**: Stage 0 scoring + taxonomy  
-  - Code: `src/eval/error_taxonomy.py`, `src/eval/equivalence_tables.py`, `src/eval/transliteration_equivalence.py`  
-  - Report: [`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md) (Tier 1 fraction; see also [`docs/adjudication_analysis.md`](./docs/adjudication_analysis.md))
-- **Q2 (exposure vs complexity)**: Probe 1 fixed-effects diagnostic  
+- **Q A (exposure vs complexity)**: Probe 1 fixed-effects diagnostic  
   - Script: `src/analysis/probe1_fixed_effects.py`  
   - Report: `docs/probe1_fixed_effects.md`
-- **Q3 (reading vs guessing / confidence without sight)**: blank/noise + training curve + ablations + teacher forcing  
-  - Probe 3: `data/probe_results/probe3_hindi_*.jsonl` + analysis in `docs/`  
-  - Probe 3b: `data/probe_results/probe3_curve_*.json` + report `docs/probe3_curve_analysis.md`  
-  - Attention ablation: `data/probe_results/attention_ablation_*.jsonl` + report [`docs/attention_ablation_analysis.md`](./docs/attention_ablation_analysis.md)  
-  - Teacher-forced likelihood: `data/probe_results/probe_gt_likelihood_*.jsonl` + report [`docs/gt_likelihood_analysis.md`](./docs/gt_likelihood_analysis.md)
-- **Q4 (does softmax “know the right glyph” when argmax is wrong?)**: Probe 2 substitutions + \(p(\mathrm{true})\) / rank  
+- **Q B (confidence = visual evidence?)**: blank/noise + training curve
+  + ablations + teacher forcing + position 0  
+  - Probe 3: `data/probe_results/probe3_hindi_*.jsonl`  
+  - Probe 3b: `data/probe_results/probe3_curve_*.json` +
+    `docs/probe3_curve_analysis.md`  
+  - Attention ablation: `data/probe_results/attention_ablation_*.jsonl` +
+    [`docs/attention_ablation_analysis.md`](./docs/attention_ablation_analysis.md)  
+  - Teacher-forced likelihood:
+    `data/probe_results/probe_gt_likelihood_*.jsonl` +
+    [`docs/gt_likelihood_analysis.md`](./docs/gt_likelihood_analysis.md)  
+  - Headline numbers:
+    [`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md)
+    (Abstract Fact + Items 1–7)
+- **Q1 (what counts as an error?)**: Stage 0 scoring + taxonomy  
+  - Code: `src/eval/error_taxonomy.py`, `equivalence_tables.py`,
+    `transliteration_equivalence.py`  
+  - Report: [`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md)
+    (Tier 1 fraction; see also
+    [`docs/adjudication_analysis.md`](./docs/adjudication_analysis.md))
+- **Q2 (exposure vs complexity)**: same as Q A above
+- **Q3 (reading vs guessing)**: same as Q B above
+- **Q4 (softmax rank of true grapheme)**: Probe 2  
   - JSONL: `data/probe_results/probe2_hindi_natural_seed*.jsonl`  
   - Report: `docs/probe2_confusion_analysis.md`
 - **Q5 (calibration)**: Probe 5 + offline defensibility battery  
   - JSONL: `data/probe_results/probe5_hindi_*.jsonl`  
   - Tables: [`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md)
-- **Q6 (synthetic → held-out Tier C check)**: Probe 6  
+- **Q6 (synthetic → Tier C check)**: Probe 6  
   - JSONL: `data/probe_results/probe6_synthetic_real_hindi_seed*.jsonl`  
   - Report: [`docs/probe6_synthetic_real_analysis.md`](./docs/probe6_synthetic_real_analysis.md)
-- **Q7 (production API confidence vs its own accuracy spread)**: Stage 5a (Sarvam Extract)  
+- **Q7 (production confidence vs published accuracy)**: Stage 5a + 5b  
   - JSONL: `data/probe_results/sarvam_transfer_probe.jsonl`  
-  - Report: [`docs/sarvam_vision_confidence.md`](./docs/sarvam_vision_confidence.md)
-- **Q8 (triage cascade)**: Stage 6 cascade results (offline)  
-  - Report: `docs/stage6_triage_cascade.md`  
+  - Reports: [`docs/sarvam_vision_confidence.md`](./docs/sarvam_vision_confidence.md),
+    [`docs/stage5b_rank_correlation.md`](./docs/stage5b_rank_correlation.md)
+- **Q8 (triage cascade)**: Stage 6 (offline)  
+  - Report: [`docs/stage6_triage_cascade.md`](./docs/stage6_triage_cascade.md)  
   - Code: `src/probes/cascade.py`
+
+---
 
 ## Research questions and answers
 
-The project is diagnostic evaluation of **decoder confidence** in Indic
-document OCR. Production systems use per-token or per-page confidence to
-decide what a human should review. The scientific question is whether
-that signal tracks **whether the image supports the text**, or only
-**whether the generated string looks like language**.
+The project is a controlled scientific investigation of **decoder
+confidence** in Indic document OCR — not primarily an attempt to build
+the most accurate OCR model. Production systems use per-token or
+per-page confidence to decide what a human should review. The central
+question is whether that signal tracks **whether the image supports the
+text**, or only **whether the generated string looks like language**.
 
-Indic documents add two measurement problems: multiple valid Unicode
-encodings of the same reading, and published systems that fail
-**non-silently** — high confidence when the script in the image is one
-the model cannot read. A closed API cannot explain *why*. This
-repository therefore (1) normalizes encodings before counting residual
-errors, (2) trains a small reader with a known empty Indic pretraining
-history, and (3) probes blank input, unseen scripts, encoder ablation,
-and teacher-forced likelihood **by generation position**. The
-informative test is **position 0**: there is no generated prefix, so
-any probability on the correct first grapheme has to come from the
-image.
+### Question A — Why is Indic OCR difficult?
+
+Is poor recognition caused by **insufficient grapheme exposure**, or by
+**intrinsic visual complexity**? Natural Devanagari frequency spans
+orders of magnitude; accuracy-vs-frequency confounds exposure with
+complexity. That motivated the controlled renderer and the natural /
+flattened / inverted exposure conditions (Stage 1, Probe 1). See **Q2**
+below for what we found — including the distinction that **apparatus
+success ≠ experiment success** when flattened/inverted models sit at the
+performance floor.
+
+### Question B — Does confidence mean the model actually sees the image?
+
+This is the **central paper question**. Production OCR often assumes:
+high confidence → the model knows; low confidence → send to a human.
+But an autoregressive decoder can emit fluent text from a language prior
+while the image is blank, scrambled, or an unseen script. The informative
+test is **position 0**: there is no generated prefix, so any probability
+on the correct first grapheme has to come from the image.
+
+**Position-0 headline** (cite
+[`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md),
+Abstract Fact):
+
+| Signal | Text-bearing Hindi | Blank |
+|---|---:|---:|
+| Self-generated max-softmax (pos 1) | **0.9020** | **0.8952** |
+| Teacher-forced *p*(GT) at pos 0 | **2.204×10⁻¹¹** | **6.328×10⁻¹¹** |
+| GT is argmax at pos 0 | **0 / 180** | **0 / 180** |
+
+The model is ~90% confident in its chosen first token while assigning
+the true first grapheme ~10⁻¹¹ probability. See **Q3–Q6** for the full
+probe battery.
+
+Indic scripts add two measurement problems before either question is
+answerable: multiple valid Unicode encodings of the same reading, and
+published systems that fail **non-silently** — high confidence when the
+script in the image is one the model cannot read. A closed API cannot
+explain *why*. This repository therefore (1) normalizes encodings before
+counting residual errors, (2) trains a small reader with a known empty
+Indic pretraining history, and (3) probes blank input, unseen scripts,
+encoder ablation, and teacher-forced likelihood **by generation position**.
 
 ### Q1 — When an engine disagrees with ground truth, is it wrong?
 
 **Question.** Exact-match and code-point CER treat every byte
 disagreement as an error. Indic orthography has encoding variants NFC
 does not cover (ZWJ/ZWNJ, anusvara vs conjunct nasal, khanda-ta, danda
-vs period, digit systems). How much of “error” is spelling, not
+vs period, digit systems). How much of "error" is spelling, not
 misreading?
 
 **How we asked it.** Stage 0: run Tesseract / Surya / PaddleOCR
@@ -295,8 +563,9 @@ comparing engines or claiming improvement.
 
 ### Q2 — Is a glyph hard because it is visually hard, or because it was rare?
 
-**Question.** Natural Devanagari frequency spans orders of magnitude.
-Accuracy vs frequency confounds exposure with complexity.
+**Question.** Same as Question A. Natural Devanagari frequency spans
+orders of magnitude. Accuracy vs frequency confounds exposure with
+complexity.
 
 **How we asked it.** Stage 1 renderer with a glyph-frequency *dial*:
 `natural` / `flattened` / `inverted`, same data volume, TV ≤ 0.08
@@ -307,20 +576,22 @@ exposure with glyph fixed effects (`probe1_fixed_effects.py`).
 **What we found.** The dial moved. Flattened/inverted **collapsed line
 accuracy to ~0%**; natural reached only modest line accuracy (~18% in
 the first FE diagnostic). Headline β is **withheld** as uninterpretable
-(Decision #49, `docs/probe1_fixed_effects.md`). Mechanistic paper
-claims therefore use the three **natural** checkpoints only (#66), not
-all nine.
+(Decision #49, `docs/probe1_fixed_effects.md`). **Apparatus success ≠
+experiment success:** we demonstrated exposure manipulation, but the
+planned causal slope is not claimable because two conditions never
+learned to read. Mechanistic paper claims therefore use the three
+**natural** checkpoints only (#66), not all nine.
 
 **Implied fix.** Treat exposure as something you design. Do not report
 an exposure slope when two of three conditions never learned to read.
 
 ### Q3 — Is the model looking at the image, or completing language?
 
-**Question.** Autoregressive OCR can emit fluent text from a language
-prior. Does confidence drop when there is nothing to read? Does it
-appear as training loss falls? Does zeroing encoder memory change the
-confidence peak? Does teacher-forced *p*(ground truth) at position 0
-exceed chance?
+**Question.** Same as Question B. Autoregressive OCR can emit fluent
+text from a language prior. Does confidence drop when there is nothing
+to read? Does it appear as training loss falls? Does zeroing encoder
+memory change the confidence peak? Does teacher-forced *p*(ground truth)
+at position 0 exceed chance?
 
 **How we asked it.** Probe 3 blank/noise; Probe 3b snapshots at steps
 500/1000/2000/3000/5000; attention ablation (zero encoder memory before
@@ -333,7 +604,7 @@ blank, noise, Santhali, and Kashmiri (condition means within a few
 thousandths; 5b between-condition range of across-seed means **0.0037**,
 smaller than seed SDs). Training-curve real−blank gap sign-flips and is
 indistinguishable from zero across seeds. Ablation: mean confidence
-almost unchanged (full vs zero-memory); ~12% of token-choice mass
+almost unchanged (full vs zero-memory); ~8% of token-choice mass
 depends on image content. Teacher-forced first-token *p*(GT) is on the
 order of 10⁻¹¹ while self-generated max-softmax is ~0.90. Ground truth
 is never the argmax at position 0 (0/180 sequences). Charset: **360/360**
@@ -342,8 +613,8 @@ CER on held-out Hindi is near 1 and not better than blank (see
 `docs/paper_defensibility_stats.md` Item 1). The model **is**
 undertrained; the finding is that confidence **does not report that**.
 
-**Implied fix.** Do not use max-softmax as a “the image supports this
-string” signal on this class of decoder. Position 0 and teacher-forced
+**Implied fix.** Do not use max-softmax as a "the image supports this
+string" signal on this class of decoder. Position 0 and teacher-forced
 *p*(GT) are the honest tests.
 
 ### Q4 — When the model is wrong, does the softmax still know the right cluster?
@@ -356,7 +627,7 @@ and rank from the full softmax (Decision #57).
 
 **What we found.** See `docs/probe2_confusion_analysis.md` (jsonl
 `probe2_hindi_natural_seed{0,1,2}.jsonl`). Mixed top pairs; substantial
-EOS/space mass. This is not a story of “almost right, rank 2.”
+EOS/space mass. This is not a story of "almost right, rank 2."
 
 ### Q5 — Does confidence rank correctness?
 
@@ -371,10 +642,10 @@ mid-teens, ECE ≈ 0.81. Flattened/inverted: accuracy ~0–1%. Cite
 `docs/paper_defensibility_stats.md` for the pooled AUROC. That AUROC
 is **not** a held-out-string result: Probe 5 samples its eval rows from
 `hindi_natural.jsonl` itself, so the non-overlapping subset is empty
-(`docs/memorisation_split.md`). A different pool (60
-teacher-forced real-scan strings) has partial overlap with the same
-manifest; that is not the Probe 5 split. Mid-sequence teacher-forced
-log *p*(GT) sits in the same band as a 4–5-gram grapheme LM
+(`docs/memorisation_split.md`). A different pool (60 teacher-forced
+real-scan strings) has partial overlap with the same manifest; that is
+not the Probe 5 split. Mid-sequence teacher-forced log *p*(GT) sits in
+the same band as a 4–5-gram grapheme LM
 (`docs/position_matched_ngrams.md`). Full-softmax KL vs that prior
 **is computed** on three seeds (`docs/ngram_kl_argmax.md`): mid-sequence
 KL is ~0.27–0.32 nats with ~91–94% argmax agreement; positions 0, 1,
@@ -386,21 +657,21 @@ treat AUROC on overlapping strings as generalization.
 
 ### Q6 — Does the synthetic world lie? Does the pattern hold on held-out pages?
 
-**Question.** Controlled renders (Tier A/B) might not match “real”
+**Question.** Controlled renders (Tier A/B) might not match evaluation
 pages (Tier C). Also: train/eval leakage.
 
 **How we asked it.** Probe 6 paper scope (Decision #58): Tier C Hindi
 plain + degraded + blank vs synthetic Claim B. Leakage check: 0 overlaps
 between `data/manifests/hindi_*.jsonl` and `data/raw/hindi/images/`.
 Eval images are still GlotOCR **renders**, not photographs (Decision
-#74: never label them “real” in figures).
+#74: never label them "real" in figures).
 
 **What we found.** Mean confidence stays high (plain / degraded / blank
 in the same band); Tier 1/2 line accuracy 0.0 on the scored real
 sample. Pattern transfers across that gap; reading does not appear.
 Details: `docs/probe6_synthetic_real_analysis.md`.
 
-### Q7 — Does a production API’s confidence track its own published accuracy gap?
+### Q7 — Does a production API's confidence track its own published accuracy gap?
 
 **Question.** The instrument is ~20M parameters and does not read.
 Sarvam Vision is a production 3B-class system with published
@@ -411,7 +682,7 @@ accuracy falls (Hindi → Kashmiri)?
 (Digitise has no field confidence, Decision #59). 35 pages, cached once
 (Decision #19). Published accuracies re-fetched from sarvam.ai
 (Decisions #6, #60). Glyph-class transfer (#15) stays deferred; the
-**per-image** Spearman transfer (Decision #89) is the Stage 5b that ran.
+**per-image** Spearman transfer (Decision #89) is Stage 5b.
 
 **What we found (5a).** Hindi → Kashmiri published accuracy gap
 **39.98 pp**; Extract confidence delta **0.0027**. Blanks score 0.0000.
@@ -422,11 +693,12 @@ Spearman ρ = **0.0293**, permutation p = **0.8267** — a genuine null
 (protocol locked before looking; Decision #89). Full table:
 `docs/stage5b_rank_correlation.md`. See Chapter 8.
 
-**What it does not prove.** That Sarvam “reads without looking” in the
-instrument’s mechanistic sense — we cannot blank-ablate their encoder.
-It shows that **page-level confidence does not track their own
-language-wise accuracy spread**, and that the instrument’s difficulty
-ranking does not predict Sarvam’s per-image CER on the same plains.
+**What it does not prove.** That Sarvam "reads without looking" in the
+instrument's mechanistic sense — we cannot blank-ablate their encoder.
+It shows that **page-level confidence did not track the published
+language-wise accuracy spread** in our sample, and that the instrument's
+difficulty ranking did not predict Sarvam's per-image CER on the same
+plains.
 
 ### Q8 — Can confidence route work to a stronger system or a human?
 
@@ -439,8 +711,74 @@ because the instrument is not expected to beat Tesseract.
 Hindi plains), instrument-confidence routing leaves residual system CER
 **0.0109** — worse than random (**0.0095**), GT grapheme-length
 (**0.0092**), and Tesseract confidence (**0.0079**). Report:
-`docs/stage6_triage_cascade.md`. On this test the instrument confidence
-signal is **not** a useful production triage router. See Chapter 9.
+`docs/stage6_triage_cascade.md` (not in the preprint). On this test the
+instrument confidence signal is **not** a useful production triage router.
+See Chapter 9.
+
+---
+
+## What we concluded
+
+Concise findings — cite the docs for tables; this list is orientation
+only.
+
+**Finding 1 — Indic evaluation itself can mislead.** ~20.4% of
+Tesseract *non-exact* rows are Tier-1 encoding variants (provisional;
+large UNREVIEWED). Measure at grapheme/encoding-aware level before
+comparing engines.
+
+**Finding 2 — Exposure apparatus worked; causal slope did not.**
+Flattened/inverted training collapsed (~0% line accuracy); natural
+~18%. Do not claim an exposure β from this experiment (Decision #49).
+
+**Finding 3 — The instrument does not read held-out images; confidence
+does not say so.** Grapheme CER ≈ 0.985 text-bearing vs ≈ 0.949 blank
+(`docs/paper_defensibility_stats.md` Item 1); confidence ~99%.
+
+**Finding 4 — Max-softmax is not a reliable grounding signal.** Blank,
+unseen scripts, and encoder ablation do not meaningfully lower
+confidence; position-0 *p*(GT) ~10⁻¹¹ vs max-softmax ~0.90.
+
+**Finding 5 — Position 0 is the killer diagnostic.** No prefix → image
+must matter; yet GT is never argmax (0/180) and self-confidence stays
+~0.90.
+
+**Finding 6 — Mid-sequence behaves like a text-only LM.** Teacher-forced
+log *p*(GT) converges toward 4–5-gram grapheme priors; real and blank
+curves overlap (KL ~0.27–0.32 nats mid-sequence).
+
+**Finding 7 — Calibration is broken; AUROC is not held-out.** Natural:
+conf ≈ 99.4%, acc ≈ 18.3%, ECE ≈ 0.811; AUROC 0.838 is
+in-training-manifest only (`docs/memorisation_split.md`).
+
+**Finding 8 — Production transfer: null rank correlation.** Instrument
+difficulty ≉ Sarvam per-image CER: ρ = 0.0293, p = 0.8267 (Stage 5b).
+
+**Finding 9 — Triage: worse than random.** Instrument-confidence routing
+at 20% escalation leaves higher residual CER than random or Tesseract
+confidence (Stage 6).
+
+**Central limitation:** no positive control — a known-good autoregressive
+Devanagari reader under the same position-0 diagnostic. Second: no
+genuine held-out synthetic train/eval split before training.
+
+---
+
+## What not to claim
+
+| Don't say | Say instead |
+|---|---|
+| "We proved OCR models hallucinate." / "VLMs don't look at images." | In **this** from-scratch instrument, confidence stayed high when the model demonstrably did not read the evaluation image; production evidence is weaker and correlational. |
+| "We proved a model that can read is hallucinating." | We studied an undertrained instrument (~CER 0.985); the finding is **confidence ≠ grounding**, not universal VLM failure. |
+| "We trained a production OCR model." | ~19.6M research instrument for mechanistic evaluation. |
+| "18.3% held-out accuracy." | Synthetic line accuracy **18.3%** on the **training-manifest** regime (natural; [`docs/probe1_fixed_effects.md`](./docs/probe1_fixed_effects.md)). |
+| "GlotOCR provided real scans." | Evaluation images are **renders** (plain / degraded). |
+| "We beat / competed with Sarvam on accuracy." | Stage 5 is **not** an accuracy contest; it tests whether confidence tracks difficulty. |
+| "We proved Sarvam doesn't look at images." | Page-level Extract confidence didn't track published language accuracy (Δ **0.0027**); instrument ranking didn't predict Sarvam CER (ρ **0.0293**). We cannot ablate their encoder. |
+| "Sarvam confidence and our confidence are the same number." | Different semantics; Stage 5 tests two **transfer questions**, not calibration between models. |
+| "AUROC 0.838 proves confidence generalizes." | AUROC is in-training-manifest only; held-out-image AUROC(conf→CER<median) ≈ **0.5698** ([`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md)). |
+| "Probe 1 proved exposure causes better OCR." | Apparatus manipulated exposure (TV passed); causal β withheld because flattened (**0.33%**) / inverted (**0.67%**) never learned to read. |
+| "Present to Sarvam: our model vs theirs." | Present: instrument → mechanism → external validation → **grounding-aware confidence** as the engineering next step. |
 
 ---
 
@@ -473,7 +811,7 @@ data/raw/{hindi,bengali,santhali,kashmiri}/     GlotOCR images + GT (gitignored)
   upstream.
 - **Script scope (Decision #6).** Devanagari (Hindi) is the powered
   experiment. Bengali is a cross-script structural check (manifests
-  exist; full probe sweep not the paper’s mechanistic claims). Santhali
+  exist; full probe sweep not the paper's mechanistic claims). Santhali
   (Ol Chiki) and Kashmiri (Perso-Arabic) are **zero-shot floor only** —
   no training pipeline — because those two languages are the published
   outliers the project exists to speak to.
@@ -507,7 +845,7 @@ blocked.
 
 Two models were a founding choice (Decision #1): a pretrained VLM
 cannot isolate exposure. Vocabulary is grapheme clusters, not BPE (#2),
-so “times this visual unit was seen” is not tangled with merge
+so "times this visual unit was seen" is not tangled with merge
 frequency. Encoder 320-d / decoder 384-d with a linear bridge (#36).
 Greedy decode, no beam, no KV cache, returns probe tensors (#38).
 fp16 + grad checkpoint on Turing T4 (no bf16). Constant LR `3e-4`,
@@ -550,6 +888,10 @@ When a checkbox flips, update **both** files.
 **Status legend:** `[ ]` not started · `[~]` in progress · `[x]` done ·
 `[!]` blocked. `[x] BUILT — QUEUED` = code ran on fake/smoke data.
 `[x] BUILT — VERIFIED` = ran on real project data.
+
+**Preprint scope:** Stages 0–2 and Stage 4 probes. **Stage 5b and Stage
+6 are computed and documented offline** (post-preprint extensions; not
+deferred — see reports below).
 
 ### Stage 0 — Error taxonomy
 
@@ -625,11 +967,12 @@ holes (#81). No demo-model curve. `docs/tier2_stage3_reading_order.md`.
 | `sarvam_client.py` | `[x]` Extract, cache by SHA-256 |
 | `sarvam_transfer_probe.py` | VERIFIED RUN — 35 pages |
 | `analyze_sarvam_transfer.py` | `[ ]` 5a bootstrap CIs |
-| Stage 5b rank correlation | computed offline on cached pages (no new API): `docs/stage5b_rank_correlation.md` |
+| Stage 5b rank correlation | **computed / documented (offline)** — `docs/stage5b_rank_correlation.md`; not in preprint |
 
 ### Stage 6 — Cascade
 
-`cascade.py` built, protocol-only until 5b `--compute-now`.
+**computed / documented (offline)** — `docs/stage6_triage_cascade.md`;
+`cascade.py` ran threshold sweep on Stage 5 cache; not in preprint.
 
 ### Tooling
 
@@ -640,7 +983,7 @@ holes (#81). No demo-model curve. `docs/tier2_stage3_reading_order.md`.
 ## Decision catalog (summaries)
 
 Full text stays in `DECISIONS.md`. This catalog is so you can search
-this file for “why.” “Why rejected” is compressed; if you are about to
+this file for "why." "Why rejected" is compressed; if you are about to
 override a choice, read the numbered entry first.
 
 ### Founding scientific choices (#1–#16)
@@ -654,7 +997,7 @@ unit. BPE merges mix tokenizer frequency with visual frequency.
 
 **#3 Demo base = SmolDocling-256M-preview.** Closed on a Colab T4
 four-way dummy LoRA (#84): 1.63 GB peak, below granite (1.84 GB) and
-both LightOnOCR ids (5.67 GB). #79 was the “do not fake T4” hold.
+both LightOnOCR ids (5.67 GB). #79 was the "do not fake T4" hold.
 
 **#4 Do not re-solve NFC.** olmOCR-bench already NFC-normalizes. The
 claim is about equivalences NFC *ignores*.
@@ -663,7 +1006,7 @@ claim is about equivalences NFC *ignores*.
 
 **#6 Script scope.** Hindi deep, Bengali structural, Santhali/Kashmiri
 zero-shot only. Full four-script training was rejected on compute/fonts;
-dropping the two outliers was rejected because they *are* Sarvam’s
+dropping the two outliers was rejected because they *are* Sarvam's
 published spread (Kashmiri 55.93 / Santhali 80.32, re-verified on the
 Vision blog).
 
@@ -688,7 +1031,7 @@ coverage, the policy omits text to game accuracy.
 Digitise.
 
 **#14 Three seeds per Probe 1 condition.** Non-negotiable. Seed-0-only
-headlines are forbidden. #53 later showed why: Kashmiri “significance”
+headlines are forbidden. #53 later showed why: Kashmiri "significance"
 died at seeds 1–2.
 
 **#15 Transfer on Tier A and B.** Clean-only comparison is uninformative.
@@ -703,7 +1046,7 @@ variance. **#19** Cache every Sarvam page once. **#20** Assist module
 separate from the viewer so notes record confirm vs override. **#21**
 PDF text-layer for born-digital layouts; ink projection for scans.
 **#22** Tier 0 whitespace before assist diffs. **#23** Assist false
-positives were punctuation gaps → grow Tier 1, don’t relabel as
+positives were punctuation gaps → grow Tier 1, don't relabel as
 order/matra. **#26** Pipe-as-danda and space-before-punctuation in
 Tier 1. **#28 / #42** Surya `recognition` API; PaddleOCR 3.x
 `predict()`, no `show_log`, MKLDNN off on CPU. **#31–#34** Append+skip
@@ -717,8 +1060,8 @@ bootstrap CI after humans label.
 **#24** Degradation parameters inverted from measurements, not
 hardcoded. **#25** Sentence-level IS over Indic clusters. **#27**
 uharfbuzz + Pillow/raqm; Tier A is clean. **#29** Bigram-guided
-synthesis to hit TV ≤ 0.08. **#30** Audit: don’t mark layout/degradation
-complete when they aren’t. **#41** Line boxes from `measure_line_width`.
+synthesis to hit TV ≤ 0.08. **#30** Audit: don't mark layout/degradation
+complete when they aren't. **#41** Line boxes from `measure_line_width`.
 **#44** Height 70 px.
 
 ### Instrument and Colab (#32, #36–#40, #43, #47–#48, #65–#66, #73)
@@ -735,7 +1078,7 @@ target. **#66** Mechanistic claims = three natural seeds. **#73** No
 eval-string holdout during training; n-gram analysis excludes exact
 string overlaps after the fact.
 
-### Probe statistics and paper (#45–#46, #49–#53, #56–#64, #67–#77)
+### Probe statistics and paper (#45–#46, #49–#53, #56–#64, #67–#89)
 
 **#45 / #58** Probe 6: resize Tier C to 70 px; paper scope is Tier C +
 blank, not the full synthetic gap. **#46** Methodology upgrades listed
@@ -753,11 +1096,9 @@ probes (mismatch, cross-attn norms authored; noise/scrambled **ran**;
 mismatch/cross-attn still blocked on local checkpoints). **#64** Unified figure generator +
 offline defensibility battery. **#67** Live bibliography, no invented
 venues. **#68** Single `paper/` directory. **#69** GitHub Pages: one
-URL, two modes; **#87** default is the preprint, Extract is the other
-tab. **#88** RLVR reward accuracy is emitted-only.
-tab. **#70–#71** Figure 1 inset layout. **#72** Surya
+URL, two modes. **#70–#71** Figure 1 inset layout. **#72** Surya
 positive-control citation is a reported preprint, not our verification.
-**#74** Never call eval images “real.” **#75** Preprint tab matches tex
+**#74** Never call eval images "real." **#75** Preprint tab matches tex
 terminology. **#76** README is a map. **#77** One Sarvam-facing note.
 **#78** Paddle in-process fill. **#79** Do not close demo-base without
 T4 VRAM. **#80** Demo SFT = Hindi natural line crops. **#81** Stage 3
@@ -773,8 +1114,396 @@ locked before looking at ρ. Spend gated.
 
 ---
 
+## First principles: the central finding
+
+Read this section before the teaching chapters if you want the
+mechanistic story without opening code. Every number below cites a
+committed doc or the preprint — do not invent headlines.
+
+> **Framing (repeat):** The paper does **not** prove that a model which
+> can read is hallucinating. It shows that, in this from-scratch
+> instrument, **confidence remains extremely high even when the model
+> demonstrably does not read the evaluation image.**
+
+### What 0.90 confidence actually means
+
+At each decoding step the instrument outputs a probability vector over
+its vocabulary — roughly **367 grapheme clusters** (Decision #65). After
+softmax, the confidence scalar we report is:
+
+\[
+C_t = \max_v P(v \mid \text{image}, y_{<t})
+\]
+
+That is the peak of the distribution at step *t*, not the probability
+assigned to the ground-truth token.
+
+Important subtlety: when we say the model is "90% confident about token
+A," **token A is not one fixed grapheme**. It is whatever wins the argmax
+at that step — and that identity **varies across images**. The shock is
+not that one wrong grapheme dominates globally; it is that **whatever
+wins is almost never the correct first grapheme**. Pooled over three
+seeds (60 images × 3 = 180 sequences), ground truth is the argmax at
+position 0 in **0 / 180** sequences
+([`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md),
+Abstract Fact).
+
+Meanwhile self-generated max-softmax at the first generated step stays
+≈ **0.9020** on text-bearing inputs and ≈ **0.8952** on **blank**
+inputs, while teacher-forced *p*(GT) at position 0 is ≈ **2.204×10⁻¹¹**
+(real) and ≈ **6.328×10⁻¹¹** (blank).
+
+| Signal | Text-bearing | Blank |
+|---|---:|---:|
+| Self-generated max-softmax (pos 1) | **0.9020** | **0.8952** |
+| Teacher-forced *p*(GT) at pos 0 | **2.204×10⁻¹¹** | **6.328×10⁻¹¹** |
+| GT is argmax at pos 0 | **0 / 180** | **0 / 180** |
+
+That is the **dissociation**: extremely high confidence about *some*
+token, effectively zero probability on the visually correct one — and
+blank behaves similarly.
+
+### Sharp vs uncertain — not the same failure mode
+
+These are different shapes of softmax output:
+
+- **Uncertain:** probabilities are relatively flat — no single token
+  dominates (uniform over |V| ≈ 367 would give ≈ **0.0027** each).
+- **Confidently wrong:** one token gets ≈ **0.90** while *p*(GT) ≈
+  **10⁻¹¹** — a very sharp peak on the wrong answer.
+
+The instrument is in the second regime. Position-0 predictive entropy
+is **0.333 nats** pooled (Table E1, [`paper/main.tex`](./paper/main.tex))
+— low enough to confirm the distribution is peaked, not flat. A
+scale-free companion statistic: median GT rank **70.5 / 367** (IQR
+[33.0, 136.2]), with **35.0%** of sequences ranking the correct symbol
+below position 100 in the model's own distribution (same table). Do **not**
+anchor the headline on uniform 1/|V| alone (SITE_SYNC_PROMPT): the point
+is sharp wrong confidence, not "below chance."
+
+### Why position 0 isolates vision — but we measured the full profile
+
+**Autoregressive** decoding emits one grapheme at a time; each step can
+depend on the image and on everything already generated (`<BOS> → भ →
+ा → …`). At step *k* > 0, a strong **language prior** can mask a weak
+visual signal: "after `भा`, the next cluster is probably `र`."
+
+At **position 0** there is no Hindi prefix — only `<BOS>`. Only the
+image can supply input-dependent information for the first grapheme.
+That makes position 0 the cleanest grounding diagnostic.
+
+We did not stop at position 0. Teacher-forced mean log *p*(GT) by
+position bucket, instrument vs text-only 5-gram
+([`docs/position_matched_ngrams.md`](./docs/position_matched_ngrams.md)):
+
+| Pos | Instrument (real) | 5-gram |
+|---|---:|---:|
+| 0 | **−24.54** | **−4.73** |
+| 1 | **−8.12** | **−1.14** |
+| 2–9 | **−0.48** | **−0.31** |
+| 10–19 | **−0.15** | **−0.26** |
+| 20–39 | **−0.27** | **−0.20** |
+| 40+ | **−6.12** | **−0.18** |
+
+Narrative read: position **0** is catastrophic (~**19.8 nats** below
+the text-only first-grapheme reference); position **1** is still bad;
+positions **2–39** look language-prior-like (within a few tenths of a
+nat of a 5-gram on the GT token); position **40+** diverges again (long
+tail / EOS effects). Full-softmax KL(model ‖ 5-gram) and argmax agreement
+confirm mid-sequence overlap ([`docs/ngram_kl_argmax.md`](./docs/ngram_kl_argmax.md),
+pooled): KL **0.27–0.32** nats on positions 2–39, argmax agreement
+**91–94%**.
+
+### Language prior — not "world knowledge"
+
+Safer wording: the decoder learned **statistical regularities of the
+training text** — local Indic grapheme patterns like `भा → र` — the same
+mechanism a text-only n-gram captures, not encyclopedic facts. Probe 5
+evaluates on strings drawn from the **training manifest** (same text
+regime the decoder saw); held-out-image AUROC ≈ **0.5698** shows
+in-manifest AUROC **0.838** does not generalize
+([`docs/memorisation_split.md`](./docs/memorisation_split.md),
+[`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md)).
+
+The central question: **is confidence coming from visual evidence or
+from the decoder's ability to produce statistically plausible text?**
+
+### Blank images — careful phrasing
+
+Blank controls do **not** prove the model "learned vision and then
+ignored it." An equally live alternative: it **may never have learned a
+useful visual representation** that transfers to evaluation renders.
+The paper keeps both explanations alive. What blank *does* show: high
+confidence and near-zero *p*(GT) persist when meaningful visual content
+is removed — same dissociation as text-bearing inputs.
+
+### Encoder ablation — shape moves; peak barely does
+
+Zeroing encoder memory before `memory_projection` changes the output
+distribution (mean KL(full ‖ zero) ≈ **1.075** nats; top-1 agreement ≈
+**0.879**; prior sufficiency ≈ **0.8827** — ~**8%** of steps flip
+argmax and carry ~**97%** of KL), but pooled mean max-softmax is almost
+unchanged (full **0.9861** vs zero **0.9891**, Δ **−0.0030**). The
+visual pathway **does** affect distribution shape and some token choices;
+the max-softmax scalar is largely insensitive. Do **not** say "the model
+doesn't use vision" — say confidence peak is not tracking visual
+contribution. Source:
+[`docs/attention_ablation_analysis.md`](./docs/attention_ablation_analysis.md),
+[`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md) Item 5.
+
+### Vocabulary — why grapheme `\X`, not BPE
+
+The scientific question is visual exposure at **grapheme** granularity.
+BPE subword merges would entangle "how often the model saw a visual unit"
+with tokenizer statistics. The instrument segments with Unicode grapheme
+cluster rules (`\X`), keeps clusters with frequency ≥ 5 in the training
+manifest, and ends at |V| ≈ **367** (Decision #65;
+[`docs/training_config.md`](./docs/training_config.md)). Tier **0**
+whitespace normalization, Tier **1** encoding-equivalence tables, and
+Tier **2** assist diffs (Stage 0) sit upstream of any error rate.
+
+### Probe 1 — dial worked; causal β withheld
+
+The exposure **manipulation** worked: realized grapheme distributions
+within TV ≤ **0.08** (natural **0**, flat ≈ **0.047**, inv ≈ **0.005**
+— [`docs/RESULTS.md`](./docs/RESULTS.md)). Sentence-level selection alone
+could not hit flattened/inverted targets; bigram-guided synthesis was
+used instead (Decision #28). Line accuracy: natural **18.3%**, flattened
+**0.33%**, inverted **0.67%**
+([`docs/probe1_fixed_effects.md`](./docs/probe1_fixed_effects.md)) —
+floor performance, so no exposure coefficient β was estimated (Decision
+#49).
+
+### Three seeds — because seed 0 failed to replicate
+
+Probes and training report three seeds (0, 1, 2) after a single-seed
+Kashmiri headline did not replicate (Decision #56). Do not regress to
+seed-0-only numbers in new write-ups.
+
+### Calibration — ECE and the AUROC trap
+
+Natural Hindi (synthetic manifest): mean confidence ≈ **0.994**, line
+accuracy ≈ **0.183**, ECE ≈ **0.811**
+([`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md)).
+Pooled AUROC **0.838** ranks correctness **within the training-manifest
+regime only**. Held-out GlotOCR-render AUROC(conf → CER < median) ≈
+**0.5698** — near chance.
+
+### Where this section hands off
+
+- **Chapters 0–3** — CV basics, scoring, renderer, instrument architecture.
+- **Chapter 7** — full probe suite with paths and interpretation.
+- **Chapters 8–9** — Sarvam transfer and triage cascade.
+- **Presenting to Sarvam** — pitch order for product conversations.
+- **Experiments done · Not proved · Roadmap** — checklist after the Sarvam pitch.
+- **Appendix H** — verbatim interview Q&A.
+
+---
+
+## Related work
+
+This project did not discover in isolation that multimodal models can
+lean on language priors. It provides a **controlled, grapheme-level Indic
+OCR diagnostic** — blank/unseen-script/ablation/position-0 instruments
+that are hard to run on a closed API. Verified papers to cite:
+
+| Work | What it contributes | How we differ |
+|---|---|---|
+| [M3ID — Favero et al., CVPR 2024](https://arxiv.org/abs/2403.14003) | **Conditioning dilution**: autoregressive VLMs rely more on language prior as generation proceeds; M3ID boosts visual grounding during decode. | They **mitigate** grounding decay in large VLMs; we **diagnose** position-resolved confidence vs *p*(GT) in a small from-scratch OCR instrument. |
+| [First Logit Boosting — Ha et al., CVPR 2026](https://arxiv.org/abs/2604.00455) | First token as **visual anchor** in models that read; reuse first-logit signal to reduce later hallucination. | They find strong position-0 grounding in capable models; we find catastrophic position-0 failure in our instrument — motivates a **positive control** under the same protocol. |
+| [BICR — Grounded or Guessing?](https://arxiv.org/abs/2605.10893) | Confidence not grounded in image; **real vs blacked-out** contrast for LVLM confidence estimation. | BICR learns a probe on hidden states in large VLMs; we provide a **training-free, position-specific** OCR diagnostic with teacher-forced *p*(GT). |
+| [HALP — EACL 2026](https://aclanthology.org/2026.eacl-long.287/) | Pre-generation **hallucination risk** from internal representations (reported high AUROC on some VLMs). | HALP targets general VLM hallucination detection; we motivate **grounding-aware OCR confidence** (real-vs-blank likelihood gap, cross-attention contribution). |
+| [GlotOCR Bench](https://arxiv.org/abs/2604.12978) | Multilingual OCR benchmark; models struggle beyond a handful of scripts; unfamiliar scripts → wrong-script emissions. | We use GlotOCR text and eval **renders**; our contribution is the **instrument + probes**, not a new benchmark score. |
+
+Say in interviews: existing work established ungrounded confidence and
+multilingual OCR weakness; **this repo asks what that failure looks like
+when you can manipulate exposure and intervene on the visual pathway.**
+
+---
+
+## Presenting to Sarvam
+
+Use this order in a product or research call. Stage 5 is **not** "our
+20M model vs Sarvam accuracy."
+
+### Motivation (production phenomenon)
+
+Sarvam Vision reports substantial language-wise spread on its Indic OCR
+benchmark — Hindi **95.91%**, Santhali **80.32%**, Kashmiri **55.93%**
+word accuracy ([sarvam.ai/blogs/sarvam-vision](https://www.sarvam.ai/blogs/sarvam-vision);
+Decisions #6, #60). Production pipelines still expose confidence for
+routing. The question: **does that confidence reflect difficulty regimes
+the benchmark already shows?**
+
+### What we built (instrument → mechanism)
+
+We could not run counterfactuals on an API (blank encoder, full softmax,
+position-0 *p*(GT), controlled training exposure). So we built:
+
+```text
+Stage 0 — Indic-aware scoring
+Stage 1 — controlled renderer (exposure dial)
+Stage 2a — ~19.6M from-scratch instrument
+Stage 4 — probes (blank, unseen script, ablation, teacher forcing, n-gram)
+```
+
+Main mechanistic result: max-softmax ≈ **0.90** while *p*(GT) at
+position 0 ≈ **2.2×10⁻¹¹**, GT never argmax — **in this instrument
+that does not read held-out images** (CER ≈ **0.985** text vs ≈ **0.949**
+blank — not meaningfully different; [`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md)).
+
+### External validation (not proof about Sarvam's encoder)
+
+**Stage 5a:** Extract page confidence Hindi **0.9997** → Kashmiri
+**0.9970** (Δ **0.0027**) across a **39.98 pp** published accuracy gap;
+blanks **0.0000** ([`docs/sarvam_vision_confidence.md`](./docs/sarvam_vision_confidence.md)).
+
+**Stage 5b:** Per-image instrument difficulty vs Sarvam CER on Hindi
+plains (n=60): Spearman ρ = **0.0293**, permutation p = **0.8267** —
+pre-registered null ([`docs/stage5b_rank_correlation.md`](./docs/stage5b_rank_correlation.md)).
+
+**Stage 6:** At 20% escalation (k=12), instrument-confidence routing
+residual CER **0.0109** vs random **0.0095**, Tesseract **0.0079**
+([`docs/stage6_triage_cascade.md`](./docs/stage6_triage_cascade.md)).
+
+These show **no useful transfer** of our instrument's confidence/difficulty
+signal to Sarvam in this sample — not that Sarvam "doesn't read."
+
+### Contribution pitch (what to say)
+
+> "We built a controlled OCR instrument to decompose confidence into
+> visual evidence versus language-prior behavior — blank controls, unseen
+> scripts, encoder ablation, position-resolved teacher-forced likelihood,
+> and comparison to text-only n-gram models. Max-softmax could remain near
+> ceiling while the correct visual token had effectively zero probability.
+> We then tested transfer to Sarvam Vision at language and per-image
+> levels and found no useful transfer in our sample. The production
+> takeaway is not 'confidence is useless' but that **max-softmax is not
+> necessarily a grounding signal** — the next step is grounding-aware
+> confidence (real-vs-blank representation contrast, image-conditioned
+> *p*(GT), cross-attention contribution — cf. BICR, HALP)."
+
+### What not to say to Sarvam
+
+- "We proved VLMs don't look at images."
+- "Our model vs yours on accuracy."
+- "Sarvam confidence is broken" (we tested a small Extract sample; blanks
+  did go to zero).
+
+### What we'd do next (with their context)
+
+1. Held-out synthetic train/val/test split before training.
+2. Positive control — known-good Devanagari reader, same position-0 protocol.
+3. Grounding score: *p*(GT | image) − *p*(GT | blank), not max-softmax alone.
+4. Larger matched Sarvam evaluation (500–2000 pages), stratified by script.
+
+---
+
+## Experiments done · Not proved · Roadmap
+
+Orientation lists only — cite docs for numbers; flip `IMPLEMENTATION.md`
+when a roadmap item is built and verified.
+
+### (A) Experiments already done
+
+1. **Stage 0 — Indic-aware evaluation.** Tier 0 whitespace, Tier 1
+   encoding equivalence, Tier 2 assist diffs, error taxonomy before
+   comparing engines (`docs/error_taxonomy.csv`, Chapter 1).
+2. **Stage 1 — Controlled renderer.** Natural / flattened / inverted
+   exposure modes; TV dial verified (natural **0**, flat ≈ **0.047**,
+   inv ≈ **0.005** — [`docs/RESULTS.md`](./docs/RESULTS.md)).
+3. **Stage 2a — From-scratch instrument.** ~19.6M params, empty pretraining
+   history, full softmax + teacher forcing
+   ([`docs/training_config.md`](./docs/training_config.md)).
+4. **Probe 1 — Exposure manipulation.** Dial worked; causal β withheld
+   at accuracy floor ([`docs/probe1_fixed_effects.md`](./docs/probe1_fixed_effects.md)).
+5. **Probe 2 — Confusion / alternative tokens.** What the model considers
+   besides GT ([`docs/probe2_confusion_analysis.md`](./docs/probe2_confusion_analysis.md)).
+6. **Probe 3 — Blank and matched noise.** Confidence invariance when
+   visual content removed ([`docs/probe3_curve_analysis.md`](./docs/probe3_curve_analysis.md)).
+7. **Probe 3b — Training-curve snapshots.** Accuracy vs step along natural
+   training (same doc — [`docs/probe3_curve_analysis.md`](./docs/probe3_curve_analysis.md)).
+8. **Probe 5 / 5b — Calibration and unseen scripts.** ECE ≈ **0.811**;
+   Ol Chiki / Perso-Arabic zero target-script emissions
+   ([`docs/results_analysis.md`](./docs/results_analysis.md),
+   [`docs/probe5b_analysis.md`](./docs/probe5b_analysis.md)).
+9. **Encoder ablation.** Zero visual memory: Δ confidence **−0.0030**,
+   KL **1.075** nats ([`docs/attention_ablation_analysis.md`](./docs/attention_ablation_analysis.md)).
+10. **GT likelihood by position.** Teacher-forced log *p*(GT) + entropy;
+    position-0 dissociation ([`docs/gt_likelihood_analysis.md`](./docs/gt_likelihood_analysis.md),
+    [`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md)).
+11. **Position-matched n-grams + KL/argmax (Steps 4a/4b).** Text-only
+    baseline vs full decoder softmax
+    ([`docs/position_matched_ngrams.md`](./docs/position_matched_ngrams.md),
+    [`docs/ngram_kl_argmax.md`](./docs/ngram_kl_argmax.md)).
+12. **Tier 0d — Noise and patch-scramble.** Same likelihood pattern as
+    blank/text ([`docs/tier0d_noise_scrambled.md`](./docs/tier0d_noise_scrambled.md)).
+13. **Stage 5a — Sarvam Extract vs published spread.** Δ confidence
+    **0.0027** across **39.98 pp** accuracy gap
+    ([`docs/sarvam_vision_confidence.md`](./docs/sarvam_vision_confidence.md)).
+14. **Stage 5b + 6 — Transfer and triage.** ρ = **0.0293**, p = **0.8267**;
+    instrument routing worse than random at 20% escalation
+    ([`docs/stage5b_rank_correlation.md`](./docs/stage5b_rank_correlation.md),
+    [`docs/stage6_triage_cascade.md`](./docs/stage6_triage_cascade.md)).
+
+### (B) What we have NOT proved
+
+1. That **models which can read** universally hallucinate or ignore images.
+2. That **this instrument "doesn't use vision"** — ablation moves
+   distributions; only the confidence peak is insensitive.
+3. That **Sarvam doesn't look at images** — we tested a small Extract
+   sample; we cannot ablate their encoder.
+4. That **grapheme exposure causally improves OCR** — Probe 1 β withheld
+   (flattened **0.33%** / inverted **0.67%** vs natural **18.3%**).
+5. That the model **learned vision then ignored it** vs **never learned
+   useful visual features** — both remain live (blank controls).
+6. That **renderer domain shift alone** explains held-out CER ≈ 1 — noise,
+   scramble, and ablation favor a bypass account but do not prove it
+   ([`docs/probe6_synthetic_real_analysis.md`](./docs/probe6_synthetic_real_analysis.md)).
+7. That **AUROC 0.838 generalizes** — it is in-training-manifest only;
+   held-out-image AUROC ≈ **0.5698**.
+8. That **instrument difficulty predicts Sarvam per-image CER** — primary
+   null at n=60 (Stage 5b).
+9. That **max-softmax suffices for production routing** — Stage 6 shows
+   worse-than-random escalation at the fair operating point.
+
+### (C) Next-round roadmap (priority order)
+
+1. **Positive control first.** Known-good autoregressive Devanagari reader
+   under the same position-0 / blank / ablation / GT-likelihood protocol
+   ([`docs/paddleocr_feasibility.md`](./docs/paddleocr_feasibility.md),
+   [`docs/surya_positive_control.md`](./docs/surya_positive_control.md)).
+2. **Per-position curve as primary exhibit.** Full teacher-forced profile
+   (already computed — make it the default slide after position 0).
+3. **Vocabulary audit.** Confirm `\X` clusters, rare-grapheme handling,
+   and tokenizer–eval alignment did not confound exposure counts.
+4. **Natural exposure redesign.** Reweight **real sentences** instead of
+   flattened/inverted synthetic language (mixed-effects target).
+5. **Held-out synthetic split before training.** Train / val / test text
+   disjoint; never touch test until final eval — fixes AUROC/calibration
+   interpretability.
+6. **Confound checklist A–F.** When comparing conditions, log glyph
+   complexity, exposure count, font, sentence context, layout, and image
+   quality separately — do not let frequency manipulation change
+   everything at once.
+7. **Train longer — after design fixes.** More steps/data only once split,
+   exposure, and eval protocol are fixed; not "same broken experiment, more
+   GPU."
+8. **Grounding-aware confidence.** *p*(GT | image) − *p*(GT | blank),
+   cross-attention contribution, or hidden-state probes (BICR / HALP
+   direction) — replace max-softmax as the routing signal.
+9. **Larger Sarvam evaluation.** 500–2000 matched pages, stratified by
+   script, to test whether any grounding score predicts production errors
+   beyond n=60.
+
+---
 
 ## Chapter 0 — What Is Computer Vision, and Why Is Reading Hard For a Machine
+
+> **Start here for CV basics.** If you already want the central
+> mechanistic finding (position 0, n-grams, ablation), read **First
+> principles: the central finding** above first — then return here for
+> Indic-script motivation.
 
 ### Start with what a computer actually sees
 
@@ -894,20 +1623,25 @@ someone else’s.
 
 Every chapter after this one follows the same shape: a real problem in
 computer vision, why it’s hard, and then what building a piece of this
-repo taught about it. Chapter 1 starts with something that sounds
-boring — how do you even *measure* whether OCR got something right? —
-and shows why that question turns out to be far less obvious than it
-looks, especially for scripts where “one character” and “one encoded
-value” aren’t the same thing.
+repo taught about it. The scientific arc is: first make “wrong” mean
+wrong (Chapter 1), then control what the model sees (Chapter 2), then
+own a model with empty Indic history (Chapter 3), then interrogate
+whether its confidence is visual grounding or language prior
+(Chapter 7) — with production transfer and triage in Chapters 8–9.
 
 > **What to remember.** A machine does not see letters; it sees numbers.
 > Reading systems generate text from images one visual unit at a time,
 > and for Indic scripts the hardest scientific question is often not
-> “how do I get a higher score,” but “what does that score even mean?”
+> “how do I get a higher score,” but “does that score — or that
+> confidence — mean the image was actually read?”
 
 ---
 
 ## Chapter 1 — Measuring Correctness Is Its Own Hard Problem
+
+Before asking whether confidence reflects vision, we need "wrong" to mean
+**misreading**, not a different valid Unicode spelling. See **First
+principles** §4–5 for why this precedes the position-0 story.
 
 ### The question that forced this chapter
 
@@ -916,8 +1650,9 @@ both wrong? Or did one of them write the *same reading* using a
 different, equally valid Unicode spelling?
 
 If you cannot answer that, every published “error rate” for Indic OCR
-is partly fiction. Stage 0 of this project exists to force that answer
-into the open *before* anyone trains a new model.
+is partly fiction — and every later claim about confidence or exposure
+rests on sand. Stage 0 exists to force that answer into the open
+*before* anyone trains a new model or trusts a confidence meter.
 
 ### What “correct” even means
 
@@ -1073,6 +1808,12 @@ learned to emit a different valid spelling.
 Chapter 2 is about building a controlled **text → image** machine so
 that you can deliberately decide what the OCR model gets to see during
 training.
+
+> **Link to first principles:** the exposure **dial** (natural / flat /
+> inverted; TV natural **0**, flat ≈ **0.047**, inv ≈ **0.005**) exists
+> so we can ask Question A — but Probe 1 showed flattened/inverted models
+> never learned to read; mechanistic claims use **natural** checkpoints only
+> (Decision #66).
 
 That sentence only makes sense once you start from the research
 question. So that is where we begin.
@@ -1529,13 +2270,20 @@ can turn.
 ## Chapter 3 — Learning to Read From Nothing (the Instrument)
 
 Chapter 2 built the **controlled training data**. Chapter 3 builds the
-**OCR model that will actually learn from it**.
+**OCR model that will actually learn from it** — and that we can open
+up later as a measurement instrument for Question B (does confidence
+track visual evidence?). Architecture and training numbers live in
+[`docs/training_config.md`](./docs/training_config.md) (**19,607,104**
+params); the model is undertrained on purpose — accuracy is not the
+deliverable. Read **First principles** before this chapter if you want
+the position-0 dissociation first.
 
 The key idea is:
 
 > We deliberately start with a model that knows nothing about Indic
-> scripts, so that later we can ask whether its performance depends on
-> how much exposure each grapheme received.
+> scripts, so that later we can ask (A) whether performance depends on
+> how much exposure each grapheme received, and (B) whether its
+> confidence tracks the image or only language plausibility.
 
 ### Why can’t we just use an existing OCR or VLM?
 
@@ -2601,14 +3349,23 @@ implements a policy update (`docs/tier2_rlvr_ablation.md`,
 
 ## Chapter 7 — What Does the Model Actually Know (the Probe Suite)
 
-Chapter 7 is the payoff of everything in Chapters 0–6. The easiest way
-to understand it is:
+Chapter 7 is the payoff of everything in Chapters 0–6. If you read
+**First principles: the central finding**, this chapter is the same story
+with file paths, probe IDs, and alternative-explanation structure.
+
+The easiest way to understand it is:
 
 > We built a small OCR model not primarily to make it accurate, but so
-> we can open it up and investigate *why* it behaves the way it does.
+> we can open it up and separate **correctness**, **confidence**, and
+> **visual grounding** — Question B from the front of this book. The
+> paper does **not** claim universal hallucination; it documents this
+> failure mode in **this** instrument and tests weak transfer to Sarvam.
 
 Think of the instrument as a patient in a lab, and the probes as
-medical tests.
+medical tests. Each probe also attacks a competing explanation for the
+previous observation (undertraining → training curve; domain shift →
+noise/scramble; “maybe the encoder still matters for confidence” →
+ablation; “maybe only our toy model” → Stage 5–6).
 
 ### First: what are we trying to find out?
 
@@ -2619,14 +3376,14 @@ about **how the model arrived there**.
 We really want to know:
 
 1. Does seeing a glyph more often make the model better at it?
+   (Question A — exposure. Apparatus succeeded; causal β withheld.)
 2. When it makes a mistake, what did it think the answer was?
-3. Is it actually looking at the image, or just guessing based on
-   language patterns?
+3. Is it actually looking at the image, or just completing language?
 4. When it says “I’m 99% confident,” is it actually right 99% of the
-   time?
+   time — and does that confidence mean the *image* supported the text?
 
-Those four questions (plus fairness of scoring, plus a reality check
-on synthetic pages) are what the **probes** investigate. They are the
+Those questions (plus fairness of scoring, plus a reality check on
+synthetic pages) are what the **probes** investigate. They are the
 project’s real deliverable. The instrument exists so these questions
 have somewhere to land.
 
@@ -3640,12 +4397,21 @@ manifests; Stage 2a instrument (9 Hindi checkpoints on Colab);
 `make smoke-test`; Probe 1 FE (β withheld); Probes 2, 3, 3b, 5, 5b;
 attention ablation; GT-likelihood including noise/scrambled extras;
 n-gram KL; Probe 5 overlap check; Probe 6 paper scope; Stage 5a Extract
-35-page probe; offline `paper_defensibility_stats.md` + paper figures.
+35-page probe; **Stage 5b** rank-correlation transfer (offline;
+`docs/stage5b_rank_correlation.md`); **Stage 6** triage cascade
+(offline; `docs/stage6_triage_cascade.md`); offline
+`paper_defensibility_stats.md` + paper figures.
+
+**Preprint scope vs book:** The PDF covers the instrument and
+mechanistic probes. Stage 5b and Stage 6 are subsequent extensions —
+documented here and on the Extract tab of `index.html`, not in
+`paper/main.tex`.
 
 **Partial:** layout bank (`form` / `table-embedded`, india.gov);
 degradation source mix; UNREVIEWED / unlabeled
 adjudication sample; Probe 4 on instrument outputs; Bengali probe sweep;
-equal-mass ECE offline but not in the live Probe 5 printer.
+equal-mass ECE offline but not in the live Probe 5 printer;
+`analyze_sarvam_transfer.py` 5a bootstrap CIs.
 
 **Code written, not run (need checkpoints):** `probe_gt_mismatch.py`,
 `probe_cross_attn_norms.py`, position-0 null rank
@@ -3655,9 +4421,8 @@ waiting on a run.
 
 **Described only (this phase):** RLVR **policy** training (reward +
 SFT exist; `docs/rlvr_scoping.md`); reading-order / table metrics on
-the **demo** (code exists, no demo curve); Stage 5b rank-correlation
-transfer; `analyze_sarvam_transfer.py`; Stage 6 cascade; mixed-effects
-Probe 1; second annotator kappa. Demo LoRA **SFT** ran on Colab T4.
+the **demo** (code exists, no demo curve); mixed-effects Probe 1;
+second annotator kappa. Demo LoRA **SFT** ran on Colab T4.
 
 ---
 
@@ -3770,6 +4535,8 @@ Do not memorize headlines. Use this lookup (same as `docs/RESULTS.md`).
 | Training hyperparameters | `docs/training_config.md` |
 | Probe 6 | `docs/probe6_synthetic_real_analysis.md` |
 | Stage 5a Sarvam | `docs/sarvam_vision_confidence.md` |
+| Stage 5b Spearman transfer | `docs/stage5b_rank_correlation.md` |
+| Stage 6 triage cascade | `docs/stage6_triage_cascade.md` |
 | Remaining GPU work | `docs/remaining_measurements.md` |
 | Colab log | `COLAB_RUNS.md` |
 
@@ -3787,8 +4554,113 @@ Extract audit is the other tab).
   last checkpoint). More compute would mainly buy longer training and
   a true eval holdout (#73) so “undertrained” can be separated from
   “structurally ungrounded confidence” at a higher accuracy floor.
-- Stages 2b, 3, 5b, and 6 were deliberately not executed in this
-  phase — see README § Future Work.
+- Stages 2b (RLVR **policy**), Stage 3 demo curves, and a positive
+  control remain open. **Stage 5b and Stage 6 are computed offline**
+  (not in the preprint); see Preface and Appendix B.
+- Biggest scientific gaps for a follow-up: positive-control
+  autoregressive Devanagari reader; genuine held-out synthetic split
+  before training; Probe 1 redesign that preserves learnability.
+
+---
+
+## Appendix H — Interview Q&A
+
+Short answers for common attacks. Numbers cite docs; do not invent.
+
+### "Your model barely reads. Why should I care?"
+
+> Accuracy was not the experimental objective. I intentionally trained a
+> small model from scratch so I could control its training history and
+> inspect internal probability distributions. That made it a **measurement
+> instrument**, not a production OCR competitor. Grapheme CER ≈ **0.985**
+> on text-bearing vs ≈ **0.949** on blank
+> ([`docs/paper_defensibility_stats.md`](./docs/paper_defensibility_stats.md)).
+
+### "Maybe it just wasn't trained enough."
+
+> Legitimate alternative. We ran training-curve snapshots (Probe 3b),
+> encoder ablation, unseen-script tests, blank/noise/scramble controls,
+> and position-resolved teacher-forced likelihood. Evidence is consistent
+> with a confidence peak that is largely decoder-prior driven. I would
+> not claim we fully rule out insufficient visual learning — that's why
+> a **positive-control reader** under the same position-0 protocol is the
+> most important next experiment.
+
+### "Why didn't your exposure experiment work?"
+
+> The exposure **manipulation** worked — realized distributions within
+> TV ≤ 0.08 (natural **0**, flat ≈ **0.047**, inv ≈ **0.005**). But
+> flattened/inverted models sat at the accuracy floor (**0.33%** /
+> **0.67%** line accuracy vs **18.3%** natural —
+> [`docs/probe1_fixed_effects.md`](./docs/probe1_fixed_effects.md)), so
+> we cannot estimate an exposure coefficient. Likely confound: frequency
+> inversion disrupted linguistic regularity. Next: natural-sentence
+> reweighting + held-out test + mixed-effects model.
+
+### "Why not just use Sarvam's production model?"
+
+> An API tells us what it outputs, not the counterfactuals we need:
+> blank the encoder, inspect the full softmax, measure *p*(GT) at
+> position 0, or control training exposure. Sarvam is the **external
+> production reference**; the instrument is the mechanistic lab.
+
+### "Sarvam's confidence and your model's confidence are completely different."
+
+> Correct — we do not treat them as numerically comparable. Stage 5 asks
+> two **transfer** questions: (5a) does Sarvam's page confidence track
+> its own published language-level accuracy spread? (5b) does our
+> instrument's per-image difficulty rank predict Sarvam CER? Neither is
+> a calibration comparison between models.
+
+### "Why do you need an n-gram model? You already have the OCR model."
+
+> I needed a **language-only baseline**. If the OCR model produces
+> plausible text on blank images, I must know whether that matches what
+> a zero-visual-input model could generate from statistics alone. At
+> position 0 the n-gram prior (−**4.73** nats) massively outscores the
+> instrument (−**24.54** nats —
+> [`docs/position_matched_ngrams.md`](./docs/position_matched_ngrams.md)).
+
+### "Why is position zero better than later tokens?"
+
+> Later tokens can be predicted from the generated prefix. At position 0
+> there is no prefix — only the image can supply input-dependent
+> information for the first grapheme. That makes teacher-forced *p*(GT)
+> a cleaner grounding diagnostic.
+
+### "Okay position 0 is weird — what happens later?"
+
+> Position 0 is the cleanest case because there is no generated prefix,
+> but we measured the **full positional profile**, not just the first
+> step. Teacher-forced log *p*(GT) is catastrophic at position 0
+> (**−24.54** nats vs a text-only 5-gram's **−4.73** at the first
+> grapheme — [`docs/position_matched_ngrams.md`](./docs/position_matched_ngrams.md)),
+> still bad at position 1 (**−8.12** vs **−1.14**), then tracks a 4/5-gram
+> surprisingly closely on positions 2–39 (within a few tenths of a nat;
+> KL **0.27–0.32**; argmax agreement **91–94%** —
+> [`docs/ngram_kl_argmax.md`](./docs/ngram_kl_argmax.md)), and diverges
+> again at 40+. So the story is not "only the first token is broken" —
+> mid-sequence the decoder behaves like a **text-only language model**
+> even when the image does not support the output. Position 0 remains the
+> killer diagnostic because only the image could have mattered there;
+> mid-sequence overlap is what a language-prior account predicts once a
+> prefix exists.
+
+### "Why not use max probability as confidence?"
+
+> Max-softmax measures how **peaked** the distribution is around the
+> model's preferred answer, not whether that answer is **supported by
+> the image**. Our instrument showed ~**0.90** self-confidence while
+> *p*(GT) ≈ **2.2×10⁻¹¹** at position 0 and GT was never argmax (0/180).
+
+### "What did you actually contribute?" (Sarvam-style)
+
+> A controlled OCR instrument to decompose confidence into visual
+> evidence vs language-prior behavior, with interventions impossible on
+> a closed API; then external validation on Sarvam showing no useful
+> transfer of our difficulty signal in n=60. Takeaway: production needs
+> **grounding-aware confidence**, not raw max-softmax. See **Presenting
+> to Sarvam**.
 
 ---
 

@@ -1,51 +1,39 @@
 # Site sync (GitHub Pages `index.html`)
 
-Run this whenever `paper/main.tex` changes claims, terminology, or a
-headline number. The Preprint tab is a reading aid; `paper/main.pdf` is
-canonical. Do not invent numbers. Cite `docs/paper_defensibility_stats.md`
-or the tex.
+The live page is a **call walkthrough** (Diagnosis / Sarvam tabs).
+`paper/main.pdf` is canonical for preprint claims. Do not invent numbers.
 
-## Terminology (our data)
+## Critical framing
 
-- **text-bearing** — an evaluation image containing rendered text (vs **blank**).
-- **held-out** — the evaluation set generally.
-- **real** — only other people’s data (Singh’s scans, GlotOCR source
-  sentences, published scan corpora). Never our Probe 5b/6 images.
-  Those are GlotOCR *renders*, not photographs.
+Not “VLMs ignore images.” Claim: in this instrument, confidence stays
+high even when the model does not read held-out images.
 
-## Position 0
+## Diagnosis tab flow (scroll as a talk)
 
-Do **not** anchor geometric-mean \(p(\mathrm{GT})\) on uniform
-\(1/|V|\approx 2.725\times10^{-3}\). The paper retracts that comparison
-(softmax sharpness, not specifically disfavouring the truth).
+1. Claim / framing
+2. What 0.90 means (peak of 367; Token A varies; sharp vs uncertain;
+   entropy 0.333, median rank 70.5, 35% below rank 100 — from paper)
+3. Position 0 dissociation
+4. **Full position profile** (0 / 1 / 2–39 / 40+) — not pos-0 only
+5. Blank & ablation (careful phrasing) + interactive Probe 3
+6. Say-this script
+7. Next priorities
 
-Use the position-matched \(n\)-gram: instrument \(\approx -24.54\) nats
-vs text-only first-symbol marginal \(\approx -4.73\) (19.8 nats / more
-than eight orders below a **text-only** baseline). Pair with
-self-generated max-softmax \(\approx 0.90\).
+## Sarvam tab
 
-## Training contamination
+Production motivation → 5a gap → why instrument → 5b/6 → pitch.
 
-The instrument trains on the **full** 2,538-line `hindi_natural.jsonl`.
-`train.py` has no eval-string filter. 19 of 60 evaluation strings appear
-verbatim as training lines (47 manifest rows). State that on the
-Preprint tab. Position 0/1 still fail at floor (contamination can only
-have helped). Do not treat mid-sequence \(-0.15\) or synthetic AUROC
-0.838 as a clean held-out result.
+## Animations (keep simple)
 
-## Parameter count
+- Existing section reveal + hero rise
+- Position-profile bars fill on scroll (`#posProfile.in`)
+- Probe 3 meter width
+- Respect `prefers-reduced-motion`
 
-\(\approx 19.6\mathrm{M}\) at \(|V|=367\) (19,607,104), not 19.5M.
+## Numbers
 
-## After edits
+Position profile: `docs/position_matched_ngrams.md`.
+Pos-0: `docs/paper_defensibility_stats.md`.
+Entropy/rank: `paper/main.tex` Table E1.
 
-Push `index.html` (and this file) to `main` so Pages updates before any
-external send that links the site.
-
-Default tab is the **preprint** (Decision #87). Extract audit is the
-other toggle. Do not restore the 17-section BOOK walkthrough.
-
-## Now in the PDF (do not list as remaining)
-
-Noise/scramble log p(GT), n-gram KL/argmax agreement, Probe 5
-non-match n=0, PaddleOCR CTC infeasibility.
+Push `index.html` to `main` before calls.

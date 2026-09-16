@@ -1,7 +1,8 @@
 # IMPLEMENTATION.md
 
-Stages 2b, 3, 5, and 6 were deliberately not executed in this phase —
-see README.md § Future Work for the reasoning behind each.
+Stages 2b (RLVR policy) and Stage 3 demo curves were deliberately not
+executed in this phase — see `BOOK.md` / `README.md` for scope. Stage 5b
+and Stage 6 **are** computed offline (not in the preprint).
 
 This is the technical spec for ocr-vlm-eval. Every module below has a goal,
 concrete inputs/outputs, a file location, and acceptance criteria. A coding
@@ -418,7 +419,7 @@ fix" is the bar, not just "here's a number").
 **Budget: ~200 pages total, ₹0.5/page, max 10 pages/job (confirmed
 docs.sarvam.ai, Sept 2026).  Allocate up front, do not spend ad hoc.**
 
-### Stage 5a — minimal confidence-gap probe (BUILT — ready to run)
+### Stage 5a — minimal confidence-gap probe (BUILT — VERIFIED)
 
 - [x] `src/eval/sarvam_client.py` — thin wrapper over Sarvam Doc-AI
       **Extract** endpoint (not Digitise — only Extract exposes
@@ -460,39 +461,37 @@ docs.sarvam.ai, Sept 2026).  Allocate up front, do not spend ad hoc.**
 Statistic pre-registered in DECISIONS.md **#89** (Spearman ρ,
 permutation null, per-image unit). Do not change it after seeing ρ.
 
-- [x] BUILT — NOT RUN (spend gate) `src/eval/transfer_analysis.py` —
-      Spearman + 10k permutation p. Default CLI writes protocol only
-      (`docs/stage5b_rank_correlation.md`). `--compute-now` after the
-      user confirms the page set.
-- [x] BUILT — NOT RUN (spend gate) `src/probes/stage5b_sarvam_pages.py`
-      — remaining Hindi plains / degraded Extract. Dry-run default;
-      live POST requires `--i-confirm-spend-inr` matching ₹0.5 ×
-      uncached pages. Output:
+- [x] BUILT — VERIFIED (offline) `src/eval/transfer_analysis.py` —
+      Spearman + 10k permutation p. Primary Hindi plains n=60:
+      ρ = 0.0293, p = 0.8267. Report:
+      `docs/stage5b_rank_correlation.md`. Not in the preprint.
+- [x] BUILT — VERIFIED (spend ran; budget-limited) `src/probes/stage5b_sarvam_pages.py`
+      — Hindi plains completed; degraded arm stopped at n=24 after
+      HTTP 402 (36/110 failed). Output:
       `data/probe_results/sarvam_stage5b_pages.jsonl`.
 - Original glyph-class unit: **overridden** by #89 (per-image).
-- Original 60 cascade pages: **not purchased** (Decision #19: Stage 6
-  is cache-only).
+- Original 60 cascade pages: Stage 6 uses Stage 5 cache (Decision #19).
 
 **Acceptance (5b):** report ρ, permutation p, n in
-`docs/stage5b_rank_correlation.md` after confirmed spend (or after an
-explicit ₹0 / n=10 cache-only confirmation).
+`docs/stage5b_rank_correlation.md` — **met** for primary plains.
 
 **Acceptance (5a):** 35 cached JSON records in `data/cache/sarvam/`,
 one output JSONL, and an honest report of whether Sarvam confidence tracks
-its own per-language accuracy gap.
+its own per-language accuracy gap — **met**.
 
 ---
 
 ## Stage 6 — Triage cascade demo
 
-- [x] BUILT — NOT RUN (waits on 5b) `src/probes/cascade.py` — Probe 5b
+- [x] BUILT — VERIFIED (offline) `src/probes/cascade.py` — instrument
       `mean_confidence` vs random / GT grapheme-length / Tesseract
-      confidence at matched k (Decision #16, #89). No API.
-      `docs/stage6_triage_cascade.md`. Default CLI is protocol-only.
+      confidence at matched k (Decision #16, #89). No new API.
+      At k=12 (20% of n=60): instrument residual CER 0.0109 (worse than
+      random 0.0095). Report: `docs/stage6_triage_cascade.md`.
+      Not in the preprint.
 
-**Acceptance:** residual system CER (escalated pages scored 0) vs
-fraction escalated, instrument vs three baselines, after Stage 5b
-`--compute-now`.
+**Acceptance:** residual system CER vs fraction escalated, instrument vs
+three baselines — **met** for the fair k=12 slice.
 
 ---
 
