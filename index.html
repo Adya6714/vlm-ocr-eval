@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reading Without Looking</title>
+<title>Indic OCR confidence &amp; transfer — Production</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -949,64 +949,50 @@
     margin:0 0 6px;
   }
 
-  /* ---- chart presentation ---- */
+  /* ---- better figure / chart presentation ---- */
   .pub-fig{
     margin:28px 0 36px; max-width:100%;
     padding:14px 14px 12px;
+    background:linear-gradient(180deg, var(--paper-raised), color-mix(in srgb, var(--paper) 70%, var(--paper-raised)));
     border:1px solid var(--hairline-strong);
     border-radius:6px;
-    background:
-      linear-gradient(180deg, color-mix(in srgb, var(--paper-raised) 88%, #fff), var(--paper));
-    box-shadow:0 10px 28px rgba(28,24,20,0.04);
-  }
-  .pub-fig .fig-meta{
-    display:flex; flex-wrap:wrap; gap:8px 14px; align-items:baseline;
-    margin:0 0 12px;
-  }
-  .pub-fig .fig-tag{
-    font-family:'IBM Plex Mono', monospace; font-size:0.66rem;
-    letter-spacing:0.1em; text-transform:uppercase;
-    color:var(--ink-blue);
-    border:1px solid color-mix(in srgb, var(--ink-blue) 35%, var(--hairline));
-    border-radius:999px; padding:3px 9px;
-  }
-  .pub-fig .fig-title{
-    font-family:'Fraunces', serif; font-size:1.02rem; color:var(--ink); margin:0;
-  }
-  .pub-fig .fig-frame{
-    border:1px solid var(--hairline); border-radius:4px; overflow:hidden;
-    background:#fff; position:relative;
+    box-shadow:0 10px 32px rgba(28,27,25,0.07);
   }
   .pub-fig img{
     width:100%; height:auto; display:block;
-    transition:transform 280ms ease;
+    border:1px solid var(--hairline); background:#fff; border-radius:3px;
   }
-  .pub-fig:hover img{transform:scale(1.012);}
   .pub-fig figcaption{
-    font-size:0.86rem; color:var(--ink-soft); margin:12px 2px 2px; max-width:78ch;
-    line-height:1.5;
+    font-size:0.84rem; color:var(--ink-soft); margin:10px 2px 2px; max-width:78ch;
+    line-height:1.45;
   }
-  .pub-fig figcaption strong{color:var(--ink);}
-
-  /* ---- mermaid panels ---- */
+  .pub-fig .fig-badge{
+    display:inline-block; margin:0 0 10px;
+    font-family:'IBM Plex Mono', monospace; font-size:0.68rem;
+    letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--ink-blue); border:1px solid var(--hairline-strong);
+    padding:3px 8px; border-radius:999px; background:var(--paper);
+  }
+  .chart-grid{
+    display:grid; grid-template-columns:1fr; gap:18px; margin:22px 0;
+  }
+  @media (min-width:880px){ .chart-grid.two{grid-template-columns:1fr 1fr;} }
   .mermaid-wrap{
-    margin:26px 0 18px;
-    border:1px solid var(--hairline-strong);
-    border-radius:6px;
+    margin:24px 0 28px; padding:18px 16px 8px;
+    border:1px solid var(--hairline-strong); border-radius:6px;
     background:var(--paper-raised);
-    padding:16px 16px 8px;
     overflow-x:auto;
   }
-  .mermaid-wrap .flow-caption{margin-bottom:8px;}
+  .mermaid-wrap .flow-caption{
+    font-family:'IBM Plex Mono', monospace; font-size:0.72rem;
+    letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft);
+    margin:0 0 10px;
+  }
   .mermaid{
     display:flex; justify-content:center;
     background:transparent !important;
   }
   .mermaid svg{max-width:100%; height:auto;}
-  .flow-grid{
-    display:grid; grid-template-columns:1fr; gap:16px; margin:22px 0;
-  }
-  @media (min-width:960px){ .flow-grid{grid-template-columns:1fr 1fr;} }
 
 
   .regime{font-family:'IBM Plex Mono', monospace; font-size:0.68rem;
@@ -1098,6 +1084,7 @@
       <a href="#limits" class="paper-only">Limits</a>
       <a href="#next" class="paper-only">Next</a>
       <a href="#motivation" class="walk-only">Motivation</a>
+      <a href="#prod-atlas" class="walk-only">Atlas</a>
       <a href="#gap" class="walk-only">Gap</a>
       <a href="#why-instrument" class="walk-only">Why instrument</a>
       <a href="#mechanism" class="walk-only">Mechanism</a>
@@ -1140,7 +1127,7 @@
         </div>
         <div class="abstract-box">
           <p><strong>Two questions drive everything.</strong> <em>A:</em> can we tell when Indic OCR is hard? <em>B:</em> does confidence track visual evidence, or only how peaked the softmax is?</p>
-          <p>This Research tab is the scientific deep dive — figures, flowcharts, and demos for Question B. Flip back to <strong>Production</strong> for the Indic OCR transfer story (without claiming our toy model competes on accuracy).</p>
+          <p>This Research tab answers B inside the instrument — with figures, flowcharts, and a few tap-to-play demos. The Production tab asks what transfers to a real Indic OCR product (without claiming our toy model competes on accuracy).</p>
         </div>
         <p class="pdf-link"><a href="paper/main.pdf">Preprint PDF</a> · <a href="BOOK.md">BOOK.md</a> · <a href="docs/paper_defensibility_stats.md">defensible numbers</a></p>
       </div>
@@ -1208,58 +1195,6 @@ HOPE                         TEST (this project)
       <div class="section-kicker">What we built · why · how</div>
       <h2 class="section-title">A full research chain from pages to probes — instrument separate from demo</h2>
       <p class="lede">Nothing here is a single script. Each stage exists because a later probe would be uninterpretable without it. The ~19.6M model is a measurement instrument; a separate demo stack (LoRA/SFT on a VLM) lives in the Colab notebook but is not the preprint claim.</p>
-
-      <div class="mermaid-wrap">
-        <div class="flow-caption">Research pipeline · Stages 0 → 6</div>
-        <div class="mermaid">flowchart TB
-  subgraph measure [Measure hardness]
-    S0[Stage 0 · Tier 0/1/2 taxonomy]
-  end
-  subgraph control [Control the pixels]
-    S1[Stage 1 · HarfBuzz + exposure dial — natural / flat / inverted]
-  end
-  subgraph instrument [Owned instrument]
-    S2[Stage 2 · ~19.6M encoder→bridge→decoder — |V| ≈ 367 graphemes · 3 seeds]
-  end
-  subgraph probes [Mechanistic probes]
-    P0[Pos-0 p GT vs max-softmax]
-    PF[Full position profile]
-    BL[Blank · noise · scramble]
-    AB[Encoder ablation]
-    NG[Matched n-gram KL]
-  end
-  subgraph transfer [Production transfer]
-    T5a[5a language gap]
-    T5b[5b Spearman]
-    T6[6 triage]
-  end
-  S0 --> S1 --> S2 --> P0
-  S2 --> PF
-  S2 --> BL
-  S2 --> AB
-  S2 --> NG
-  P0 --> T5a --> T5b --> T6</div>
-      </div>
-      <div class="flow-grid">
-        <div class="mermaid-wrap">
-          <div class="flow-caption">Three quantities (do not conflate)</div>
-          <div class="mermaid">flowchart LR
-  C[Correctness — CER vs GT] -.->|orthogonal| F[Confidence — max softmax]
-  F -.->|orthogonal| G[Grounding — p GT · blank Δ]
-  F -->|what users see| M[Routing meter]
-  G -->|what we want| M</div>
-        </div>
-        <div class="mermaid-wrap">
-          <div class="flow-caption">Position profile story</div>
-          <div class="mermaid">flowchart LR
-  P0[pos 0 — −24.54] --> P1[pos 1 — −8.12]
-  P1 --> MID[pos 2–39 — n-gram-like]
-  MID --> TAIL[pos 40+ — worse again]
-  P0 -.->|vision must dominate| FAIL[FAIL]
-  MID -.->|language prior| OK[Looks competent]</div>
-        </div>
-      </div>
-
       <div class="flow-box">
         <div class="flow-caption">End-to-end pipeline (Stages 0 → 6)</div>
         <pre>
@@ -1286,7 +1221,35 @@ Stage 0   ERROR TAXONOMY          Tier 0/1/2 on Tesseract + baselines
         <div class="tier-node">Probes<br>4–6</div><span class="tier-arrow">→</span>
         <div class="tier-node ochre">Transfer<br>5a–6</div>
       </div>
-      <p>The instrument is deliberately small and trained from scratch so we own every tensor. A production-scale reader might behave differently — we say that out loud. The instrument's job is to make confidence legible under counterfactuals APIs cannot run.</p>
+      
+      <div class="mermaid-wrap">
+        <div class="flow-caption">Research build · data and probes</div>
+        <pre class="mermaid">
+flowchart TD
+  G["GlotOCR pages<br/>data/raw/"] --> M["Line manifests<br/>natural / flat / inverted"]
+  M --> R["HarfBuzz renderer<br/>70px crops"]
+  R --> I["Train instrument<br/>~19.6M · 5k steps · 3 seeds"]
+  I --> P0["Pos-0 teacher force<br/>pGT · max-softmax · rank"]
+  I --> PP["Full position profile<br/>vs text-only n-gram"]
+  I --> C["Blank · noise · scramble<br/>ablation · unseen script"]
+  P0 --> FIG["Paper figures + stats docs"]
+  PP --> FIG
+  C --> FIG
+  FIG --> X["Stage 5–6 transfer<br/>Production tab"]
+        </pre>
+      </div>
+      <div class="mermaid-wrap">
+        <div class="flow-caption">What each stage unlocks</div>
+        <pre class="mermaid">
+flowchart LR
+  S0["Stage 0<br/>scoring"] --> S1["Stage 1<br/>renderer"]
+  S1 --> S2["Stage 2<br/>instrument"]
+  S2 --> S4["Stage 4<br/>probes"]
+  S4 --> S5["Stage 5<br/>transfer"]
+  S5 --> S6["Stage 6<br/>triage"]
+        </pre>
+      </div>
+<p>The instrument is deliberately small and trained from scratch so we own every tensor. A production-scale reader might behave differently — we say that out loud. The instrument's job is to make confidence legible under counterfactuals APIs cannot run.</p>
       <div class="step-rail">
         <div class="step">
           <div class="step-n">0</div>
@@ -1498,8 +1461,8 @@ Random sentence from corpus          Controlled line renderer
         <p>Bigram synthesis during training means the decoder always saw locally plausible continuations. Probe 5 compares against a text-only n-gram that never sees pixels.</p>
       </div>
       <figure class="pub-fig">
-        <div class="fig-meta"><span class="fig-tag">Figure</span><p class="fig-title">Natural vs flattened vs inverted exposure regimes.</p></div>
-        <div class="fig-frame"><img src="docs/figures/fig4_regime_contrast.png" alt="Natural vs flattened vs inverted exposure regimes." loading="lazy"></div>
+        <span class="fig-badge">Figure · exposure regimes</span>
+        <img src="docs/figures/fig4_regime_contrast.png" alt="Natural vs flattened vs inverted exposure regimes.">
         <figcaption>Regime contrast — same architecture, different language-prior exposure.</figcaption>
       </figure>
     </div>
@@ -1580,19 +1543,6 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
       <div class="soft-card">
         <p><span class="mono">C<sub>t</sub> = max<sub>v</sub> P(v | image, previous tokens)</span></p>
         <p>If that max is 0.90, we say “90% confident in its selected token.” That is <em>not</em> the same as “90% chance the OCR is right.”</p>
-      <div class="mermaid-wrap">
-        <div class="flow-caption">Softmax → confidence (one step)</div>
-        <div class="mermaid">flowchart LR
-  IMG[Image + prefix] --> ENC[Encoder + bridge]
-  ENC --> DEC[Decoder logits — ~367 graphemes]
-  DEC --> SM[Softmax]
-  SM --> MX[max = confidence]
-  SM --> AR[argmax = prediction]
-  SM --> GT[p GT if teacher-forced]
-  MX -.->|can be 0.90| HI[Looks sure]
-  GT -.->|can be 10⁻¹¹| LO[Truth buried]</div>
-      </div>
-
       </div>
       <p><strong>Token A is not one fixed grapheme.</strong> It is whatever wins on that image at that step — maybe <span class="mono">क</span> on one line, <span class="mono">स</span> on another. The shock is not “the model likes क.” The shock is: <em>whatever wins is almost never the correct first grapheme.</em></p>
 
@@ -1621,8 +1571,8 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
       </div>
       <p class="follow">Position-0 predictive entropy ≈ <strong>0.333 nats</strong> (sharp, not soft). Median rank of the true grapheme ≈ <strong>70.5 / 367</strong>; <strong>35%</strong> of sequences put truth below rank 100. Sharpness on the wrong event is worse than a flat “I don’t know” for routing — you skip review precisely when the model is confidently off.</p>
       <figure class="pub-fig">
-        <div class="fig-meta"><span class="fig-tag">Figure</span><p class="fig-title">Confidence distributions vs controls.</p></div>
-        <div class="fig-frame"><img src="docs/figures/fig3_confidence_distributions.png" alt="Confidence distributions vs controls." loading="lazy"></div>
+        <span class="fig-badge">Figure · confidence distributions</span>
+        <img src="docs/figures/fig3_confidence_distributions.png" alt="Confidence distributions vs controls.">
         <figcaption>Figure — max-softmax stays high across conditions; shape differs more than the scalar.</figcaption>
       </figure>
     </div>
@@ -1684,8 +1634,8 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
         <p>High confidence and near-zero p(GT) can coexist at the first step. That is a <em>dissociation</em>, not a quirk of one image.</p>
       </div>
       <figure class="pub-fig">
-        <div class="fig-meta"><span class="fig-tag">Figure</span><p class="fig-title">Position-resolved dissociation between confidence and p(GT).</p></div>
-        <div class="fig-frame"><img src="docs/figures/fig1_position_dissociation.png" alt="Position-resolved dissociation between confidence and p(GT)." loading="lazy"></div>
+        <span class="fig-badge">Figure · position dissociation</span>
+        <img src="docs/figures/fig1_position_dissociation.png" alt="Position-resolved dissociation between confidence and p(GT).">
         <figcaption>Position profile overview — collapse at start; confidence stays high underneath.</figcaption>
       </figure>
     </div>
@@ -1752,8 +1702,8 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
 
       <p>Mid-sequence behavior is <strong>language prior</strong>, not world knowledge — matched n-grams never saw pixels. Probe 5 synthetic eval uses training-manifest lines by design (it tests "does decoder match n-gram statistics given prefix," not generalization).</p>
       <figure class="pub-fig">
-        <div class="fig-meta"><span class="fig-tag">Figure</span><p class="fig-title">KL between instrument and matched n-gram by position.</p></div>
-        <div class="fig-frame"><img src="docs/figures/fig7_ngram_kl.png" alt="KL between instrument and matched n-gram by position." loading="lazy"></div>
+        <span class="fig-badge">Figure · n-gram KL</span>
+        <img src="docs/figures/fig7_ngram_kl.png" alt="KL between instrument and matched n-gram by position.">
         <figcaption>Mid-sequence KL dips — decoder overlaps text-only baseline.</figcaption>
       </figure>
     </div>
@@ -1811,8 +1761,8 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
         <p>It does <strong>not</strong> prove the model learned vision and then ignored it. It may never have learned a useful visual representation. We keep that alternative alive in the paper — which is why a positive-control reader is Priority 1.</p>
       </div>
       <figure class="pub-fig">
-        <div class="fig-meta"><span class="fig-tag">Figure</span><p class="fig-title">Noise and scrambled controls vs text.</p></div>
-        <div class="fig-frame"><img src="docs/figures/fig6_noise_scrambled.png" alt="Noise and scrambled controls vs text." loading="lazy"></div>
+        <span class="fig-badge">Figure · noise / scramble</span>
+        <img src="docs/figures/fig6_noise_scrambled.png" alt="Noise and scrambled controls vs text.">
         <figcaption>Visual destruction — the readout barely moves.</figcaption>
       </figure>
 
@@ -1822,8 +1772,8 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
         <p><strong>Say this:</strong> vision can change which token wins sometimes; the max-softmax scalar is largely insensitive. <strong>Don’t say:</strong> “the model doesn’t use vision.”</p>
       </div>
       <figure class="pub-fig">
-        <div class="fig-meta"><span class="fig-tag">Figure</span><p class="fig-title">Ablation KL concentrates where argmax flips.</p></div>
-        <div class="fig-frame"><img src="docs/figures/fig2_ablation_kl.png" alt="Ablation KL concentrates where argmax flips." loading="lazy"></div>
+        <span class="fig-badge">Figure · encoder ablation</span>
+        <img src="docs/figures/fig2_ablation_kl.png" alt="Ablation KL concentrates where argmax flips.">
         <figcaption>Shape vs peak — KL tells you more than confidence alone.</figcaption>
       </figure>
 
@@ -2125,12 +2075,62 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
     </div>
   </div>
 </header>
-<section id="gap" class="mode-item walk-only story" style="--paper-order:2; --walk-order:2">
+
+<section id="prod-atlas" class="mode-item walk-only story" style="--paper-order:0; --walk-order:2">
+  <div class="fig-rail">
+    <div class="fig-body">
+      <div class="section-kicker">What we built · big picture</div>
+      <h2 class="section-title">From published accuracy gaps to a transfer test — in one flowchart</h2>
+      <p class="lede">Production motivation comes first. The Research tab is the microscope. This diagram is the whole project as a product conversation: notice the problem → build an instrument you can open → ask what transfers.</p>
+      <div class="mermaid-wrap">
+        <div class="flow-caption">Production path · Stages 0 → 6</div>
+        <pre class="mermaid">
+flowchart TD
+  A["Published Indic OCR gap<br/>Hindi 95.91% · Kashmiri 55.93%"] --> B["Question: does confidence<br/>track that difficulty?"]
+  B --> C["Stage 0 · Indic-aware scoring<br/>Tier 0 / 1 / 2"]
+  C --> D["Stage 1 · Controlled renderer<br/>HarfBuzz · exposure dial"]
+  D --> E["Stage 2 · ~19.6M instrument<br/>from scratch · |V|≈367"]
+  E --> F["Stage 4 · Probes<br/>pos-0 · profile · blank/noise/scramble · ablation"]
+  F --> G["Stage 5a · Extract confidence<br/>vs published accuracy"]
+  F --> H["Stage 5b · Spearman transfer<br/>instrument ↔ Sarvam CER"]
+  F --> I["Stage 6 · Triage cascade<br/>escalate bottom 20%"]
+  G --> J["Finding: Δ conf = 0.0027"]
+  H --> K["Finding: ρ ≈ 0.03 · null"]
+  I --> L["Finding: worse than random"]
+  J --> M["Ask for grounding-aware confidence<br/>not an accuracy bake-off"]
+  K --> M
+  L --> M
+        </pre>
+      </div>
+      <div class="mermaid-wrap">
+        <div class="flow-caption">Two tabs · same repo · different audience</div>
+        <pre class="mermaid">
+flowchart LR
+  P["Production tab<br/>motivation · transfer · pitch"] -.->|"mechanism deep dive"| R["Research tab<br/>0.90 · pos 0 · profile · controls"]
+  R -.->|"what transfers?"| P
+  P --> S["Sarvam-facing call"]
+  R --> T["Paper / interview"]
+        </pre>
+      </div>
+      <p class="follow">Keep scrolling for Stage 5a gap bars, the blank/noise demo, and Stage 5b/6 nulls. Flip to <strong>Research</strong> when someone asks “how do you know the image isn’t doing the work?”</p>
+    </div>
+  </div>
+</section>
+<section id="gap" class="mode-item walk-only story" style="--paper-order:2; --walk-order:3">
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">Stage 5a · language-level gap</div>
       <h2 class="section-title">~40 pp accuracy spread · confidence Δ = 0.0027</h2>
       <p class="lede">We compare Sarvam's published word accuracy to Extract API page-level confidence on cached pages (35 pages: 10 Hindi, 10 Santhali, 10 Kashmiri, 5 blank). Call once, cache forever, analyse offline — ~₹17.50 total API spend for this slice.</p>
+      <div class="mermaid-wrap">
+        <div class="flow-caption">Stage 5a question</div>
+        <pre class="mermaid">
+flowchart LR
+  A["Published accuracy<br/>Hindi → Kashmiri ~40 pp"] --> Q["Does Extract confidence<br/>move the same way?"]
+  Q --> R["Measured Δ = 0.0027<br/>blanks still go to 0"]
+        </pre>
+      </div>
+
       <table class="data">
         <caption>Indic OCR Bench vs Extract confidence</caption>
         <thead><tr><th>Language</th><th>Published accuracy</th><th>Extract confidence</th></tr></thead>
@@ -2180,51 +2180,22 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
     </div>
   </div>
 </section>
-<section id="why-instrument" class="mode-item walk-only story" style="--paper-order:3; --walk-order:3">
+<section id="why-instrument" class="mode-item walk-only story" style="--paper-order:3; --walk-order:4">
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">Why an owned instrument</div>
       <h2 class="section-title">APIs cannot run the counterfactuals — and we are not competing on accuracy</h2>
       <p class="lede">Sarvam Extract tells you what it outputs on a page. It does not let you remove the image, zero cross-attention, teacher-force the true first grapheme, or compare to a matched text-only n-gram. Those experiments require an owned forward pass.</p>
-
       <div class="mermaid-wrap">
-        <div class="flow-caption">What we built · end-to-end (Production view)</div>
-        <div class="mermaid">flowchart LR
-  A[GlotOCR pages] --> B[Stage 0 — Indic scoring]
-  B --> C[Stage 1 — HarfBuzz renderer]
-  C --> D[Stage 2 — ~19.6M instrument]
-  D --> E[Stage 4 probes — pos-0 · blank · ablation]
-  E --> F[Stage 5a/b — Sarvam transfer]
-  F --> G[Stage 6 — triage cascade]
-  style D fill:#e8eef8,stroke:#2b3a67
-  style F fill:#f7efe6,stroke:#a66b3d
-  style G fill:#f7efe6,stroke:#a66b3d</div>
-      </div>
-      <div class="flow-grid">
-        <div class="mermaid-wrap">
-          <div class="flow-caption">Why an owned instrument exists</div>
-          <div class="mermaid">flowchart TB
-  API[Production OCR API] -->|outputs text + confidence| BLACK[Black box]
-  BLACK -.->|cannot| X1[Blank the page]
-  BLACK -.->|cannot| X2[Zero encoder]
-  BLACK -.->|cannot| X3[Teacher-force p GT]
-  INST[~19.6M instrument] -->|owned forward pass| OPEN[Full softmax + ablations]
-  OPEN --> P0[Position-0 dissociation]
-  OPEN --> BL[Blank / noise / scramble]
-  OPEN --> NG[Text-only n-gram KL]
-  P0 --> ASK[Does diagnosis transfer?]
-  ASK --> S5[Stage 5–6 on cached Extract]</div>
-        </div>
-        <div class="mermaid-wrap">
-          <div class="flow-caption">Transfer questions (5a → 5b → 6)</div>
-          <div class="mermaid">flowchart TD
-  Q1[5a · Language level — Does mean confidence drop — Hindi → Kashmiri?] -->|Δ 0.0027| A1[Near-invariant]
-  Q2[5b · Page level — Does instrument hard — rank ↔ Sarvam CER?] -->|ρ ≈ 0.03| A2[Null]
-  Q3[6 · Routing — Escalate bottom 20% — by confidence?] -->|0.0109 vs 0.0095| A3[Worse than random]
-  A1 --> TAKE[Max-softmax ≠ grounding meter]
-  A2 --> TAKE
-  A3 --> TAKE</div>
-        </div>
+        <div class="flow-caption">Instrument vs API</div>
+        <pre class="mermaid">
+flowchart TD
+  API["Sarvam Extract API<br/>outputs + page confidence"] --> LIM["Cannot blank / ablate /<br/>teacher-force pGT"]
+  INST["Owned ~19.6M instrument"] --> EXP["Blank · noise · scramble<br/>ablation · full softmax"]
+  EXP --> ASK["Does the diagnosis transfer?"]
+  LIM --> ASK
+  ASK --> S5["Stage 5b / 6 offline"]
+        </pre>
       </div>
 
       <p>That is the whole reason this repo exists as research infrastructure, not as “another Indic OCR model.” A production API is excellent for measuring real-world accuracy. It is a poor place to ask: <em>when confidence is high, was the image doing the work?</em></p>
@@ -2276,7 +2247,7 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
     </div>
   </div>
 </section>
-<section id="mechanism" class="mode-item walk-only story" style="--paper-order:4; --walk-order:4">
+<section id="mechanism" class="mode-item walk-only story" style="--paper-order:4; --walk-order:5">
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">Mechanism recap · link to Research</div>
@@ -2346,7 +2317,7 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
     </div>
   </div>
 </section>
-<section id="transfer" class="mode-item walk-only story" style="--paper-order:5; --walk-order:5">
+<section id="transfer" class="mode-item walk-only story" style="--paper-order:5; --walk-order:6">
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">Stage 5b · per-image transfer</div>
@@ -2389,7 +2360,7 @@ For each page i:
     </div>
   </div>
 </section>
-<section id="triage" class="mode-item walk-only story" style="--paper-order:6; --walk-order:6">
+<section id="triage" class="mode-item walk-only story" style="--paper-order:6; --walk-order:7">
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">Stage 6 · offline triage cascade</div>
@@ -2435,7 +2406,7 @@ For each page i:
     </div>
   </div>
 </section>
-<section id="pitch" class="mode-item walk-only story" style="--paper-order:7; --walk-order:7">
+<section id="pitch" class="mode-item walk-only story" style="--paper-order:7; --walk-order:8">
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">Contribution pitch</div>
@@ -2455,7 +2426,7 @@ For each page i:
     </div>
   </div>
 </section>
-<section id="prod-next" class="mode-item walk-only story" style="--paper-order:8; --walk-order:8">
+<section id="prod-next" class="mode-item walk-only story" style="--paper-order:8; --walk-order:9">
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">Production roadmap</div>
@@ -2617,7 +2588,7 @@ For each page i:
 </section>
 
 
-<section id="prod-talk" class="mode-item walk-only story" style="--walk-order:9; --paper-order:0">
+<section id="prod-talk" class="mode-item walk-only story" style="--walk-order:10; --paper-order:0">
   <div class="fig-rail">
     <div class="fig-body">
       <div class="section-kicker">Production talk track</div>
@@ -2651,45 +2622,6 @@ For each page i:
     <div class="mono" style="font-size:0.8rem;color:var(--ink-soft);">GitHub Pages · index.html</div>
   </div>
 </footer>
-
-
-<script type="module">
-  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-  mermaid.initialize({
-    startOnLoad: false,
-    theme: 'base',
-    securityLevel: 'loose',
-    themeVariables: {
-      primaryColor: '#e8eef8',
-      primaryTextColor: '#1c1814',
-      primaryBorderColor: '#2b3a67',
-      lineColor: '#6b645c',
-      secondaryColor: '#f7efe6',
-      tertiaryColor: '#f7f3ec',
-      fontFamily: 'IBM Plex Sans, sans-serif',
-      fontSize: '14px'
-    },
-    flowchart: { curve: 'basis', htmlLabels: true, padding: 12 }
-  });
-  async function renderMermaid(){
-    const nodes = Array.from(document.querySelectorAll('div.mermaid')).filter(el => {
-      if (el.getAttribute('data-processed') === 'true') return false;
-      const host = el.closest('.paper-only, .walk-only, .mode-item');
-      if (host && getComputedStyle(host).display === 'none') return false;
-      return true;
-    });
-    if (!nodes.length) return;
-    try {
-      await mermaid.run({ nodes });
-    } catch (e) { console.warn('mermaid', e); }
-  }
-  window.__renderMermaid = renderMermaid;
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => renderMermaid());
-  } else {
-    renderMermaid();
-  }
-</script>
 
 <script>
   (function(){
@@ -2749,7 +2681,7 @@ For each page i:
       }
       try { localStorage.setItem('vlm-ocr-eval-mode', mode); } catch(e){}
       if (typeof window.__revealRefresh === 'function') window.__revealRefresh();
-      if (typeof window.__renderMermaid === 'function') window.setTimeout(() => window.__renderMermaid(), 40);
+      if (typeof window.__runMermaid === 'function') window.setTimeout(window.__runMermaid, 40);
     }
     walkBtn.addEventListener('click', ()=> setMode('walkthrough', true));
     paperBtn.addEventListener('click', ()=> setMode('paper', true));
@@ -2811,6 +2743,24 @@ For each page i:
     watchIn('freqGrid', 0.2);
   })();
 </script>
+
+<script>
+  (function(){
+    async function runMermaid(){
+      if (!window.mermaid) return;
+      try {
+        const nodes = document.querySelectorAll('.mermaid:not([data-processed])');
+        if (!nodes.length) return;
+        await mermaid.run({ nodes });
+      } catch (e) { console.warn('mermaid', e); }
+    }
+    window.__runMermaid = runMermaid;
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', runMermaid);
+    } else { runMermaid(); }
+  })();
+</script>
+
 </body>
 
 </html>

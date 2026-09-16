@@ -1,6 +1,7 @@
 # Site sync (GitHub Pages `index.html`)
 
-The live page has two modes — **Production** (default, first) and **Research** (second) — toggled in the top bar.
+The live page has two modes — **Production** (default, first) and **Research**
+(second) — toggled in the top bar.
 `paper/main.pdf` is canonical for preprint claims. Do not invent numbers.
 Numbers live in `docs/paper_defensibility_stats.md`, `docs/position_matched_ngrams.md`,
 Stage 5–6 markdown, and `paper/main.tex`. Cite those files; do not paraphrase
@@ -12,7 +13,7 @@ Not “VLMs ignore images.” Claim: in this instrument, confidence stays
 high even when the model does not read held-out images.
 Eval images are GlotOCR synthetic line renders, not phone photos.
 
-Tab labels: **Production** (default) / **Research**. Never title the Production tab
+Tab labels: **Production** (first, default) / **Research** (second). Never title the Production tab
 “Sarvam.” Sarvam Vision is named in Production body copy as the production
 motivation and transfer reference — not as an accuracy competitor.
 
@@ -32,9 +33,11 @@ Reflect `BOOK.md` depth in plain language; keep flowcharts and figures.
 7. 60-second “say this”
 8. Then build / measure / renderer / architecture / calibration / findings / limits / next
 
+Mermaid diagrams live in `.mermaid-wrap` (CDN mermaid@10). Re-run on mode switch via `__runMermaid`.
+
 Keep animations: hero rise, gap fills, pos-profile, soft-viz, freq-grid, glyph invite, meter fill, scroll reveal. Respect `prefers-reduced-motion`.
 
-## Production tab (Sarvam-motivated, not labeled Sarvam)
+## Production tab (default · Sarvam-motivated, not labeled Sarvam)
 
 Audience: product / transfer conversation. Start with motivation from
 published Indic OCR Bench gaps, then transfer results. Include a mini
