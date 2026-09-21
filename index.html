@@ -977,22 +977,109 @@
     display:grid; grid-template-columns:1fr; gap:18px; margin:22px 0;
   }
   @media (min-width:880px){ .chart-grid.two{grid-template-columns:1fr 1fr;} }
-  .mermaid-wrap{
-    margin:24px 0 28px; padding:18px 16px 8px;
-    border:1px solid var(--hairline-strong); border-radius:6px;
-    background:var(--paper-raised);
-    overflow-x:auto;
+  /* ---- rendered flow boards (no Mermaid dependency) ---- */
+  .flow-board{
+    margin:24px 0 28px; padding:18px 16px 20px;
+    border:1px solid var(--hairline-strong); border-radius:8px;
+    background:
+      radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--mode-accent) 8%, transparent), transparent 55%),
+      var(--paper-raised);
+    box-shadow:0 10px 28px rgba(28,27,25,0.06);
   }
-  .mermaid-wrap .flow-caption{
+  .flow-board .flow-caption{
     font-family:'IBM Plex Mono', monospace; font-size:0.72rem;
     letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft);
-    margin:0 0 10px;
+    margin:0 0 16px;
   }
-  .mermaid{
-    display:flex; justify-content:center;
-    background:transparent !important;
+  .flow-pipe{
+    list-style:none; margin:0; padding:0;
+    display:flex; flex-direction:column; gap:0; align-items:stretch;
   }
-  .mermaid svg{max-width:100%; height:auto;}
+  .flow-pipe > li{margin:0; padding:0;}
+  .flow-node{
+    position:relative;
+    border:1.5px solid var(--hairline-strong);
+    border-radius:8px;
+    background:var(--paper);
+    padding:12px 14px 12px 16px;
+    transition:transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  }
+  .flow-node:hover{
+    transform:translateY(-1px);
+    border-color:var(--ink-blue);
+    box-shadow:0 8px 20px rgba(43,58,103,0.08);
+  }
+  .flow-node .fn-kicker{
+    display:inline-block;
+    font-family:'IBM Plex Mono', monospace; font-size:0.68rem;
+    letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--ink-blue); margin:0 0 4px;
+  }
+  .flow-node strong{
+    display:block; font-family:'Fraunces', serif; font-weight:500;
+    font-size:1.02rem; color:var(--ink); margin:0 0 4px; line-height:1.25;
+  }
+  .flow-node p{
+    margin:0; font-size:0.88rem; color:var(--ink-soft); line-height:1.4; max-width:62ch;
+  }
+  .flow-node.accent{border-color:var(--mode-accent); background:color-mix(in srgb, var(--mode-accent) 6%, var(--paper));}
+  .flow-node.find{
+    border-color:color-mix(in srgb, var(--brick) 45%, var(--hairline-strong));
+    background:color-mix(in srgb, var(--brick) 5%, var(--paper));
+  }
+  .flow-node.find .fn-kicker{color:var(--brick);}
+  .flow-node.goal{
+    border-color:var(--ink-blue);
+    background:color-mix(in srgb, var(--ink-blue) 7%, var(--paper));
+  }
+  .flow-arrow{
+    display:flex; justify-content:center; align-items:center;
+    height:28px; color:var(--ink-soft); font-size:1.05rem;
+    line-height:1; position:relative;
+  }
+  .flow-arrow span{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:28px; height:28px; border-radius:999px;
+    border:1px solid var(--hairline-strong);
+    background:var(--paper);
+    color:var(--ink-blue);
+    font-size:0.95rem;
+  }
+  .flow-arrow-label{
+    display:flex; justify-content:center; align-items:center;
+    padding:4px 0 8px;
+    font-family:'IBM Plex Mono', monospace; font-size:0.68rem;
+    letter-spacing:0.04em; color:var(--ink-soft);
+  }
+  .flow-arrow-label::before, .flow-arrow-label::after{
+    content:''; height:1px; width:28px; background:var(--hairline-strong); margin:0 8px;
+  }
+  .flow-row{
+    display:grid; grid-template-columns:1fr; gap:12px; margin-top:4px;
+  }
+  @media (min-width:720px){
+    .flow-row.cols-2{grid-template-columns:1fr 1fr;}
+    .flow-row.cols-3{grid-template-columns:1fr 1fr 1fr;}
+    .flow-row.cols-5{grid-template-columns:repeat(5, 1fr);}
+    .flow-pipe.horizontal{
+      flex-direction:row; flex-wrap:wrap; align-items:stretch; gap:0;
+    }
+    .flow-pipe.horizontal > .flow-node{flex:1 1 140px; min-width:120px;}
+    .flow-pipe.horizontal > .flow-arrow{
+      width:36px; height:auto; min-height:48px; align-self:center; flex:0 0 36px;
+    }
+  }
+  .flow-branch{
+    display:grid; grid-template-columns:1fr; gap:10px;
+    margin:8px 0;
+    padding:12px;
+    border:1px dashed var(--hairline-strong);
+    border-radius:8px;
+    background:color-mix(in srgb, var(--paper) 70%, transparent);
+  }
+  @media (min-width:720px){
+    .flow-branch.cols-3{grid-template-columns:1fr 1fr 1fr;}
+  }
 
 
   .regime{font-family:'IBM Plex Mono', monospace; font-size:0.68rem;
@@ -1154,18 +1241,15 @@
       <p>Unicode code points are not user-perceived characters. Hindi <span class="mono">क्ष</span> can be one grapheme cluster built from multiple code points. Character Error Rate (CER) on raw Unicode can punish correct output. We normalize and cluster graphemes so metrics mean something — but the deeper issue is semantic: <strong>correctness, confidence, and visual grounding are three different quantities.</strong></p>
       <p>A model can be wrong while sounding fluent. A model can be confident while the true first symbol sits at rank ~70 in a 367-way softmax. A model can read aggregate accuracy on Hindi while Kashmiri collapses — and still report page confidence near 1.0.</p>
 
-      <div class="flow-box">
+      <div class="flow-board">
         <div class="flow-caption">Three quantities people conflate</div>
-        <pre>
-  CORRECTNESS          CONFIDENCE              GROUNDING
-  ───────────          ──────────              ─────────
-  CER vs GT            max softmax peak        p(GT) under teacher force
-  exact match?         "how sure?"             "did image matter?"
-       │                     │                        │
-       └──── orthogonal ─────┴──── orthogonal ────────┘
-
-  Our instrument: bad correctness + high confidence + weak grounding (pos 0)
-        </pre>
+        <div class="flow-row cols-3">
+          <div class="flow-node"><span class="fn-kicker">Correctness</span><strong>Did it get the text right?</strong><p>CER vs ground truth · exact match after grapheme normalize.</p></div>
+          <div class="flow-node accent"><span class="fn-kicker">Confidence</span><strong>How peaked is the softmax?</strong><p>Max probability of the chosen token — “how sure?”</p></div>
+          <div class="flow-node find"><span class="fn-kicker">Grounding</span><strong>Did the image matter?</strong><p>Teacher-forced p(GT) · blank Δ · ablation sensitivity.</p></div>
+        </div>
+        <div class="flow-arrow-label">orthogonal · our instrument at pos 0</div>
+        <div class="flow-node find"><span class="fn-kicker">What we see</span><strong>Bad correctness + high confidence + weak grounding</strong><p>That separation is the whole research question.</p></div>
       </div>
       <p class="follow">Indic OCR adds script-specific failure modes: conjuncts, matras, reordering marks, font shaping differences. A Latin OCR mental model ("letters left-to-right in boxes") misleads you when discussing Devanagari or Bengali. That is why we shape with HarfBuzz and count grapheme clusters — and why we are cautious comparing headline CER across scripts without reading the normalization spec.</p>
       <p>Question A (production) and Question B (mechanism) intersect when someone proposes: "route low-confidence pages to a human." That policy assumes confidence encodes difficulty with visual grounding. Stage 5–6 test a slice of Question A on Sarvam; the instrument probes Question B in depth.</p>
@@ -1175,15 +1259,12 @@
         <div class="kv-card"><h3>Question B</h3><p>Does decoder confidence track whether the <em>image</em> supports the text, or only whether the generated string looks like language?</p></div>
         <div class="kv-card"><h3>Why not just use Sarvam?</h3><p>An API gives outputs. It cannot blank the page, zero the encoder, teacher-force p(GT) at position 0, or ablate cross-attention. You need an owned instrument for counterfactuals.</p></div>
       </div>
-      <div class="flow-box">
-        <div class="flow-caption">Confidence routing — what we hope vs what we test</div>
-        <pre>
-HOPE                         TEST (this project)
-  ────                         ─────────────────
-  high conf  →  easy page      high conf  →  ??? visual evidence
-  low conf   →  hard page      blank page →  does conf drop?
-  escalate bottom 20%          does rank track Sarvam difficulty?
-        </pre>
+      <div class="flow-board">
+        <div class="flow-caption">Confidence routing — hope vs what we test</div>
+        <div class="flow-row cols-2">
+          <div class="flow-node"><span class="fn-kicker">Hope</span><strong>High conf → easy · low conf → hard</strong><p>Escalate the bottom 20% to a human or stronger system.</p></div>
+          <div class="flow-node find"><span class="fn-kicker">Test</span><strong>Does high conf mean visual evidence?</strong><p>Blank page — does conf drop? Does rank track Sarvam difficulty?</p></div>
+        </div>
       </div>
       <p class="follow">If confidence is only "how peaked is the softmax," routing becomes a lottery dressed up as a meter. That is the failure mode we instrument.</p>
     </div>
@@ -1195,24 +1276,23 @@ HOPE                         TEST (this project)
       <div class="section-kicker">What we built · why · how</div>
       <h2 class="section-title">A full research chain from pages to probes — instrument separate from demo</h2>
       <p class="lede">Nothing here is a single script. Each stage exists because a later probe would be uninterpretable without it. The ~19.6M model is a measurement instrument; a separate demo stack (LoRA/SFT on a VLM) lives in the Colab notebook but is not the preprint claim.</p>
-      <div class="flow-box">
-        <div class="flow-caption">End-to-end pipeline (Stages 0 → 6)</div>
-        <pre>
-Stage 0   ERROR TAXONOMY          Tier 0/1/2 on Tesseract + baselines
-      │     (~20.4% Tier-1 among non-exact provisional)
-      ▼
-  Stage 1   CONTROLLED RENDERER     HarfBuzz shaping · natural / flat / inverted dial
-      │     2,538 training lines · TV: natural 0 · flat ~0.047 · inv ~0.005
-      ▼
-  Stage 2   FROM-SCRATCH INSTRUMENT ~19.6M · |V|≈367 · 5k steps · 3 seeds
-      │     encoder → bridge → autoregressive decoder
-      ▼
-  Stage 4   MECHANISTIC PROBES      pos-0 p(GT) · profile · blank · ablation · n-gram KL
-      │
-      ├─► Stage 5a  Sarvam Extract confidence vs published accuracy (cached API)
-      ├─► Stage 5b  Spearman transfer instrument ↔ Sarvam (offline, n=60)
-      └─► Stage 6   Triage cascade — residual CER if you escalate by confidence
-        </pre>
+      <div class="flow-board">
+        <div class="flow-caption">End-to-end pipeline · Stages 0 → 6</div>
+        <ol class="flow-pipe">
+          <li class="flow-node"><span class="fn-kicker">Stage 0</span><strong>Error taxonomy</strong><p>Tier 0/1/2 on Tesseract + baselines · ~20.4% Tier-1 among non-exact.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node"><span class="fn-kicker">Stage 1</span><strong>Controlled renderer</strong><p>HarfBuzz · natural / flat / inverted · 2,538 training lines.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node accent"><span class="fn-kicker">Stage 2</span><strong>From-scratch instrument</strong><p>~19.6M · |V|≈367 · encoder → bridge → decoder · 3 seeds.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node"><span class="fn-kicker">Stage 4</span><strong>Mechanistic probes</strong><p>Pos-0 p(GT) · profile · blank · ablation · n-gram KL.</p></li>
+        </ol>
+        <div class="flow-arrow-label">production transfer</div>
+        <div class="flow-branch cols-3">
+          <div class="flow-node find"><span class="fn-kicker">5a</span><strong>Extract vs accuracy</strong><p>Cached API · language gap.</p></div>
+          <div class="flow-node find"><span class="fn-kicker">5b</span><strong>Spearman transfer</strong><p>Instrument ↔ Sarvam CER · n=60.</p></div>
+          <div class="flow-node find"><span class="fn-kicker">6</span><strong>Triage cascade</strong><p>Escalate bottom 20% by confidence.</p></div>
+        </div>
       </div>
       <div class="tier-flow">
         <div class="tier-node blue">GlotOCR<br>pages</div><span class="tier-arrow">→</span>
@@ -1221,33 +1301,40 @@ Stage 0   ERROR TAXONOMY          Tier 0/1/2 on Tesseract + baselines
         <div class="tier-node">Probes<br>4–6</div><span class="tier-arrow">→</span>
         <div class="tier-node ochre">Transfer<br>5a–6</div>
       </div>
-      
-      <div class="mermaid-wrap">
+
+      <div class="flow-board">
         <div class="flow-caption">Research build · data and probes</div>
-        <pre class="mermaid">
-flowchart TD
-  G["GlotOCR pages<br/>data/raw/"] --> M["Line manifests<br/>natural / flat / inverted"]
-  M --> R["HarfBuzz renderer<br/>70px crops"]
-  R --> I["Train instrument<br/>~19.6M · 5k steps · 3 seeds"]
-  I --> P0["Pos-0 teacher force<br/>pGT · max-softmax · rank"]
-  I --> PP["Full position profile<br/>vs text-only n-gram"]
-  I --> C["Blank · noise · scramble<br/>ablation · unseen script"]
-  P0 --> FIG["Paper figures + stats docs"]
-  PP --> FIG
-  C --> FIG
-  FIG --> X["Stage 5–6 transfer<br/>Production tab"]
-        </pre>
+        <ol class="flow-pipe">
+          <li class="flow-node"><span class="fn-kicker">Source</span><strong>GlotOCR pages</strong><p><span class="mono">data/raw/</span> — controlled text, not phone photos.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node"><span class="fn-kicker">Manifests</span><strong>Natural · flattened · inverted</strong><p>Exposure dial so we can stress the language prior.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node"><span class="fn-kicker">Stage 1</span><strong>HarfBuzz renderer</strong><p>70px line crops with real Indic shaping.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node accent"><span class="fn-kicker">Stage 2</span><strong>Train the instrument</strong><p>~19.6M params · 5k steps · 3 seeds · |V|≈367.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+        </ol>
+        <div class="flow-branch cols-3">
+          <div class="flow-node"><span class="fn-kicker">Probe</span><strong>Position 0</strong><p>Teacher-forced p(GT), max-softmax, rank.</p></div>
+          <div class="flow-node"><span class="fn-kicker">Probe</span><strong>Full profile</strong><p>vs text-only n-gram mid-sequence.</p></div>
+          <div class="flow-node"><span class="fn-kicker">Probe</span><strong>Blank · noise · scramble</strong><p>Plus ablation and unseen script.</p></div>
+        </div>
+        <div class="flow-arrow" aria-hidden="true"><span>↓</span></div>
+        <div class="flow-node goal"><span class="fn-kicker">Outputs</span><strong>Paper figures + stats docs</strong><p>Then Stage 5–6 transfer on the Production tab.</p></div>
       </div>
-      <div class="mermaid-wrap">
+      <div class="flow-board">
         <div class="flow-caption">What each stage unlocks</div>
-        <pre class="mermaid">
-flowchart LR
-  S0["Stage 0<br/>scoring"] --> S1["Stage 1<br/>renderer"]
-  S1 --> S2["Stage 2<br/>instrument"]
-  S2 --> S4["Stage 4<br/>probes"]
-  S4 --> S5["Stage 5<br/>transfer"]
-  S5 --> S6["Stage 6<br/>triage"]
-        </pre>
+        <ol class="flow-pipe horizontal">
+          <li class="flow-node"><span class="fn-kicker">0</span><strong>Scoring</strong><p>Tier 0/1/2</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>→</span></li>
+          <li class="flow-node"><span class="fn-kicker">1</span><strong>Renderer</strong><p>Exposure dial</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>→</span></li>
+          <li class="flow-node accent"><span class="fn-kicker">2</span><strong>Instrument</strong><p>~19.6M</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>→</span></li>
+          <li class="flow-node"><span class="fn-kicker">4</span><strong>Probes</strong><p>Mechanism</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>→</span></li>
+          <li class="flow-node find"><span class="fn-kicker">5–6</span><strong>Transfer</strong><p>Triage</p></li>
+        </ol>
       </div>
 <p>The instrument is deliberately small and trained from scratch so we own every tensor. A production-scale reader might behave differently — we say that out loud. The instrument's job is to make confidence legible under counterfactuals APIs cannot run.</p>
       <div class="step-rail">
@@ -1302,31 +1389,30 @@ flowchart LR
       <h2 class="section-title">Tier 0 / 1 / 2 taxonomy before any neural training</h2>
       <p class="lede">Before training our own model, we need a vocabulary for failure. Stage 0 labels Tesseract and baseline outputs so later probes know what "hard" meant on real pages.</p>
       <p>Tier 0 is exact match after normalization. Tier 1 captures provisional near-misses worth human review. Tier 2 is everything else. Among Tesseract outputs that are not Tier-0 exact, roughly <strong>20.4%</strong> land in Tier 1 — a slice big enough to matter for routing stories but not so big that the label is meaningless.</p>
-      <div class="flow-box">
-        <div class="flow-caption">Tier decision (simplified)</div>
-        <pre>
-normalize(pred) vs normalize(gt)
-        │
-        ├─ exact match ──────────────────────► Tier 0
-        │
-        ├─ provisional rules (substitution / insert / delete patterns)
-        │       └─ passes review heuristics ─► Tier 1  (~20.4% of non-exact)
-        │
-        └─ else ─────────────────────────────► Tier 2
-        </pre>
+      <div class="flow-board">
+        <div class="flow-caption">Tier decision · simplified</div>
+        <ol class="flow-pipe">
+          <li class="flow-node"><span class="fn-kicker">Compare</span><strong>normalize(pred) vs normalize(gt)</strong><p>Grapheme-level, not raw Unicode code points.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+        </ol>
+        <div class="flow-branch cols-3">
+          <div class="flow-node accent"><span class="fn-kicker">Tier 0</span><strong>Exact match</strong><p>After normalization — “correct.”</p></div>
+          <div class="flow-node"><span class="fn-kicker">Tier 1</span><strong>Provisional near-miss</strong><p>Substitution / insert / delete patterns worth review.</p></div>
+          <div class="flow-node find"><span class="fn-kicker">Tier 2+</span><strong>Everything else</strong><p>Genuine errors and residual cases.</p></div>
+        </div>
       </div>
       <p>This stage does not prove anything about confidence. It sets up Stage 1–2 so "error type" and "exposure regime" can be crossed later. Baseline engines (Surya, PaddleOCR) fill gaps for Santhali and Kashmiri where manifests exist.</p>
 
       <h3 class="story-q">Why tiers before training?</h3>
       <p class="story-a">If you train first and discover your eval set is 90% "trivial exact match," you will think confidence works because easy pages dominate. Tiers force you to look at the provisional slice — the pages a human might still need to check — before any neural net enters the picture.</p>
       <p class="story-a">Tier 1 at ~20.4% of non-exact Tesseract outputs is not a headline result. It is a scope marker: enough ambiguous cases exist that routing could matter, but not so many that the pipeline is pure noise.</p>
-      <div class="flow-box">
-        <div class="flow-caption">Stage 0 outputs (what lands on disk)</div>
-        <pre>
-  data/predictions/{engine}/{language}.jsonl   baseline OCR outputs
-  hand_review suggestions                      Tier-1 candidates flagged
-  docs/                                        tier counts feed paper tables
-        </pre>
+      <div class="flow-board">
+        <div class="flow-caption">Stage 0 outputs · what lands on disk</div>
+        <div class="flow-row cols-3">
+          <div class="flow-node"><span class="fn-kicker">Predictions</span><strong>engine / language jsonl</strong><p><span class="mono">data/predictions/</span> baseline OCR outputs.</p></div>
+          <div class="flow-node"><span class="fn-kicker">Review</span><strong>Hand-review flags</strong><p>Tier-1 candidates marked for humans.</p></div>
+          <div class="flow-node accent"><span class="fn-kicker">Docs</span><strong>Tier counts</strong><p>Feed later routing and paper stats.</p></div>
+        </div>
       </div>
       <div class="step-rail">
         <div class="step">
@@ -1421,34 +1507,30 @@ normalize(pred) vs normalize(gt)
         </div>
       </div>
       <p>Total variation (TV) measures how far the glyph histogram moved from natural. Flattened pushes toward uniform; inverted boosts rare glyphs. These are not "data augmentation for accuracy" — they are <strong>dials on the language prior</strong> the decoder may lean on when vision is weak.</p>
-      <div class="flow-box">
-        <div class="flow-caption">Why we synthesize lines instead of sampling sentences</div>
-        <pre>
-Random sentence from corpus          Controlled line renderer
-  ───────────────────────────          ────────────────────────
-  ✗ unknown length / layout            ✓ fixed crop geometry
-  ✗ mixed exposure in one batch        ✓ regime label per manifest
-  ✗ hard to match n-gram baselines     ✓ paired text-only 4–5-gram
-  ✗ confound: is it vision or text?     ✓ dial isolates prior vs vision
-        </pre>
+      <div class="flow-board">
+        <div class="flow-caption">Why we synthesize lines</div>
+        <div class="flow-row cols-2">
+          <div class="flow-node find"><span class="fn-kicker">Random corpus sentence</span><strong>Hard to interpret</strong><p>Unknown length/layout · mixed exposure · n-gram baselines don’t match.</p></div>
+          <div class="flow-node accent"><span class="fn-kicker">Controlled renderer</span><strong>Fair probes</strong><p>Fixed crop · regime labels · paired text-only 4–5-gram · dial isolates prior vs vision.</p></div>
+        </div>
       </div>
 
       <p>Each manifest row carries a regime tag: <span class="mono">natural</span>, <span class="mono">flattened</span>, or <span class="mono">inverted</span>. Probes 3 and 5 run all three so we can ask whether confidence tracks exposure — not just whether one regime overfit.</p>
-      <div class="flow-box">
-        <div class="flow-caption">Renderer pipeline (Stage 1)</div>
-        <pre>
-  GlotOCR page text  ──►  sentence / line split  ──►  HarfBuzz shape
-                                │
-                                ▼
-                     frequency table (script-specific)
-                                │
-              ┌─────────────────┼─────────────────┐
-              ▼                 ▼                 ▼
-          natural           flattened          inverted
-           TV=0              TV~0.047           TV~0.005
-              │                 │                 │
-              └────────► PNG line crop + GT jsonl manifest
-        </pre>
+      <div class="flow-board">
+        <div class="flow-caption">Renderer pipeline · Stage 1</div>
+        <ol class="flow-pipe">
+          <li class="flow-node"><span class="fn-kicker">Text</span><strong>GlotOCR page text</strong><p>Sentence / line split with known GT.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node accent"><span class="fn-kicker">Shape</span><strong>HarfBuzz OpenType</strong><p>Real Indic ligatures — not toy boxes.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+        </ol>
+        <div class="flow-branch cols-3">
+          <div class="flow-node"><span class="fn-kicker">Natural</span><strong>TV = 0</strong><p>Training frequency shape.</p></div>
+          <div class="flow-node"><span class="fn-kicker">Flattened</span><strong>TV ≈ 0.047</strong><p>Toward uniform glyphs.</p></div>
+          <div class="flow-node"><span class="fn-kicker">Inverted</span><strong>TV ≈ 0.005</strong><p>Rare glyphs boosted.</p></div>
+        </div>
+        <div class="flow-arrow" aria-hidden="true"><span>↓</span></div>
+        <div class="flow-node goal"><span class="fn-kicker">Out</span><strong>PNG line crop + GT jsonl</strong><p>Fixed geometry so the encoder always sees comparable crops.</p></div>
       </div>
       <div class="soft-card">
         <p><strong>100 pages per mode</strong> exported for Hindi/Bengali scaled manifests where applicable. Line crops are fixed geometry so the vision encoder always sees comparable aspect ratios — layout variation is intentionally reduced so failure modes are easier to interpret.</p>
@@ -1473,37 +1555,55 @@ Random sentence from corpus          Controlled line renderer
     <div class="fig-body">
       <div class="section-kicker">Stage 2 · the instrument</div>
       <h2 class="section-title">Encoder → bridge → decoder on ~367 grapheme tokens</h2>
-      <p class="lede">Roughly 19.6 million parameters, vocabulary ~367 clustered graphemes, 2,538 training lines, 5,000 optimizer steps, three random seeds. Small on purpose — we want a legible failure mode, not SOTA.</p>
-      <div class="flow-box">
-        <div class="flow-caption">Architecture (forward pass)</div>
-        <pre>
-line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory)
-                                                    │
-                                                    ▼
-                              <BOS> ──►  Autoregressive decoder  ──►  grapheme tokens
-                                                    │
-                                         softmax → max = "confidence"
-        </pre>
+      <p class="lede">Roughly 19.6 million parameters, vocabulary ~367 clustered graphemes, 2,538 training lines, 5,000 optimizer steps, three random seeds. Small on purpose — we want a <em>legible</em> failure mode, not SOTA accuracy.</p>
+      <p>Think of three layers: <strong>pixels → visual memory → next grapheme</strong>. The vision encoder sees the line crop. The bridge holds that memory for cross-attention. The decoder starts at <span class="mono">&lt;BOS&gt;</span> and emits one grapheme at a time. “Confidence” is just the tallest bar in that ~367-way softmax — which is why it can look sure while the true symbol sits at rank ~70.</p>
+      <div class="flow-board">
+        <div class="flow-caption">Architecture · forward pass</div>
+        <ol class="flow-pipe">
+          <li class="flow-node"><span class="fn-kicker">Input</span><strong>Line-crop image</strong><p>70px HarfBuzz render · known ground-truth graphemes.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node accent"><span class="fn-kicker">Vision</span><strong>Encoder</strong><p>Turns pixels into a visual memory the decoder can attend to.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node"><span class="fn-kicker">Bridge</span><strong>Cross-attention memory</strong><p>Connects vision features to the language decoder. Ablation zeros this.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node accent"><span class="fn-kicker">Language</span><strong>Autoregressive decoder</strong><p>Starts from &lt;BOS&gt; · emits ~367 grapheme tokens one by one.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node find"><span class="fn-kicker">Meter</span><strong>Softmax → max = “confidence”</strong><p>Peak probability of the chosen token — not P(correct).</p></li>
+        </ol>
+        <p style="margin:14px 0 0;font-size:0.9rem;color:var(--ink-soft);max-width:66ch;">Complexity is not “bigger model = better OCR.” Complexity lives in <em>measurement</em>: grapheme tokenization, Indic shaping, teacher forcing, and counterfactuals an API cannot run.</p>
       </div>
-      <div class="soft-card">
+      
+      <div class="flow-board">
+        <div class="flow-caption">Where the complexity actually lives</div>
+        <div class="flow-row cols-2">
+          <div class="flow-node find"><span class="fn-kicker">Not here</span><strong>We are not chasing SOTA OCR</strong><p>~19.6M is tiny next to production VLMs. Held-out CER ≈ 0.985 — the model does not “read” well. That is intentional for a measurement instrument.</p></div>
+          <div class="flow-node accent"><span class="fn-kicker">Here</span><strong>Measurement + Indic script reality</strong><p>Grapheme clustering · HarfBuzz shaping · teacher forcing · blank/ablation · three-seed aggregates · transfer tests with a hard API budget.</p></div>
+        </div>
+        <div class="flow-arrow-label">why from scratch</div>
+        <div class="flow-branch cols-3">
+          <div class="flow-node"><span class="fn-kicker">Inspect</span><strong>Full softmax</strong><p>See rank of GT, not just argmax.</p></div>
+          <div class="flow-node"><span class="fn-kicker">Intervene</span><strong>Ablate / blank</strong><p>Zero vision memory on purpose.</p></div>
+          <div class="flow-node"><span class="fn-kicker">Compare</span><strong>Text-only n-gram</strong><p>Same prefixes, zero pixels.</p></div>
+        </div>
+      </div>
+<div class="soft-card">
         <p><strong>Grapheme tokenizer.</strong> Clusters user-perceived characters after Unicode normalization — not raw code points. CER and teacher-forced log p(GT) are computed in this space.</p>
         <p><strong>Training config.</strong> From-scratch on T4 (fp16, gradient checkpointing). Checkpoints exported per seed. Held-out evaluation uses manifest lines not seen in training — still synthetic renders.</p>
         <p><strong>Three seeds.</strong> Probe 3/5 aggregate across seeds so single-seed luck does not drive claims.</p>
       </div>
       <p>This is not the demo VLM with LoRA adapters. That path explores whether a pretrained vision-language model can be fine-tuned for OCR — a different question. The preprint's mechanistic claims refer to this from-scratch instrument only.</p>
 
-      <div class="flow-box">
-        <div class="flow-caption">Training loop (Colab T4 · fp16)</div>
-        <pre>
-  for step in 1..5000:
-      sample line crop + GT grapheme sequence
-      forward: encoder → bridge → decoder logits
-      loss: cross-entropy on teacher-forced tokens
-      backward + optimizer step
-      every N steps: checkpoint to Drive-compatible path
-
-  three seeds (0,1,2)  ──►  separate probe jsonl per seed  ──►  aggregate mean ± spread
-        </pre>
+      <div class="flow-board">
+        <div class="flow-caption">Training loop · Colab T4 · fp16</div>
+        <ol class="flow-pipe">
+          <li class="flow-node"><span class="fn-kicker">Step</span><strong>Sample a line crop + GT sequence</strong><p>Teacher-forced target graphemes from the manifest.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node"><span class="fn-kicker">Forward</span><strong>Encoder → bridge → decoder logits</strong><p>Full owned graph — every tensor inspectable.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node"><span class="fn-kicker">Loss</span><strong>Cross-entropy on teacher-forced tokens</strong><p>Standard next-token training.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node accent"><span class="fn-kicker">5,000 steps</span><strong>Checkpoint · three seeds</strong><p>Separate probe jsonl per seed → aggregate mean ± spread.</p></li>
+        </ol>
       </div>
       <table class="data">
         <caption>Why these hyperparameters (not SOTA chasing)</caption>
@@ -1616,17 +1716,14 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
         </div>
       </div>
       <p class="follow">The n-gram is a sanity floor: if your vision-language OCR decoder is <em>worse</em> than "language prior only" at the first step, the image channel is not carrying the load — regardless of what max-softmax says.</p>
-      <div class="flow-box">
+      <div class="flow-board">
         <div class="flow-caption">Teacher forcing vs free running</div>
-        <pre>
-  TEACHER FORCED (analysis):          FREE RUNNING (deployment):
-  feed GT prefix tokens               feed model's own predictions
-  ask p(next GT token)                ask p(chosen token)
-  → p(GT) at pos 0 ≈ 10⁻¹¹           → max-softmax ≈ 0.90
-
-  The dissociation is visible under teacher forcing —
-  the same logits drive both metrics at decode time.
-        </pre>
+        <div class="flow-row cols-2">
+          <div class="flow-node accent"><span class="fn-kicker">Analysis</span><strong>Teacher forced</strong><p>Feed GT prefix · ask p(next GT token) → p(GT) at pos 0 ≈ 10⁻¹¹.</p></div>
+          <div class="flow-node find"><span class="fn-kicker">Deployment</span><strong>Free running</strong><p>Feed model’s own predictions · ask p(chosen token) → max-softmax ≈ 0.90.</p></div>
+        </div>
+        <div class="flow-arrow-label">same logits · two different readouts</div>
+        <div class="flow-node"><span class="fn-kicker">Point</span><strong>The dissociation is visible under teacher forcing</strong><p>The meter users see can look “sure” while p(GT) is near zero.</p></div>
       </div>
 
       <div class="finding-callout">
@@ -1686,16 +1783,19 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
         <p><strong>40+:</strong> longer tail, smaller sample — log p(GT) drops again.</p>
       </div>
 
-      <div class="flow-box">
-        <div class="flow-caption">Position buckets (how to read the profile)</div>
-        <pre>
-  pos 0     only &lt;BOS&gt;           vision must dominate  →  FAIL (−24.54)
-  pos 1     one GT grapheme       still vision-heavy    →  FAIL (−8.12)
-  pos 2–9   short prefix          prior kicks in        →  mid (−0.48)
-  pos 10–19 longer prefix         n-gram-like           →  best (−0.15)
-  pos 20–39 continued           KL ~0.27–0.32        →  mid (−0.27)
-  pos 40+   tail bucket           smaller n             →  worse (−6.12)
-        </pre>
+      <div class="flow-board">
+        <div class="flow-caption">Position buckets · how to read the profile</div>
+        <ol class="flow-pipe">
+          <li class="flow-node find"><span class="fn-kicker">pos 0</span><strong>Only &lt;BOS&gt; · vision must dominate</strong><p>−24.54 nats · FAIL</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node find"><span class="fn-kicker">pos 1</span><strong>One GT grapheme · still vision-heavy</strong><p>−8.12 nats · FAIL</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node"><span class="fn-kicker">pos 2–9</span><strong>Short prefix · prior kicks in</strong><p>−0.48 nats · mid</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node accent"><span class="fn-kicker">pos 10–39</span><strong>Looks like a text-only n-gram</strong><p>Best mid-sequence · KL ~0.27–0.32</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node find"><span class="fn-kicker">pos 40+</span><strong>Tail bucket · smaller n</strong><p>−6.12 nats · worse again</p></li>
+        </ol>
       </div>
       <p class="follow">Argmax agreement with matched 4–5-gram: ~<strong>91–94%</strong> in the mid bucket. That is not "world knowledge" — the n-gram baseline never receives pixels. It is statistical redundancy of Indic script sequences in training text.</p>
       <p>Probe 5 overlap check (same manifest) confirms the decoder can appear competent mid-sequence while position 0 proves it did not start from visual evidence. Both statements are true simultaneously — that is the mechanistic punchline.</p>
@@ -1783,16 +1883,14 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
         <p>We do not claim the architecture cannot read. We claim this training regime did not produce reading with a useful confidence meter.</p>
       </div>
 
-      <div class="flow-box">
+      <div class="flow-board">
         <div class="flow-caption">Excuse → which control answers it</div>
-        <pre>
-  "Maybe it's miscalibrated but still uses vision"  →  blank / noise (conf flat)
-  "Maybe vision matters for token choice, not conf" →  ablation (KL↑, conf flat)
-  "Maybe it just needs more training"               →  Probe 3b + held-out CER
-  "Maybe vocab doesn't cover eval"                  →  unseen-script (0/360)
-  "Maybe only position 0 is weird"                  →  full profile + n-gram KL
-  "Maybe scramble is a weird domain shift"          →  4-condition 0.053-nat band
-        </pre>
+        <div class="flow-row cols-2">
+          <div class="flow-node"><span class="fn-kicker">“Miscalibrated but uses vision”</span><strong>Blank / noise</strong><p>Confidence stays flat when pixels disappear.</p></div>
+          <div class="flow-node"><span class="fn-kicker">“Vision for tokens, not conf”</span><strong>Ablation</strong><p>KL↑ and some argmax flips · scalar barely moves.</p></div>
+          <div class="flow-node"><span class="fn-kicker">“Just needs more training”</span><strong>Probe 3b + CER</strong><p>Loss falls · held-out CER still ~0.985 · conf flat.</p></div>
+          <div class="flow-node"><span class="fn-kicker">“Only pos 0 is weird”</span><strong>Full profile</strong><p>Mid-sequence looks like a text-only n-gram.</p></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1849,21 +1947,15 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
         <p>In-manifest AUROC <strong>0.838</strong> sounds respectable until you learn held-out graded AUROC is ~<strong>0.570</strong> — barely better than coin flip for routing. A confidence field can rank errors on familiar synthetic lines without transferring to new lines.</p>
       </div>
 
-      <div class="flow-box">
-        <div class="flow-caption">Probe 1 setup (what it actually measures)</div>
-        <pre>
-  manifest lines (in-distribution synthetic)
-        │
-        ▼
-  split predictions into thirds by confidence (top / mid / bottom)
-        │
-        ▼
-  measure error rate per third  →  18.3% / 0.33% / 0.67% (headline buckets)
-        │
-        also: ECE ≈ 0.811 · AUROC ≈ 0.838 in-manifest
-        │
-        held-out graded AUROC ≈ 0.570  ←  generalization collapse
-        </pre>
+      <div class="flow-board">
+        <div class="flow-caption">Probe 1 setup · what it measures</div>
+        <ol class="flow-pipe">
+          <li class="flow-node"><span class="fn-kicker">Input</span><strong>Manifest lines</strong><p>In-distribution synthetic renders.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node"><span class="fn-kicker">Split</span><strong>Thirds by confidence</strong><p>Top / mid / bottom of the meter.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node find"><span class="fn-kicker">Readout</span><strong>Error rate per third</strong><p>18.3% / 0.33% / 0.67% in-manifest — AUROC can look good while ECE is poor.</p></li>
+        </ol>
       </div>
       <p class="follow">Apparatus success: the pipeline runs, buckets monotonic-ish on familiar lines. Experiment success would require held-out routing value — that fails. This mirrors Stage 6 triage: a metric can look fine in-sample and still be useless for decisions on new pages.</p>
       <p>ECE ≈ <strong>0.811</strong> is catastrophically miscalibrated if you interpret max-softmax as P(correct). AUROC ≈ <strong>0.838</strong> in-manifest seduces you into thinking routing might work — until held-out graded ≈ <strong>0.570</strong> reminds you the split leaked structural familiarity.</p>
@@ -1983,18 +2075,15 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
         </div>
       </div>
 
-      <div class="flow-box">
-        <div class="flow-caption">Epistemic boundary (what would change our mind)</div>
-        <pre>
-  IF a positive-control reader shows:
-      low CER on held-out AND
-      p(GT) high at pos 0 AND
-      blank drops confidence AND
-      ablation moves confidence
-  THEN we would revise "architecture cannot ground" → "this training regime did not"
-
-  We are not there yet — that experiment is Priority 1.
-        </pre>
+      <div class="flow-board">
+        <div class="flow-caption">Epistemic boundary · what would change our mind</div>
+        <p style="margin:0 0 12px;font-size:0.92rem;color:var(--ink-soft);max-width:66ch;">If a <strong>positive-control reader</strong> showed all of these, we would revise “this architecture cannot ground” toward “this training regime did not”:</p>
+        <div class="flow-branch cols-2">
+          <div class="flow-node accent"><span class="fn-kicker">Reading</span><strong>Low held-out CER</strong><p>And high p(GT) at position 0.</p></div>
+          <div class="flow-node accent"><span class="fn-kicker">Meter</span><strong>Blank drops confidence</strong><p>And ablation moves the confidence scalar.</p></div>
+        </div>
+        <div class="flow-arrow-label">until then</div>
+        <div class="flow-node find"><span class="fn-kicker">Claim stays narrow</span><strong>Confidence without grounding in this instrument</strong><p>Not “all VLMs ignore images.”</p></div>
       </div>
       <ul class="compute-list">
         <li><strong>GlotOCR renders ≠ photos.</strong> Skew, blur, and layout stress might change confidence behavior — unknown until tested.</li>
@@ -2082,35 +2171,41 @@ line crop image  ──►  Vision encoder  ──►  bridge (cross-attn memory
       <div class="section-kicker">What we built · big picture</div>
       <h2 class="section-title">From published accuracy gaps to a transfer test — in one flowchart</h2>
       <p class="lede">Production motivation comes first. The Research tab is the microscope. This diagram is the whole project as a product conversation: notice the problem → build an instrument you can open → ask what transfers.</p>
-      <div class="mermaid-wrap">
+      <div class="flow-board">
         <div class="flow-caption">Production path · Stages 0 → 6</div>
-        <pre class="mermaid">
-flowchart TD
-  A["Published Indic OCR gap<br/>Hindi 95.91% · Kashmiri 55.93%"] --> B["Question: does confidence<br/>track that difficulty?"]
-  B --> C["Stage 0 · Indic-aware scoring<br/>Tier 0 / 1 / 2"]
-  C --> D["Stage 1 · Controlled renderer<br/>HarfBuzz · exposure dial"]
-  D --> E["Stage 2 · ~19.6M instrument<br/>from scratch · |V|≈367"]
-  E --> F["Stage 4 · Probes<br/>pos-0 · profile · blank/noise/scramble · ablation"]
-  F --> G["Stage 5a · Extract confidence<br/>vs published accuracy"]
-  F --> H["Stage 5b · Spearman transfer<br/>instrument ↔ Sarvam CER"]
-  F --> I["Stage 6 · Triage cascade<br/>escalate bottom 20%"]
-  G --> J["Finding: Δ conf = 0.0027"]
-  H --> K["Finding: ρ ≈ 0.03 · null"]
-  I --> L["Finding: worse than random"]
-  J --> M["Ask for grounding-aware confidence<br/>not an accuracy bake-off"]
-  K --> M
-  L --> M
-        </pre>
+        <ol class="flow-pipe">
+          <li class="flow-node accent"><span class="fn-kicker">Motivation</span><strong>Published Indic OCR gap</strong><p>Hindi 95.91% → Kashmiri 55.93% on Sarvam’s bench.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node"><span class="fn-kicker">Question</span><strong>Does confidence track that difficulty?</strong><p>Routing only works if the meter moves with hardness.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node"><span class="fn-kicker">Stage 0</span><strong>Indic-aware scoring</strong><p>Tier 0 / 1 / 2 so “wrong” means the same thing.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node"><span class="fn-kicker">Stage 1</span><strong>Controlled renderer</strong><p>HarfBuzz shaping · exposure dial.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node accent"><span class="fn-kicker">Stage 2</span><strong>~19.6M instrument</strong><p>From scratch · |V|≈367 · owned forward pass.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node"><span class="fn-kicker">Stage 4</span><strong>Mechanistic probes</strong><p>Pos-0 · profile · blank/noise/scramble · ablation.</p></li>
+        </ol>
+        <div class="flow-arrow-label">then ask what transfers</div>
+        <div class="flow-branch cols-3">
+          <div class="flow-node find"><span class="fn-kicker">5a</span><strong>Δ conf = 0.0027</strong><p>Extract vs published accuracy.</p></div>
+          <div class="flow-node find"><span class="fn-kicker">5b</span><strong>ρ ≈ 0.03 · null</strong><p>Difficulty rank does not transfer.</p></div>
+          <div class="flow-node find"><span class="fn-kicker">6</span><strong>Worse than random</strong><p>Triage on instrument confidence.</p></div>
+        </div>
+        <div class="flow-arrow" aria-hidden="true"><span>↓</span></div>
+        <div class="flow-node goal"><span class="fn-kicker">Ask</span><strong>Grounding-aware confidence</strong><p>Not an accuracy bake-off against their stack.</p></div>
       </div>
-      <div class="mermaid-wrap">
+      <div class="flow-board">
         <div class="flow-caption">Two tabs · same repo · different audience</div>
-        <pre class="mermaid">
-flowchart LR
-  P["Production tab<br/>motivation · transfer · pitch"] -.->|"mechanism deep dive"| R["Research tab<br/>0.90 · pos 0 · profile · controls"]
-  R -.->|"what transfers?"| P
-  P --> S["Sarvam-facing call"]
-  R --> T["Paper / interview"]
-        </pre>
+        <div class="flow-row cols-2">
+          <div class="flow-node accent"><span class="fn-kicker">Production</span><strong>Motivation · transfer · pitch</strong><p>Sarvam-facing call — gaps, Stage 5–6, what to ask next.</p></div>
+          <div class="flow-node"><span class="fn-kicker">Research</span><strong>0.90 · pos 0 · profile · controls</strong><p>Paper / interview — mechanism with tap-to-play demos.</p></div>
+        </div>
+        <div class="flow-arrow-label">same evidence · different framing</div>
+        <div class="flow-row cols-2">
+          <div class="flow-node goal"><span class="fn-kicker">Call</span><strong>Sarvam-facing conversation</strong><p>Start here (this tab).</p></div>
+          <div class="flow-node goal"><span class="fn-kicker">Paper</span><strong>Interview / preprint</strong><p>Flip to Research for the microscope.</p></div>
+        </div>
       </div>
       <p class="follow">Keep scrolling for Stage 5a gap bars, the blank/noise demo, and Stage 5b/6 nulls. Flip to <strong>Research</strong> when someone asks “how do you know the image isn’t doing the work?”</p>
     </div>
@@ -2122,13 +2217,15 @@ flowchart LR
       <div class="section-kicker">Stage 5a · language-level gap</div>
       <h2 class="section-title">~40 pp accuracy spread · confidence Δ = 0.0027</h2>
       <p class="lede">We compare Sarvam's published word accuracy to Extract API page-level confidence on cached pages (35 pages: 10 Hindi, 10 Santhali, 10 Kashmiri, 5 blank). Call once, cache forever, analyse offline — ~₹17.50 total API spend for this slice.</p>
-      <div class="mermaid-wrap">
+      <div class="flow-board">
         <div class="flow-caption">Stage 5a question</div>
-        <pre class="mermaid">
-flowchart LR
-  A["Published accuracy<br/>Hindi → Kashmiri ~40 pp"] --> Q["Does Extract confidence<br/>move the same way?"]
-  Q --> R["Measured Δ = 0.0027<br/>blanks still go to 0"]
-        </pre>
+        <ol class="flow-pipe horizontal">
+          <li class="flow-node accent"><span class="fn-kicker">Published</span><strong>Accuracy cliff</strong><p>Hindi → Kashmiri ~40 pp</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>→</span></li>
+          <li class="flow-node"><span class="fn-kicker">Ask</span><strong>Does Extract confidence move?</strong><p>Same product, same bench</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>→</span></li>
+          <li class="flow-node find"><span class="fn-kicker">Measured</span><strong>Δ = 0.0027</strong><p>Blanks still go to 0</p></li>
+        </ol>
       </div>
 
       <table class="data">
@@ -2186,31 +2283,25 @@ flowchart LR
       <div class="section-kicker">Why an owned instrument</div>
       <h2 class="section-title">APIs cannot run the counterfactuals — and we are not competing on accuracy</h2>
       <p class="lede">Sarvam Extract tells you what it outputs on a page. It does not let you remove the image, zero cross-attention, teacher-force the true first grapheme, or compare to a matched text-only n-gram. Those experiments require an owned forward pass.</p>
-      <div class="mermaid-wrap">
+      <div class="flow-board">
         <div class="flow-caption">Instrument vs API</div>
-        <pre class="mermaid">
-flowchart TD
-  API["Sarvam Extract API<br/>outputs + page confidence"] --> LIM["Cannot blank / ablate /<br/>teacher-force pGT"]
-  INST["Owned ~19.6M instrument"] --> EXP["Blank · noise · scramble<br/>ablation · full softmax"]
-  EXP --> ASK["Does the diagnosis transfer?"]
-  LIM --> ASK
-  ASK --> S5["Stage 5b / 6 offline"]
-        </pre>
+        <div class="flow-row cols-2">
+          <div class="flow-node"><span class="fn-kicker">API</span><strong>Sarvam Extract</strong><p>Outputs + page confidence. Cannot blank, ablate, or teacher-force p(GT).</p></div>
+          <div class="flow-node accent"><span class="fn-kicker">Instrument</span><strong>Owned ~19.6M model</strong><p>Blank · noise · scramble · ablation · full softmax inspect.</p></div>
+        </div>
+        <div class="flow-arrow" aria-hidden="true"><span>↓</span></div>
+        <div class="flow-node goal"><span class="fn-kicker">Then</span><strong>Does the diagnosis transfer?</strong><p>Stage 5b rank correlation · Stage 6 triage — offline on cached pages.</p></div>
       </div>
 
       <p>That is the whole reason this repo exists as research infrastructure, not as “another Indic OCR model.” A production API is excellent for measuring real-world accuracy. It is a poor place to ask: <em>when confidence is high, was the image doing the work?</em></p>
-      <div class="flow-box">
-        <div class="flow-caption">Instrument → transfer → Sarvam (relationship)</div>
-        <pre>
-~19.6M instrument                    Sarvam Vision (production)
-  ─────────────────                    ──────────────────────────
-  blank / noise / ablate               cached Extract confidence
-  position-0 p(GT)                     published language accuracy
-  full softmax inspect                 black-box output only
-           │                                      ▲
-           └──── "does diagnosis transfer?" ──────┘
-                 Stage 5b rank · Stage 6 triage
-        </pre>
+      <div class="flow-board">
+        <div class="flow-caption">Instrument → transfer → Sarvam</div>
+        <div class="flow-row cols-2">
+          <div class="flow-node accent"><span class="fn-kicker">Instrument</span><strong>~19.6M microscope</strong><p>Blank / noise / ablate · pos-0 p(GT) · full softmax inspect.</p></div>
+          <div class="flow-node"><span class="fn-kicker">Production</span><strong>Sarvam Vision</strong><p>Cached Extract confidence · published language accuracy · black-box output.</p></div>
+        </div>
+        <div class="flow-arrow-label">does the diagnosis transfer?</div>
+        <div class="flow-node goal"><span class="fn-kicker">Stages 5b · 6</span><strong>Rank correlation + triage simulation</strong><p>Offline on cached pages — not an accuracy bake-off.</p></div>
       </div>
       <div class="step-rail">
         <div class="step">
@@ -2283,20 +2374,14 @@ flowchart TD
         </tbody>
       </table>
       <p>Mid-sequence (positions 2–39), log p(GT) approaches a text-only n-gram (KL 0.27–0.32; ~91–94% argmax agreement). Production parallel: fluent OCR output can look confident because language is predictable, not because every glyph was seen clearly.</p>
-      <div class="flow-box">
+      <div class="flow-board">
         <div class="flow-caption">How to say the mechanism without overclaiming</div>
-        <pre>
-  SAY:     "In our controlled instrument, confidence stayed high while
-            the correct first symbol had probability ~10⁻¹¹ — and blank
-            pages looked almost the same."
-
-  DON'T:   "Production VLMs ignore images" / "Sarvam hallucinates."
-
-  THEN:    "We tested whether that diagnosis transfers — Stage 5–6 —
-            and got language-level near-invariance + page-rank null +
-            triage worse than random. That motivates better grounding
-            metrics, not an accuracy bake-off."
-        </pre>
+        <div class="flow-row cols-2">
+          <div class="flow-node accent"><span class="fn-kicker">Say</span><strong>In our instrument, conf stayed high while p(GT)≈10⁻¹¹</strong><p>Blank pages looked almost the same. Mid-sequence looks text-only.</p></div>
+          <div class="flow-node find"><span class="fn-kicker">Don’t</span><strong>“Production VLMs ignore images”</strong><p>Don’t say Sarvam hallucinates. We tested transfer — nulls, not equivalence.</p></div>
+        </div>
+        <div class="flow-arrow-label">then</div>
+        <div class="flow-node goal"><span class="fn-kicker">Close</span><strong>Stage 5–6 motivate grounding-aware meters</strong><p>Not an accuracy bake-off.</p></div>
       </div>
       <div class="finding-callout">
         <div class="fc-label">Transfer hypothesis (tested in 5b/6)</div>
@@ -2326,17 +2411,15 @@ flowchart TD
       <div class="null-banner">
         <p>Spearman ρ = <strong>0.0293</strong>, permutation p = <strong>0.8267</strong> (locked before peeking). This is a genuine null: instrument "hard" does not align with Sarvam "hard" in this sample.</p>
       </div>
-      <div class="flow-box">
-        <div class="flow-caption">What 5b tests (plain)</div>
-        <pre>
-For each page i:
-    instrument signal  (confidence, CER proxy, etc.)
-    Sarvam signal      (residual error vs GT on cached extract)
-
-  Spearman(rank_instrument, rank_Sarvam)  →  ρ ≈ 0.03, not significant
-
-  Interpretation: difficulty ranking did NOT transfer
-        </pre>
+      <div class="flow-board">
+        <div class="flow-caption">What Stage 5b tests</div>
+        <ol class="flow-pipe horizontal">
+          <li class="flow-node"><span class="fn-kicker">Per page</span><strong>Instrument signal</strong><p>Confidence / hardness proxy</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>→</span></li>
+          <li class="flow-node"><span class="fn-kicker">Per page</span><strong>Sarvam residual error</strong><p>vs GT on cached extract</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>→</span></li>
+          <li class="flow-node find"><span class="fn-kicker">Spearman</span><strong>ρ ≈ 0.03 · null</strong><p>Difficulty rank did not transfer</p></li>
+        </ol>
       </div>
 
       <div class="soft-card">
@@ -2344,15 +2427,12 @@ For each page i:
         <p><strong>Secondary arms:</strong> budget-limited (HTTP 402) — degraded scans, smaller n. Report exists but do not treat as powered nulls.</p>
         <p><strong>What would transfer have looked like?</strong> ρ significantly negative if instrument hard pages predict Sarvam high residual error — we do not see that.</p>
       </div>
-      <div class="flow-box">
-        <div class="flow-caption">5b vs 5a (different questions)</div>
-        <pre>
-  Stage 5a (language level):   does mean confidence drop Hindi → Kashmiri?
-                               →  Δ ≈ 0.0027 (tiny)
-
-  Stage 5b (page level):       does page rank by instrument ↔ rank by Sarvam error?
-                               →  ρ ≈ 0.03 (null)
-        </pre>
+      <div class="flow-board">
+        <div class="flow-caption">5a vs 5b · different questions</div>
+        <div class="flow-row cols-2">
+          <div class="flow-node"><span class="fn-kicker">Stage 5a</span><strong>Language-level</strong><p>Does mean confidence drop Hindi → Kashmiri? → Δ ≈ 0.0027 (tiny).</p></div>
+          <div class="flow-node find"><span class="fn-kicker">Stage 5b</span><strong>Page-level</strong><p>Does page rank by instrument ↔ rank by Sarvam error? → ρ ≈ 0.03 (null).</p></div>
+        </div>
       </div>
 
       <p>Secondary arms (degraded quality, smaller n) hit HTTP 402 budget limits — treat those as underpowered, not confirmed nulls. Report: <a href="docs/stage5b_rank_correlation.md">docs/stage5b_rank_correlation.md</a>.</p>
@@ -2381,24 +2461,21 @@ For each page i:
         <p>Confidence is near ceiling (~0.99) for almost everyone — so "bottom 20%" is a noisy tie-break on tiny differences, not "these pages lack visual grounding." You escalate the wrong pages.</p>
       </div>
 
-      <div class="flow-box">
-        <div class="flow-caption">Stage 6 simulation (offline)</div>
-        <pre>
-  pool of pages with GT + instrument preds + Sarvam preds
-        │
-        ▼
-  rank pages by router signal (instrument conf / random / Tesseract conf / length)
-        │
-        ▼
-  escalate bottom 20% (k=12) to "expensive" pipeline
-        │
-        ▼
-  measure residual CER on escalated set  →  lower is better
-
-  instrument conf: 0.0109  (worst)
-  random:          0.0095
-  Tesseract conf:  0.0079  (best here)
-        </pre>
+      <div class="flow-board">
+        <div class="flow-caption">Stage 6 · offline triage simulation</div>
+        <ol class="flow-pipe">
+          <li class="flow-node"><span class="fn-kicker">Pool</span><strong>Pages with GT + instrument + Sarvam preds</strong><p>Cached · no new API spend in the simulator.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node"><span class="fn-kicker">Rank</span><strong>By router signal</strong><p>Instrument conf · random · Tesseract conf · length.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+          <li class="flow-node"><span class="fn-kicker">Escalate</span><strong>Bottom 20% (k=12)</strong><p>Send to an “expensive” pipeline in simulation.</p></li>
+          <li class="flow-arrow" aria-hidden="true"><span>↓</span></li>
+        </ol>
+        <div class="flow-branch cols-3">
+          <div class="flow-node find"><span class="fn-kicker">Instrument</span><strong>0.0109</strong><p>Worst residual CER</p></div>
+          <div class="flow-node"><span class="fn-kicker">Random</span><strong>0.0095</strong><p>Baseline</p></div>
+          <div class="flow-node accent"><span class="fn-kicker">Tesseract</span><strong>0.0079</strong><p>Best here</p></div>
+        </div>
       </div>
       <p class="follow">Near-ceiling confidence compresses ranks — "bottom 20%" becomes arbitrary tie-breaking among 0.989 vs 0.994, not "these pages lack glyphs." That is why worse-than-random is plausible, not a bug in the simulator.</p>
 
@@ -2681,7 +2758,6 @@ For each page i:
       }
       try { localStorage.setItem('vlm-ocr-eval-mode', mode); } catch(e){}
       if (typeof window.__revealRefresh === 'function') window.__revealRefresh();
-      if (typeof window.__runMermaid === 'function') window.setTimeout(window.__runMermaid, 40);
     }
     walkBtn.addEventListener('click', ()=> setMode('walkthrough', true));
     paperBtn.addEventListener('click', ()=> setMode('paper', true));
@@ -2744,22 +2820,6 @@ For each page i:
   })();
 </script>
 
-<script>
-  (function(){
-    async function runMermaid(){
-      if (!window.mermaid) return;
-      try {
-        const nodes = document.querySelectorAll('.mermaid:not([data-processed])');
-        if (!nodes.length) return;
-        await mermaid.run({ nodes });
-      } catch (e) { console.warn('mermaid', e); }
-    }
-    window.__runMermaid = runMermaid;
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', runMermaid);
-    } else { runMermaid(); }
-  })();
-</script>
 
 </body>
 

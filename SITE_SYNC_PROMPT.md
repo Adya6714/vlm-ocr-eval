@@ -33,7 +33,10 @@ Reflect `BOOK.md` depth in plain language; keep flowcharts and figures.
 7. 60-second “say this”
 8. Then build / measure / renderer / architecture / calibration / findings / limits / next
 
-Mermaid diagrams live in `.mermaid-wrap` (CDN mermaid@10). Re-run on mode switch via `__runMermaid`.
+Mermaid is **not** used on the live site (CDN never loaded reliably on
+Pages). Flowcharts are native `.flow-board` / `.flow-pipe` / `.flow-node`
+HTML+CSS cards — always render, match the site chrome. Do not reintroduce
+`<pre class="mermaid">` blocks.
 
 Keep animations: hero rise, gap fills, pos-profile, soft-viz, freq-grid, glyph invite, meter fill, scroll reveal. Respect `prefers-reduced-motion`.
 
