@@ -1177,7 +1177,7 @@
       <a href="#mechanism" class="walk-only">Mechanism</a>
       <a href="#transfer" class="walk-only">Transfer</a>
       <a href="#triage" class="walk-only">Triage</a>
-      <a href="#pitch" class="walk-only">Pitch</a>
+      <a href="#pitch" class="walk-only">Takeaway</a>
       <a href="#prod-next" class="walk-only">Next</a>
       <a href="paper/main.pdf">PDF</a>
       <a href="BOOK.md">Book</a>
@@ -2108,7 +2108,7 @@
     <div class="fig-body">
       <div class="section-kicker">Research roadmap</div>
       <h2 class="section-title">What we would run next — in priority order</h2>
-      <p class="lede">Flip to Production for Sarvam transfer results. These items stay on the research side.</p>
+      <p class="lede">Switch to Production for the Indic OCR transfer results. These items stay on the research side.</p>
       <ol style="max-width:66ch;color:var(--ink-soft);line-height:1.65;">
         <li><strong>Positive visual control</strong> — train or fine-tune a model that actually reads held-out lines; rerun blank / ablation / position-0 protocol.</li>
         <li><strong>Full per-position curve</strong> — p(GT), max-softmax, entropy, rank, blankΔ at every step (not bucket summaries).</li>
@@ -2142,15 +2142,15 @@
   <div class="hero-inner">
     <div class="hero-layout">
       <div class="hero-copy hero-rise">
-        <div class="hero-kicker">Production · why this should interest an Indic OCR team</div>
+        <div class="hero-kicker">Production · confidence for Indic OCR routing</div>
         <h1>Can confidence tell us when Indic OCR is hard?</h1>
-        <p class="hero-sub"><strong>Sarvam Vision</strong> publishes a nearly 40‑point spread on its own Indic bench — Hindi <strong>95.91%</strong>, Santhali <strong>80.32%</strong>, Kashmiri <strong>55.93%</strong>. Page-level confidence is supposed to help route hard scripts. Does that field actually move?</p>
+        <p class="hero-sub"><strong>Sarvam Vision</strong> publishes a nearly 40‑point spread on its Indic OCR benchmark — Hindi <strong>95.91%</strong>, Santhali <strong>80.32%</strong>, Kashmiri <strong>55.93%</strong>. Page-level confidence is supposed to help route hard scripts. Does that field actually move?</p>
         <div class="talk-strip">
-          <span class="talk-chip">Not a bake-off</span>
-          <span>We are not comparing our ~20M CER to their stack. We built a microscope for counterfactuals, then asked what transfers.</span>
+          <span class="talk-chip">Transfer study</span>
+          <span>This is not an accuracy contest against a production stack. We built a small instrument for counterfactuals, then asked what transfers.</span>
         </div>
-        <p class="hero-sub" style="margin-top:16px;">Stage 5a: confidence Δ across that accuracy cliff is only <strong>0.0027</strong>. Stage 5b/6: difficulty ranking does not transfer, and triage on instrument confidence loses to random. The constructive ask is better grounding-aware confidence — not “your model is broken.”</p>
-        <p class="pdf-link"><a href="https://www.sarvam.ai/blogs/sarvam-vision">Sarvam Vision blog</a> · <a href="docs/sarvam_vision_confidence.md">Extract write-up</a> · <a href="BOOK.md">BOOK · Presenting to Sarvam</a></p>
+        <p class="hero-sub" style="margin-top:16px;">Stage 5a: confidence Δ across that accuracy cliff is only <strong>0.0027</strong>. Stage 5b/6: difficulty ranking does not transfer, and triage on instrument confidence loses to random. The useful next step is grounding-aware confidence — not declaring any production system “broken.”</p>
+        <p class="pdf-link"><a href="https://www.sarvam.ai/blogs/sarvam-vision">Sarvam Vision blog</a> · <a href="docs/sarvam_vision_confidence.md">Extract write-up</a> · <a href="BOOK.md">BOOK.md</a></p>
       </div>
       <aside class="hero-visual">
         <div class="gap-panel">
@@ -2170,7 +2170,7 @@
     <div class="fig-body">
       <div class="section-kicker">What we built · big picture</div>
       <h2 class="section-title">From published accuracy gaps to a transfer test — in one flowchart</h2>
-      <p class="lede">Production motivation comes first. The Research tab is the microscope. This diagram is the whole project as a product conversation: notice the problem → build an instrument you can open → ask what transfers.</p>
+      <p class="lede">Start from a published accuracy gap, build an instrument you can open, then ask what transfers to a real production confidence field. The Research tab holds the mechanistic detail.</p>
       <div class="flow-board">
         <div class="flow-caption">Production path · Stages 0 → 6</div>
         <ol class="flow-pipe">
@@ -2193,21 +2193,21 @@
           <div class="flow-node find"><span class="fn-kicker">6</span><strong>Worse than random</strong><p>Triage on instrument confidence.</p></div>
         </div>
         <div class="flow-arrow" aria-hidden="true"><span>↓</span></div>
-        <div class="flow-node goal"><span class="fn-kicker">Ask</span><strong>Grounding-aware confidence</strong><p>Not an accuracy bake-off against their stack.</p></div>
+        <div class="flow-node goal"><span class="fn-kicker">Ask</span><strong>Grounding-aware confidence</strong><p>Not an accuracy contest against a production stack.</p></div>
       </div>
       <div class="flow-board">
         <div class="flow-caption">Two tabs · same repo · different audience</div>
         <div class="flow-row cols-2">
-          <div class="flow-node accent"><span class="fn-kicker">Production</span><strong>Motivation · transfer · pitch</strong><p>Sarvam-facing call — gaps, Stage 5–6, what to ask next.</p></div>
-          <div class="flow-node"><span class="fn-kicker">Research</span><strong>0.90 · pos 0 · profile · controls</strong><p>Paper / interview — mechanism with tap-to-play demos.</p></div>
+          <div class="flow-node accent"><span class="fn-kicker">Production</span><strong>Motivation · transfer · next steps</strong><p>Published gaps, Stage 5–6 results, what to measure next.</p></div>
+          <div class="flow-node"><span class="fn-kicker">Research</span><strong>0.90 · pos 0 · profile · controls</strong><p>Mechanism with tap-to-play demos and figures.</p></div>
         </div>
-        <div class="flow-arrow-label">same evidence · different framing</div>
+        <div class="flow-arrow-label">same evidence · two readings</div>
         <div class="flow-row cols-2">
-          <div class="flow-node goal"><span class="fn-kicker">Call</span><strong>Sarvam-facing conversation</strong><p>Start here (this tab).</p></div>
-          <div class="flow-node goal"><span class="fn-kicker">Paper</span><strong>Interview / preprint</strong><p>Flip to Research for the microscope.</p></div>
+          <div class="flow-node goal"><span class="fn-kicker">This tab</span><strong>Production transfer story</strong><p>Accuracy gaps → confidence → routing.</p></div>
+          <div class="flow-node goal"><span class="fn-kicker">Other tab</span><strong>Research mechanism</strong><p>How the instrument was built and probed.</p></div>
         </div>
       </div>
-      <p class="follow">Keep scrolling for Stage 5a gap bars, the blank/noise demo, and Stage 5b/6 nulls. Flip to <strong>Research</strong> when someone asks “how do you know the image isn’t doing the work?”</p>
+      <p class="follow">Keep scrolling for Stage 5a gap bars, the blank/noise demo, and Stage 5b/6 nulls. Switch to <strong>Research</strong> for the mechanistic probes (position 0, profile, controls).</p>
     </div>
   </div>
 </section>
@@ -2301,7 +2301,7 @@
           <div class="flow-node"><span class="fn-kicker">Production</span><strong>Sarvam Vision</strong><p>Cached Extract confidence · published language accuracy · black-box output.</p></div>
         </div>
         <div class="flow-arrow-label">does the diagnosis transfer?</div>
-        <div class="flow-node goal"><span class="fn-kicker">Stages 5b · 6</span><strong>Rank correlation + triage simulation</strong><p>Offline on cached pages — not an accuracy bake-off.</p></div>
+        <div class="flow-node goal"><span class="fn-kicker">Stages 5b · 6</span><strong>Rank correlation + triage simulation</strong><p>Offline on cached pages — not an accuracy contest.</p></div>
       </div>
       <div class="step-rail">
         <div class="step">
@@ -2343,7 +2343,7 @@
     <div class="fig-body">
       <div class="section-kicker">Mechanism recap · link to Research</div>
       <h2 class="section-title">Position 0 is the headline — mid-sequence is the mechanism</h2>
-      <p class="lede">If you only remember one Research result for a production conversation: at position 0, max-softmax ≈ 0.90 while p(GT) ≈ 2.2×10⁻¹¹, 0/180 argmax — on held-out synthetic lines. Blank looks the same. That pattern means the scalar confidence field can be high without evidence the image supports the text.</p>
+      <p class="lede">One Research result that matters for routing: at position 0, max-softmax ≈ 0.90 while p(GT) ≈ 2.2×10⁻¹¹, 0/180 argmax — on held-out synthetic lines. Blank looks the same. That pattern means the scalar confidence field can be high without evidence the image supports the text.</p>
       <div class="signature" id="probe3-prod" data-demo="conf" style="margin:22px 0;">
         <div class="signature-head">
           <p class="signature-label">Try it · same Probe 3 meter</p>
@@ -2362,9 +2362,9 @@
         </div>
       </div>
 
-      <p>Why position 0 matters in a product conversation: later tokens can lean on language. After a few correct-looking graphemes, the next token is often predictable from text alone. At the first step there is only <span class="mono">&lt;BOS&gt;</span> — so if vision works, the image must carry the signal. Our instrument does not: teacher-forced log p(GT) ≈ −24.54 nats vs a text-only n-gram at ≈ −4.73 nats.</p>
+      <p>Why position 0 matters for production routing: later tokens can lean on language. After a few correct-looking graphemes, the next token is often predictable from text alone. At the first step there is only <span class="mono">&lt;BOS&gt;</span> — so if vision works, the image must carry the signal. Our instrument does not: teacher-forced log p(GT) ≈ −24.54 nats vs a text-only n-gram at ≈ −4.73 nats.</p>
       <table class="data">
-        <caption>Position 0 — say this on a call</caption>
+        <caption>Position 0 — the headline numbers</caption>
         <thead><tr><th>Quantity</th><th>Value</th><th>Plain meaning</th></tr></thead>
         <tbody>
           <tr><td>Max-softmax</td><td>≈ 0.902</td><td>“Looks ~90% sure”</td></tr>
@@ -2378,10 +2378,10 @@
         <div class="flow-caption">How to say the mechanism without overclaiming</div>
         <div class="flow-row cols-2">
           <div class="flow-node accent"><span class="fn-kicker">Say</span><strong>In our instrument, conf stayed high while p(GT)≈10⁻¹¹</strong><p>Blank pages looked almost the same. Mid-sequence looks text-only.</p></div>
-          <div class="flow-node find"><span class="fn-kicker">Don’t</span><strong>“Production VLMs ignore images”</strong><p>Don’t say Sarvam hallucinates. We tested transfer — nulls, not equivalence.</p></div>
+          <div class="flow-node find"><span class="fn-kicker">Too strong</span><strong>“Production VLMs ignore images”</strong><p>We tested transfer and got nulls — not a claim that any production reader hallucinates.</p></div>
         </div>
         <div class="flow-arrow-label">then</div>
-        <div class="flow-node goal"><span class="fn-kicker">Close</span><strong>Stage 5–6 motivate grounding-aware meters</strong><p>Not an accuracy bake-off.</p></div>
+        <div class="flow-node goal"><span class="fn-kicker">Close</span><strong>Stage 5–6 motivate grounding-aware meters</strong><p>Not an accuracy contest.</p></div>
       </div>
       <div class="finding-callout">
         <div class="fc-label">Transfer hypothesis (tested in 5b/6)</div>
@@ -2395,10 +2395,10 @@
         </div>
         <div class="compare-col">
           <h3>Production tab (transfer)</h3>
-          <p>Published Indic gaps · Extract Δ0.0027 · Spearman null · triage worse than random · call pitch.</p>
+          <p>Published Indic gaps · Extract Δ0.0027 · Spearman null · triage worse than random.</p>
         </div>
       </div>
-      <p class="follow">Switch tabs with <strong>Research / Production</strong> in the top bar — same repo, two audiences. PDF covers instrument; Stage 5–6 markdown covers Sarvam-facing results. Deep dive: Research → Pos 0, Profile, Controls.</p>
+      <p class="follow">Same repo, two tabs. The PDF covers the instrument; Stage 5–6 markdown covers the production transfer results. Mechanism deep dive: Research → Pos 0, Profile, Controls.</p>
     </div>
   </div>
 </section>
@@ -2486,18 +2486,18 @@
 <section id="pitch" class="mode-item walk-only story" style="--paper-order:7; --walk-order:8">
   <div class="fig-rail">
     <div class="fig-body">
-      <div class="section-kicker">Contribution pitch</div>
+      <div class="section-kicker">Takeaway</div>
       <h2 class="section-title">Controlled decomposition + honest production null</h2>
-      <p class="lede">One paragraph for the call:</p>
-      <p>We built a controlled OCR instrument to decompose confidence into visual evidence versus language-prior behavior — experiments hard on a production API (blank, unseen script, encoder ablation, position-resolved teacher forcing, text-only n-gram baselines). Max-softmax stayed near ceiling while the correct first grapheme had ~10⁻¹¹ probability on held-out synthetic lines. We then tested transfer to Sarvam Vision: language-level confidence barely moved across a ~40 pp published accuracy spread (Δ0.0027); page-level difficulty ranking did not transfer (ρ≈0.03); offline triage on instrument confidence underperformed random. The lesson is not "confidence is useless" — it is that <strong>max-softmax is not necessarily a grounding signal</strong>, and next-gen OCR confidence should measure visual contribution explicitly.</p>
+      <p class="lede">In one paragraph:</p>
+      <p>We built a controlled OCR instrument to decompose confidence into visual evidence versus language-prior behavior — blank pages, unseen scripts, encoder ablation, position-resolved teacher forcing, and text-only n-gram baselines. Max-softmax stayed near ceiling while the correct first grapheme had ~10⁻¹¹ probability on held-out synthetic lines. We then tested transfer against Sarvam Vision Extract confidence: language-level confidence barely moved across a ~40 pp published accuracy spread (Δ0.0027); page-level difficulty ranking did not transfer (ρ≈0.03); offline triage on instrument confidence underperformed random. The lesson is not that confidence is useless — it is that <strong>max-softmax is not necessarily a grounding signal</strong>, so next systems should measure visual contribution explicitly.</p>
       <table class="data">
-        <caption>What not to say on a Sarvam call</caption>
-        <thead><tr><th>Avoid</th><th>Prefer</th></tr></thead>
+        <caption>Claim boundaries</caption>
+        <thead><tr><th>Too strong</th><th>Accurate reading</th></tr></thead>
         <tbody>
-          <tr><td>Your model hallucinates like ours</td><td>Our instrument shows one failure mode; we tested transfer, not equivalence</td></tr>
+          <tr><td>Production models hallucinate like this instrument</td><td>The instrument shows one failure mode; we tested transfer, not equivalence</td></tr>
           <tr><td>Confidence is broken everywhere</td><td>This scalar did not track difficulty in our sample — here is the evidence</td></tr>
-          <tr><td>We beat / lost to Sarvam on OCR</td><td>Different question — we decompose confidence, not accuracy</td></tr>
-          <tr><td>Blank proves you ignore images</td><td>Blank proves the confidence field is insensitive in controlled settings</td></tr>
+          <tr><td>We beat or lost to Sarvam on OCR accuracy</td><td>Different question — we decompose confidence, not accuracy</td></tr>
+          <tr><td>Blank pages prove production systems ignore images</td><td>Blank shows the confidence field can be insensitive in controlled settings</td></tr>
         </tbody>
       </table>
     </div>
@@ -2517,7 +2517,7 @@
         <li><strong>Cross-script routing</strong> — Kashmiri-heavy escalation policies keyed on signals that moved in 5a (if any at larger n).</li>
       </ul>
       <div class="docs-list">
-        <div class="doc-row primary"><span class="doc-name"><a href="BOOK.md">BOOK.md → Presenting to Sarvam</a></span><span class="doc-desc">full pitch + Q&amp;A</span></div>
+        <div class="doc-row primary"><span class="doc-name"><a href="BOOK.md">BOOK.md</a></span><span class="doc-desc">full narrative + Q&amp;A</span></div>
         <div class="doc-row"><span class="doc-name"><a href="docs/sarvam_vision_confidence.md">sarvam_vision_confidence.md</a></span><span class="doc-desc">Stage 5a numbers</span></div>
         <div class="doc-row"><span class="doc-name"><a href="docs/stage5b_rank_correlation.md">stage5b_rank_correlation.md</a></span><span class="doc-desc">Spearman transfer</span></div>
         <div class="doc-row"><span class="doc-name"><a href="docs/stage6_triage_cascade.md">stage6_triage_cascade.md</a></span><span class="doc-desc">routing simulation</span></div>
@@ -2617,8 +2617,8 @@
 <section id="talk-track" class="mode-item paper-only story" style="--paper-order:18; --walk-order:0">
   <div class="fig-rail">
     <div class="fig-body">
-      <div class="section-kicker">Talk track · 15-minute scroll</div>
-      <h2 class="section-title">Beat sheet if you present from this page</h2>
+      <div class="section-kicker">Suggested scroll · ~15 minutes</div>
+      <h2 class="section-title">Beat sheet for walking the Research tab</h2>
       <p class="lede">Each beat maps to a section above. Times are approximate for a technical audience.</p>
       <div class="step-rail">
         <div class="step"><div class="step-n">0:00</div><div><h3>Framing</h3><p>Not "VLMs ignore images." Instrument-specific confidence without grounding on held-out synthetic eval. GlotOCR renders, not photos.</p></div></div>
@@ -2629,7 +2629,7 @@
         <div class="step"><div class="step-n">8:00</div><div><h3>Controls</h3><p>Click Probe 3 tiles: 0.994 vs 0.990. Ablation: conf flat, KL 1.075. fig2 + fig6.</p></div></div>
         <div class="step"><div class="step-n">10:00</div><div><h3>Calibration trap</h3><p>AUROC 0.838 in-manifest vs ~0.570 held-out. ECE 0.811.</p></div></div>
         <div class="step"><div class="step-n">11:30</div><div><h3>Findings + limits</h3><p>What we do NOT claim table. Positive control next.</p></div></div>
-        <div class="step"><div class="step-n">13:00</div><div><h3>Flip to Production</h3><p>Sarvam 95.91 / 80.32 / 55.93 accuracy. Extract 0.9997→0.9970. ρ≈0.03. Triage 0.0109 vs random 0.0095.</p></div></div>
+        <div class="step"><div class="step-n">13:00</div><div><h3>Switch to Production</h3><p>Indic bench 95.91 / 80.32 / 55.93 accuracy. Extract 0.9997→0.9970. ρ≈0.03. Triage 0.0109 vs random 0.0095.</p></div></div>
         <div class="step"><div class="step-n">14:30</div><div><h3>Close</h3><p>Next-gen confidence should measure visual contribution — not peak softmax alone. BOOK.md + PDF.</p></div></div>
       </div>
       <details class="say-this">
@@ -2668,19 +2668,19 @@
 <section id="prod-talk" class="mode-item walk-only story" style="--walk-order:10; --paper-order:0">
   <div class="fig-rail">
     <div class="fig-body">
-      <div class="section-kicker">Production talk track</div>
-      <h2 class="section-title">Five beats for a Sarvam-facing call</h2>
+      <div class="section-kicker">Story outline</div>
+      <h2 class="section-title">Five beats through this tab</h2>
       <div class="step-rail">
-        <div class="step"><div class="step-n">1</div><div><h3>Motivation from their numbers</h3><p>Hindi 95.91%, Kashmiri 55.93% on their bench — confidence should move if it tracks difficulty. Not attacking accuracy.</p></div></div>
-        <div class="step"><div class="step-n">2</div><div><h3>Stage 5a gap</h3><p>Extract 0.9997 → 0.9970 (Δ0.0027). Blanks 0. Meter works; spread does not mirror accuracy.</p></div></div>
-        <div class="step"><div class="step-n">3</div><div><h3>Why instrument exists</h3><p>Blank, ablation, pos-0 p(GT) — API cannot run these. Link to Research tab for mechanism.</p></div></div>
-        <div class="step"><div class="step-n">4</div><div><h3>Transfer null</h3><p>5b ρ≈0.03, p≈0.83. Stage 6 triage: instrument loses to random. Sample-limited but pre-registered.</p></div></div>
-        <div class="step"><div class="step-n">5</div><div><h3>Constructive close</h3><p>Propose grounding-aware confidence metrics; offer collaboration on internal eval if useful.</p></div></div>
+        <div class="step"><div class="step-n">1</div><div><h3>Published accuracy gap</h3><p>Hindi 95.91%, Kashmiri 55.93% on the Indic OCR bench — confidence should move if it tracks difficulty.</p></div></div>
+        <div class="step"><div class="step-n">2</div><div><h3>Stage 5a gap</h3><p>Extract 0.9997 → 0.9970 (Δ0.0027). Blanks go to 0. The meter is not stuck; the spread still does not mirror accuracy.</p></div></div>
+        <div class="step"><div class="step-n">3</div><div><h3>Why the instrument exists</h3><p>Blank, ablation, and position-0 p(GT) need an owned forward pass. Research tab has the mechanism.</p></div></div>
+        <div class="step"><div class="step-n">4</div><div><h3>Transfer results</h3><p>5b ρ≈0.03, p≈0.83. Stage 6 triage: instrument confidence loses to random. Sample-limited but pre-registered.</p></div></div>
+        <div class="step"><div class="step-n">5</div><div><h3>What to measure next</h3><p>Grounding-aware confidence metrics — visual contribution, not peak softmax alone.</p></div></div>
       </div>
       <details class="say-this" open>
-        <summary>What not to say</summary>
+        <summary>Claim boundaries</summary>
         <div class="say-body">
-          <p>Do not say their model hallucinates like ours. Do not say confidence is useless everywhere. Do not compare our ~20M CER to their production accuracy. Do say: peak softmax did not track difficulty in our controlled tests and their published spread — here is the data — and here is what we would measure instead.</p>
+          <p>Do not claim production readers hallucinate like this instrument. Do not claim confidence is useless everywhere. Do not treat our ~20M CER as a production accuracy comparison. The evidence is narrower: peak softmax did not track difficulty in these controlled tests and this published spread — and grounding-aware meters are the natural next measurement.</p>
         </div>
       </details>
     </div>
@@ -2694,7 +2694,7 @@
     <div>
       <div class="fmark">vlm-ocr-eval</div>
       <p class="fnote paper-only"><em>Reading Without Looking</em> · <a href="paper/main.pdf">PDF</a>. Narrow claim: instrument-specific confidence without visual grounding on held-out synthetic eval — not "VLMs ignore images." Eval images are GlotOCR renders, not photos. Numbers: <code>docs/paper_defensibility_stats.md</code>.</p>
-      <p class="fnote walk-only">Sarvam Vision is the production reference for motivation and transfer — not an accuracy competitor. Research tab = full mechanism. Preprint does not name the product; Stage 5–6 docs do.</p>
+      <p class="fnote walk-only">Production tab: published Indic OCR gaps and Stage 5–6 transfer. Research tab: instrument mechanism. Sarvam Vision is cited as a production reference for those transfer tests — not as an accuracy competitor. The preprint focuses on the instrument; Stage 5–6 docs cover the transfer slice.</p>
     </div>
     <div class="mono" style="font-size:0.8rem;color:var(--ink-soft);">GitHub Pages · index.html</div>
   </div>
